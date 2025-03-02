@@ -6,6 +6,7 @@ import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
 
 import TitleBar from './components/TitleBar.vue';
+import ViewThread from './pages/ViewThread.vue';
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
   { icon: 'home', title: '首页', selected: false },
@@ -36,8 +37,8 @@ function handleScroll(event) {
     </div>
     <div class="content" @scroll="handleScroll">
       <!--确保内容留有48px padding-->
-      <ViewBarThreads :scrollPosition="scrollPosition" :container="container" barName="孙笑川"></ViewBarThreads>
-
+      <!--<ViewBarThreads :scrollPosition="scrollPosition" :container="container" barName="孙笑川"></ViewBarThreads>-->
+      <ViewThread :scrollPosition="scrollPosition" :container="container" tid="9534544670"></ViewThread>
     </div>
   </div>
   <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"/>
@@ -105,7 +106,7 @@ function handleScroll(event) {
 .content {
   width: calc(100% - 220px);
   height: 100%;
-  background-color: rgba(30, 31, 32, 1);
+  background-color: rgba(30, 31, 32, 0.5);
   overflow-y: auto;
   overflow-x: hidden;
   border-radius: 5px;

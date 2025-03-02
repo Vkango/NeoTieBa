@@ -5,11 +5,7 @@
         <div class="user-name">{{ user_name }}</div>
       </div>
       <div class="thread-preview">
-        <div class="thread-title">{{ thread_title }}</div>
         <div class="thread-content" v-html="content">
-        </div>
-        <div class="thread-media">
-          <img class="thread-img" v-for="i in media" :src="i.big_pic" referrerpolicy="no-referrer">
         </div>
         <div class="thread-info">
           <span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>{{ create_time1 }}
@@ -38,13 +34,16 @@ onMounted(() => {
   props.thread_content.forEach((ele, index) => {
     switch(ele.type) {
       case 0: // text
-      if (index != 0) {
+        if (index != 0) {
           content.value += props.thread_content[index].type == 0 ? `<br>` : ``;
         }
-        content.value += ele.text;
+        content.value +=  ele.text;
         break;
       case 2: // emotion
         content.value += `<img class="emotion" src="../src/assets/emotion/${ele.text}.png" alt="${ele.c}" />`;
+        break;
+      case 3: // image
+        content.value += (index != 0 ? `<br>`:``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src}" referrerpolicy="no-referrer">`;
         break;
     }
   });
@@ -60,11 +59,6 @@ const props = defineProps({
         required: true,
         default: ''
     },
-    thread_title: {
-        type: String,
-        required: true,
-        default: ''
-    },
     thread_content: {
         type: Array,
         required: true,
@@ -74,11 +68,6 @@ const props = defineProps({
         type: String,
         required: true,
         default: ''
-    },
-    media: {
-        type: Array,
-        required: true,
-        default: []
     },
     create_time: {
         type: Number,
@@ -126,10 +115,6 @@ const props = defineProps({
 }
 .thread:hover {
   background-color: rgba(0, 0, 0, 0.2);
-}
-.thread-img {
-  max-height: 450px;
-  border-radius: 5px;
 }
 .thread-preview {
   display: flex;

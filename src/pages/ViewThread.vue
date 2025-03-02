@@ -1,29 +1,21 @@
 <script setup>
 import RippleButtonWithIcon from '../components/RippleButtonWithIcon.vue';
+import Reply from '../components/Reply.vue';
 import { ref, onMounted, watch } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
-import PinnedThread from '../components/PinnedThread.vue';
-import Thread from '../components/Thread.vue';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
-const pinnedThreadList = ref([]);
 const threadList = ref([]);
 const currentPage = ref(1);
+const threadTitle = ref("");
 const n = new tieBaAPI;
 const loadData = async () => {
   isThreadsLoading.value = true;
-  returnData.value = await n.browseBar(props.barName, currentPage.value);
-  if (currentPage.value == 1) {
-    pinnedThreadList.value = [...pinnedThreadList.value, ...returnData.value.thread_list.filter(item => item.is_top === 1)];
-  }
-  const previousThreadLen = threadList.value.length;
-  returnData.value.thread_list = returnData.value.thread_list.filter(item => item.is_top != 1)
-  returnData.value.thread_list = returnData.value.thread_list.filter(item => item.id != threadList.value.map(item => item.id));
-  threadList.value = [...threadList.value, ...returnData.value.thread_list];
-  for (let i = previousThreadLen; i < threadList.value.length; i++) {
-    threadList.value[i].author = returnData.value.user_list.filter(user => user.id === threadList.value[i].author_id)[0];
-  }
+  returnData.value = await n.viewThread(props.tid, currentPage.value);
+  console.log(returnData.value);
+  threadTitle.value = returnData.value.thread.title;
+  threadList.value = [...threadList.value, ...returnData.value.post_list];
   isThreadsLoading.value = false;
   console.log(threadList.value)
 }
@@ -56,7 +48,7 @@ const props = defineProps({
     required: true,
     default: null
   },
-  barName: {
+  tid: {
     type: String,
     required: true,
   }
@@ -65,32 +57,29 @@ const props = defineProps({
 
 <template>
   <div v-if="!isLoading">
-  <div class="bar-banner">
-    <div class="image-container">
-      <img class="background-image" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
-    </div>
-    <div class="banner-content">
-      <img class="avatar" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
-      <div>
-        <div class="title">{{ returnData.forum.name }}吧</div>
-        <div class="description">{{ returnData.forum.slogan }}</div>
-        <div class="level">
-          Lv.8 铁杆8u
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="pinned-thread-list">
-    <PinnedThread v-for="item in pinnedThreadList" :title="item.title" />
-  </div>
+
   <div class="thread-list">
-    <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>
-    <Thread v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
+    <Reply v-for="item in threadList" thread_title="" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number"></Reply>
   </div>
+  <div class="thread-title">{{ threadTitle }}</div>
   </div>
 </template>
 
 <style scoped>
+.thread-title {
+  height: 40px;
+  position: absolute;
+  width: fit-content;
+  border-radius: 5px;
+  margin: 10px 0;
+  backdrop-filter: blur(20px);
+  top: 0px;
+  left: calc(10% + 210px);
+  font-weight: bold;
+  line-height: 40px;
+  padding: 0 15px;
+  background-color: rgba(0, 0, 0, 0.5);
+}
 .thread-filter {
   width: 80%;
 }
@@ -103,6 +92,7 @@ const props = defineProps({
   gap: 8px;
   align-items: center;
   justify-content: center;
+  top: 50px;
 }
 
 .pinned-thread-list {
