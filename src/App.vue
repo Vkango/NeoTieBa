@@ -4,7 +4,7 @@ import { onMounted, ref } from 'vue';
 import FollowBar from './pages/FollowBar.vue';
 import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
-import { tieBaAPI } from './tieba-api';
+
 import TitleBar from './components/TitleBar.vue';
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
@@ -15,10 +15,13 @@ const naviListItem = ref([
 
 ]);
 
-onMounted(() => {
-  let n = new tieBaAPI;
-  console.log(n.browseBar("ps"))
-});
+const scrollPosition = ref(0);
+const container = ref();
+function handleScroll(event) {
+  const target = event.target;
+  scrollPosition.value = target.scrollTop;
+  container.value = event.target;
+}
 </script>
 
 <template>
@@ -31,13 +34,13 @@ onMounted(() => {
     <div class="list">
       <FollowBar/>
     </div>
-    <div class="content">
+    <div class="content" @scroll="handleScroll">
       <!--确保内容留有48px padding-->
-      <ViewBarThreads></ViewBarThreads>
+      <ViewBarThreads :scrollPosition="scrollPosition" :container="container" barName="孙笑川"></ViewBarThreads>
 
     </div>
   </div>
-  <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @onTaskList="onTaskList"/>
+  <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"/>
   <Tabs style="position: fixed; top: 0; max-width: calc(100% - 350px); left: 70px; overflow-x: auto;"></Tabs>
   </div>  
 </template>

@@ -13,7 +13,7 @@ const naviListItem = ref([
   <div class="list-title">关注的吧</div>
   <div style="display: flex; gap: 10px; flex-direction: column;">
     <button class="bar-button" v-for="item in naviListItem">
-      <img class="avatar" :src="item.icon">
+      <img class="avatar" :src="item.icon" referrerpolicy="no-referrer">
       <div class="bar-name">{{ item.title }}</div>
     </button>
   </div>

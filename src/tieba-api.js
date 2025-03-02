@@ -1,5 +1,6 @@
 import CryptoJS from "crypto-js";
-class tieBaAPI {
+import { fetchData } from './request.js'
+export class tieBaAPI {
     /**
      * 构造函数
      */
@@ -33,23 +34,8 @@ class tieBaAPI {
         try {
             // 构造请求数据
             const data = `_client_type=2&_client_version=8.6.8.0&kw=${encodeURIComponent(barName)}&pn=${page}&q_type=2&rn=50&with_group=1`;
-            const signedData = this.calcSign(data); // 添加签名
-            const params = new URLSearchParams(signedData);
-
-            // 发送POST请求
-            const response = await fetch(this.apiUrl, {
-                method: "POST",
-                body: params,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json(); // 解析JSON数据
+            const responseData = await fetchData('http://c.tieba.baidu.com/c/f/frs/page?' + this.calcSign(data));
+            const result = await JSON.parse(responseData); // 解析JSON数据
             return result;
         } catch (error) {
             console.error("请求失败:", error);
@@ -57,4 +43,3 @@ class tieBaAPI {
         }
     }
 }
-export { tieBaAPI }; // 导出tieBaAPI类
