@@ -48,7 +48,6 @@ function onSwitchTabs(id) {
   activeTab.value.props = tabItem.props;
   activeTab.value.key = tabItem.key;
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
-  console.log(cachedTabs.value, "cachedTabs", activeTab.value.key, "activeTab");
 }
 const onTabDelete = (key) => {
   handler.remove(key);

@@ -50,9 +50,17 @@ const handleClick = (id) => {
   emit('onSwitchTabs', id);
 };
 const addTab = (key, icon, title, component, props) => {
+  let found = false;
   tabs.value.forEach(element => {
+    if (element.key == key) {
+      element.selected = true;
+      emit('onSwitchTabs', element.id);
+      found = true
+      return;
+    }
     element.selected = false;
   });
+  if (found) { return; }
   tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props });
   emit('onSwitchTabs', tabs.value.length - 1);
 };
