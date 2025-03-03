@@ -26,6 +26,7 @@
 <script setup>
 import { ref, onMounted, defineEmits } from 'vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import RippleButton from './RippleButton.vue';
 const isMaximized = ref(false);
 const isMouseDown = ref(false);
 const isMoved = ref(false);

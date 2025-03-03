@@ -3,6 +3,7 @@ import RippleButtonWithIcon from '../components/RippleButtonWithIcon.vue';
 import Reply from '../components/Reply.vue';
 import { ref, onMounted, watch } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
+import Loading from '../components/Loading.vue';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
@@ -10,14 +11,14 @@ const threadList = ref([]);
 const currentPage = ref(1);
 const threadTitle = ref("");
 const n = new tieBaAPI;
+const emit = defineEmits(['setTabInfo']);
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.viewThread(props.tid, currentPage.value);
-  console.log(returnData.value);
   threadTitle.value = returnData.value.thread.title;
+  emit('setTabInfo', { key: props.key_, title: returnData.value.thread.title, icon: returnData.value.forum.avatar });
   threadList.value = [...threadList.value, ...returnData.value.post_list];
   isThreadsLoading.value = false;
-  console.log(threadList.value)
 }
 onMounted(async() => {
   isLoading.value = true;
@@ -26,7 +27,7 @@ onMounted(async() => {
   watch(() => props.scrollPosition, () => {
   const container = props.container;
   if ((container.scrollTop + container.clientHeight + 20 >= container.scrollHeight)) {
-    if (isThreadsLoading.value) {
+    if (isThreadsLoading.value || returnData.value.page.has_more != 1) {
       return;
     }
     nextPage();
@@ -44,13 +45,18 @@ const props = defineProps({
     default: 0
   },
   container: {
-    type: Object,
     required: true,
-    default: null
   },
   tid: {
-    type: String,
+    type: Number,
     required: true,
+  },
+  key_: {
+    required: true
+  },
+  setTabInfo: {
+    type: Function,
+    required: false,
   }
 });
 </script>
@@ -59,10 +65,13 @@ const props = defineProps({
   <div v-if="!isLoading">
 
   <div class="thread-list">
-    <Reply v-for="item in threadList" thread_title="" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number"></Reply>
+    <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
   </div>
   <div class="thread-title">{{ threadTitle }}</div>
   </div>
+  <transition name="fade1">
+    <Loading class="loading-box" v-if="isLoading"></Loading>
+  </transition>
 </template>
 
 <style scoped>
@@ -74,7 +83,7 @@ const props = defineProps({
   margin: 10px 0;
   backdrop-filter: blur(20px);
   top: 0px;
-  left: calc(10% + 210px);
+  left: 10%;
   font-weight: bold;
   line-height: 40px;
   padding: 0 15px;

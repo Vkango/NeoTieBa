@@ -2,14 +2,20 @@
     <div class="thread">
       <div class="user-info">
         <div class="avatar"><img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
-        <div class="user-name">{{ user_name }}</div>
+        <div class="user-name">{{ user_name }}<span class="level" :class="{ 'color1' : level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level > 16}">{{ level }}</span></div>
       </div>
       <div class="thread-preview">
         <div class="thread-content" v-html="content">
         </div>
         <div class="thread-info">
+          
           <span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>{{ create_time1 }}
-          <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">forum</span> {{ reply_num }}
+          <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">floor</span> {{ floor }} 楼
+          <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;" v-if="reply_num > 0">forum</span> <span v-if="reply_num > 0">{{ reply_num }}</span>
+          
+        </div>
+        <div class="subpost">
+          <SubPost v-for="item in subpost_list" :thread_content="item.content" :avatar="item.author.portrait" :user_name="item.author.name_show || item.author.name" ></SubPost>
         </div>
       </div>
     </div>
@@ -17,8 +23,11 @@
 
 <script setup>
 import { defineProps, onMounted, ref } from 'vue';
+import { tieBaAPI } from '../tieba-api';
+import SubPost from './SubPost.vue';
 const content = ref('')
 const create_time1 = ref('')
+const subpost_list = ref([])
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);
   const yyyy = date.getFullYear();
@@ -47,6 +56,15 @@ onMounted(() => {
         break;
     }
   });
+  if (props.reply_num > 0) {
+    const Api = new tieBaAPI;
+    Api.viewSubPost(props.tid, props.pid).then((res) => {
+      subpost_list.value = res.subpost_list;
+      if (subpost_list.value.length > 5) {
+        subpost_list.value = subpost_list.value.slice(0, 5);
+      }
+    });
+  }
 })
 const props = defineProps({
     avatar: {
@@ -78,10 +96,53 @@ const props = defineProps({
         type: Number,
         required: true,
         default: 0
+    },
+    tid: {
+      type: Number,
+        required: true,
+        default: ''
+    },
+    pid: {
+      type: Number,
+        required: true,
+        default: ''
+    },
+    floor: {
+      type: Number,
+      required: true
+    },
+    level: {
+      type: Number,
+      required: false,
+      default: 0
     }
 })
 </script>
 <style scoped>
+.level.color1 {
+  background-color: rgba(0, 255, 166, 0.1);
+}
+.level.color2 {
+  background-color: rgba(0, 119, 255, 0.1);
+}
+.level.color3 {
+  background-color: rgba(255, 255, 0, 0.1);
+}
+.level.color4 {
+  background-color: rgba(255, 0, 0, 0.1);
+}
+.level {
+  margin-left: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 3px 10px;
+  border-radius: 5px;
+}
+.subpost {
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, 0.2);
+}
 .thread-info {
   display: flex;
   gap: 5px;

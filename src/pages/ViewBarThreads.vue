@@ -1,9 +1,10 @@
 <script setup>
 import RippleButtonWithIcon from '../components/RippleButtonWithIcon.vue';
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, defineEmits } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
 import PinnedThread from '../components/PinnedThread.vue';
 import Thread from '../components/Thread.vue';
+import Loading from '../components/Loading.vue';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
@@ -15,6 +16,7 @@ const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.browseBar(props.barName, currentPage.value);
   if (currentPage.value == 1) {
+    emit('setTabInfo', { key: props.key_, title: returnData.value.forum.name + '吧', icon: returnData.value.forum.avatar });
     pinnedThreadList.value = [...pinnedThreadList.value, ...returnData.value.thread_list.filter(item => item.is_top === 1)];
   }
   const previousThreadLen = threadList.value.length;
@@ -25,7 +27,6 @@ const loadData = async () => {
     threadList.value[i].author = returnData.value.user_list.filter(user => user.id === threadList.value[i].author_id)[0];
   }
   isThreadsLoading.value = false;
-  console.log(threadList.value)
 }
 onMounted(async() => {
   isLoading.value = true;
@@ -41,6 +42,10 @@ onMounted(async() => {
 }
 });
 });
+const handleClick = (id) => {
+  emit('threadClick', id);
+}
+const emit = defineEmits(['threadClick', 'setTabInfo']);
 const nextPage = async () => {
     currentPage.value++;
     loadData();
@@ -52,14 +57,21 @@ const props = defineProps({
     default: 0
   },
   container: {
-    type: Object,
     required: true,
     default: null
   },
   barName: {
     type: String,
     required: true,
-  }
+  },
+  key_: {
+    required: true
+  },
+  setTabInfo: {
+    type: Function,
+    required: false,
+  },
+
 });
 </script>
 
@@ -85,12 +97,16 @@ const props = defineProps({
   </div>
   <div class="thread-list">
     <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>
-    <Thread v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
+    <Thread @click="handleClick(item.id)" v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
   </div>
   </div>
+  <transition name="fade1">
+    <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
+  </transition>
 </template>
 
 <style scoped>
+
 .thread-filter {
   width: 80%;
 }

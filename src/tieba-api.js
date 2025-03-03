@@ -46,8 +46,19 @@ export class tieBaAPI {
         try {
             // 构造请求数据
             const data = `_client_version=7.2.2&kz=${id}&net_type=1&pn=${page}`;
-            console.log('http://c.tieba.baidu.com/c/f/pb/page?' + this.calcSign(data))
             const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/page?' + this.calcSign(data));
+            const result = await JSON.parse(responseData); // 解析JSON数据
+            return result;
+        } catch (error) {
+            console.error("请求失败:", error);
+            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
+        }
+    }
+    async viewSubPost(tid, pid, page = 1) {
+        try {
+            // 构造请求数据
+            const data = `kz=${tid}&pid=${pid}&pn=${page}`;
+            const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/floor?' + this.calcSign(data));
             const result = await JSON.parse(responseData); // 解析JSON数据
             return result;
         } catch (error) {

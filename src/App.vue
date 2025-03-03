@@ -1,48 +1,77 @@
 <script setup>
 import RippleButtonWithIcon from './components/RippleButtonWithIcon.vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed, getCurrentInstance  } from 'vue';
 import FollowBar from './pages/FollowBar.vue';
 import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
-
 import TitleBar from './components/TitleBar.vue';
 import ViewThread from './pages/ViewThread.vue';
+import Loading from './components/Loading.vue';
+import { KeepAliveHandler } from './handler';
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
   { icon: 'home', title: '首页', selected: false },
   { icon: 'apps', title: '贴吧', selected: true },
   { icon: 'favorite', title: '收藏', selected: false },
   { icon: 'settings', title: '设置', selected: false }
-
 ]);
-
+const activeTab = ref({});
+const TabsRef = ref(null);
 const scrollPosition = ref(0);
 const container = ref();
+const cachedTabs = ref([]);
 function handleScroll(event) {
   const target = event.target;
   scrollPosition.value = target.scrollTop;
   container.value = event.target;
 }
+const onBarThreadClick = (id) => {
+  TabsRef.value.addTab(id, "../assets/loading.svg", "正在加载", ViewThread, { scrollPosition: scrollPosition, container: container, tid: id, key_: id, onSetTabInfo: setTabInfo })
+}
+const setTabInfo = (info) => {
+  TabsRef.value.setTitle(info.key, info.title);
+  TabsRef.value.setIcon(info.key, info.icon);
+}
+const instance = getCurrentInstance();
+const handler = new KeepAliveHandler();
+
+onMounted(() => {
+  TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { scrollPosition: scrollPosition, key_: 1, container: container, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
+  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+  const keepAlive = instance.refs.keepAlive;
+  handler.bind(keepAlive);
+});
+function onSwitchTabs(id) {
+
+  const tabItem = TabsRef.value.getTab(id);
+  activeTab.value.component = tabItem.component;
+  activeTab.value.props = tabItem.props;
+  activeTab.value.key = tabItem.key;
+  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+  console.log(cachedTabs.value, "cachedTabs", activeTab.value.key, "activeTab");
+}
+const onTabDelete = (key) => {
+  handler.remove(key);
+  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+}
+
+
 </script>
 
 <template>
   <div id="container">
-
   <div class="navi">
     <RippleButtonWithIcon class="navi-button" v-for="item in naviListItem" :class="{ 'selected' : item.selected}" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
   </div>
   <div class="container">
-    <div class="list">
-      <FollowBar/>
-    </div>
     <div class="content" @scroll="handleScroll">
-      <!--确保内容留有48px padding-->
-      <!--<ViewBarThreads :scrollPosition="scrollPosition" :container="container" barName="孙笑川"></ViewBarThreads>-->
-      <ViewThread :scrollPosition="scrollPosition" :container="container" tid="9534544670"></ViewThread>
+      <keep-alive ref="keepAlive">
+        <component :is="activeTab.component" :key="activeTab.key" v-bind="activeTab.props"/>
+      </keep-alive>
     </div>
   </div>
   <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"/>
-  <Tabs style="position: fixed; top: 0; max-width: calc(100% - 350px); left: 70px; overflow-x: auto;"></Tabs>
+  <Tabs ref="TabsRef" style="position: fixed; top: 0; max-width: calc(100% - 350px); left: 70px; overflow-x: auto; height: 40px;" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"></Tabs>
   </div>  
 </template>
 
@@ -77,7 +106,6 @@ function handleScroll(event) {
   top: 45px;
   left: 70px;
   height: calc(100% - 45px);
-  background-color: rgba(73, 73, 73, 0.05);
   border-radius: 10px 0 0 0;
 }
 .navi {
@@ -88,13 +116,15 @@ function handleScroll(event) {
   display: flex;
   flex-direction: column;
   padding: 10px 0;
+  background-color: rgba(30, 31, 32, 0.5);
 }
 .list {
   top: 0;
-  height: calc(100% - 0);
+  height: 100%;
   position: relative;
   width: 220px;
   padding: 5px 10px;
+  background-color: rgba(30, 31, 32, 0.3);
 }
 .tab {
   position: relative;
@@ -104,15 +134,29 @@ function handleScroll(event) {
 
 }
 .content {
-  width: calc(100% - 220px);
+  width: 100%;
   height: 100%;
-  background-color: rgba(30, 31, 32, 0.5);
+  background-color: rgba(30, 31, 32, 0.1);
   overflow-y: auto;
   overflow-x: hidden;
   border-radius: 5px;
 }
 </style>
 <style>
+.loading-box {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+}
+.fade1-enter-active,
+.fade1-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade1-enter-from,
+.fade1-leave-to {
+  opacity: 0;
+}
 .list-title {
   font-size: 13px;
 }
@@ -122,7 +166,6 @@ function handleScroll(event) {
   line-height: 24px;
   font-weight: 400;
   color: #0f0f0f;
-  background-color: #f6f6f6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

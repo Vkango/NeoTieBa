@@ -1,83 +1,19 @@
 <template>
-  <div class="loading-container" :style="containerStyle">
-    <div class="loading-spinner" :style="spinnerStyle"></div>
-  </div>
+    <div class="loading">
+    <img src="../assets/loading.svg">
+    <span>Loading...</span>
+    </div>
 </template>
-
-<script>
-import { reactive, computed } from 'vue';
-
-export default {
-  name: 'LoadingBox',
-  props: {
-    // 圆环宽度
-    ringWidth: {
-      type: Number,
-      default: 2,
-    },
-    // 圆环颜色
-    ringColor: {
-      type: String,
-      default: '#ffffff',
-    },
-    // 组件宽度
-    width: {
-      type: Number,
-      default: 100,
-    },
-    // 组件高度
-    height: {
-      type: Number,
-      default: 100,
-    },
-  },
-  setup(props) {
-    // 定义容器样式
-    const containerStyle = computed(() => ({
-      width: `${props.width}px`,
-      height: `${props.height}px`,
-    }));
-
-    // 定义加载框样式
-    const spinnerStyle = computed(() => ({
-      width: `${props.width - 2 * props.ringWidth}px`,
-      height: `${props.height - 2 * props.ringWidth}px`,
-      borderWidth: `${props.ringWidth}px`,
-      borderColor: `${props.ringColor} transparent transparent transparent`,
-    }));
-
-    return {
-      containerStyle,
-      spinnerStyle,
-    };
-  },
-};
-</script>
-
 <style scoped>
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-}
-
-.loading-spinner {
-  border: 2px solid transparent;
-  border-radius: 50%;
-  animation: spin 0.8s ease-in-out infinite;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-@keyframes spin {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 15px;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: fit-content;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 </style>
