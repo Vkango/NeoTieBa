@@ -8,7 +8,7 @@ import TitleBar from './components/TitleBar.vue';
 import ViewThread from './pages/ViewThread.vue';
 import Loading from './components/Loading.vue';
 import { KeepAliveHandler } from './handler';
-
+import QRCodeLogin from './pages/QRCodeLogin.vue';
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
   { icon: 'home', title: '首页', selected: false },
@@ -35,6 +35,8 @@ const handler = new KeepAliveHandler();
 
 onMounted(() => {
   TabsRef.value.addTab(10001, "../assets/apps.svg", "进吧", FollowBar, { key_: 10001, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(10000, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: 10001, onSetTabInfo: setTabInfo})
+  
   TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: 1, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;

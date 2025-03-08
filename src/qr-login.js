@@ -1,3 +1,4 @@
+import { fetch_data_with_headers_command, fetchData } from './request.js'
 class ApiLogin {
     constructor() {
       this.BAIDUID = '';
@@ -10,9 +11,11 @@ class ApiLogin {
       this.msg = '';
       this.scanTimer = null;
       this.isScanning = false;
+      this.isCanceled = false;
     }
   
     async get_token() {
+      if (this.isCancelled) return; 
       const timestamp = Math.floor(Date.now() / 1000);
       const url = `https://passport.baidu.com/v2/api/?getapi&token=&tpl=tb&subpro=&apiver=v3&tt=${timestamp}&class=login&gid=9E0F7FB-E8A6-45AE-B0AB-095DDDB59C42&loginversion=v4&logintype=dialogLogin&traceid=&time=${timestamp}&alg=v3`;
       const headers = {
@@ -25,8 +28,8 @@ class ApiLogin {
         "Cookie": this.BAIDUID
       };
       try {
-        const response = await axios.get(url, { headers });
-        return response.data;
+        const response = await fetch_data_with_headers_command(url, headers);
+        return response.text;
       } catch (error) {
         console.error("get_token error:", error);
         return null;
@@ -46,7 +49,7 @@ class ApiLogin {
         "Cookie": this.BAIDUID
       };
       try {
-        const response = await axios.get(url, { headers });
+        const response = await fetch_data_with_headers_command(url, headers);
         const src = response.headers['set-cookie'];
         return src;
       } catch (error) {
@@ -58,8 +61,8 @@ class ApiLogin {
     async get_qr_code() {
       const url = "https://passport.baidu.com/v2/api/getqrcode?lp=pc&qrloginfrom=p";
       try {
-        const response = await axios.get(url);
-        return response.data;
+        const response = JSON.parse(await fetchData(url));
+        return response;
       } catch (error) {
         console.error("get_qr_code error:", error);
         return null;
@@ -67,11 +70,13 @@ class ApiLogin {
     }
   
     async get_auth_cookie() {
+      if (this.isCancelled) return;
       try {
-        const response = await axios.get("https://passport.baidu.com");
+        const response = await fetch_data_with_headers_command("https://passport.baidu.com", {});
         this.BAIDUID = response.headers['set-cookie'];
         const qrResult = await this.get_qr_code();
         if (!qrResult) throw new Error("Failed to get QR code");
+        console.log("qr_url", qrResult.imgurl);
         document.getElementById('qrCodeImg').src = `https://${qrResult.imgurl}`;
         this.token = await this.get_token();
         const tokenJson = JSON.parse(this.token.replace(/'/g, '"'));
@@ -97,8 +102,8 @@ class ApiLogin {
         "Cookie": this.BAIDUID
       };
       try {
-        const response = await axios.get(url, { headers });
-        return response.data;
+        const response = await fetch_data_with_headers_command(url, headers);
+        return response.text;
       } catch (error) {
         console.error("get_scan_status error:", error);
         return null;
@@ -118,51 +123,15 @@ class ApiLogin {
         "Cookie": this.BAIDUID
       };
       try {
-        const response = await axios.get(url, { headers });
-        return response.data;
+        const response = await fetch_data_with_headers_command(url, headers);
+        return response.text;
       } catch (error) {
         console.error("login_with_bduss error:", error);
         return null;
       }
     }
   
-    async login() {
-      if (this.isScanning) return;
-      this.isScanning = true;
-      let i = 0;
-      this.scanTimer = setInterval(async () => {
-        i++;
-        if (i === 120) {
-          this.isScanning = false;
-          clearInterval(this.scanTimer);
-          this.refreshQRCode();
-          return;
-        }
-        try {
-          const status = await this.get_scan_status();
-          document.getElementById('qrStatus').textContent = '心跳检测中...';
-          if (status.includes('"status":1')) {
-            document.getElementById('qrStatus').textContent = '扫描成功！请在手机上确认！';
-          }
-          if (status.includes('"status":0,"v":')) {
-            this.isScanning = false;
-            clearInterval(this.scanTimer);
-            const re = /"v\\":\\"(.*?)\\"/;
-            this.bdussd = re.exec(status)[1];
-            const response = await this.login_with_bduss();
-            const reDisplayName = /displayName":"(.*?)"/;
-            const rePortrait = /portraitUrl":"(.*?)"/;
-            const displayName = reDisplayName.exec(response);
-            const portrait = rePortrait.exec(response);
-            document.getElementById('loginResult').style.display = 'block';
-            document.getElementById('loginMsg').textContent = `${displayName[1]} 登录成功！`;
-            document.getElementById('userAvatar').src = portrait[1];
-          }
-        } catch (error) {
-          console.error("Login error:", error);
-        }
-      }, 5000);
-    }
+
   
     refreshQRCode() {
       clearInterval(this.scanTimer);
@@ -176,18 +145,19 @@ class ApiLogin {
       this.h = '';
       this.msg = '';
       this.get_auth_cookie();
-      this.login();
+      // this.login();
     }
   }
   
-const apiLogin = new ApiLogin();
+// const apiLogin = new ApiLogin();
 
-async function main() {
-    await apiLogin.get_auth_cookie();
-    apiLogin.login();
-}
+// async function main() {
+//     await apiLogin.get_auth_cookie();
+//     apiLogin.login();
+// }
 
-main();
-    document.getElementById('refreshQrBtn').addEventListener('click', () => {
-    apiLogin.refreshQRCode();
-});
+// main();
+//     document.getElementById('refreshQrBtn').addEventListener('click', () => {
+//     apiLogin.refreshQRCode();
+// });
+export { ApiLogin };

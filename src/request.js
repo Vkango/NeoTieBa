@@ -8,3 +8,12 @@ export async function fetchData(url) {
         console.error('Error:', error);
     }
 }
+
+export async function fetch_data_with_headers_command(url, headers) {
+    try {
+        const data = await invoke('fetch_data_with_headers_command', { url, headersJson: JSON.stringify(headers) });
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
