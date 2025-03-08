@@ -85,7 +85,7 @@ const props = defineProps({
     </div>
   </div>
   <div class="pinned-thread-list">
-    <PinnedThread v-for="item in pinnedThreadList" :title="item.title" />
+    <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)"/>
   </div>
   <div class="thread-list">
     <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>

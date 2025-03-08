@@ -62,6 +62,12 @@ const addBar = async () => {
   TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: value, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
 }
+
+const onTabScroll = (event) => {
+  const container = document.getElementsByClassName('tabs')[0];
+  const deltaX = event.deltaY;
+  container.scrollLeft += deltaX;
+};
 </script>
 
 <template>
@@ -75,11 +81,23 @@ const addBar = async () => {
     </keep-alive>
   </div>
   <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"/>
-  <Tabs ref="TabsRef" style="position: fixed; top: 0; max-width: calc(100% - 350px); left: 70px; overflow-x: auto; height: 40px;" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"></Tabs>
+  <Tabs @wheel="onTabScroll" ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"></Tabs>
   </div>  
 </template>
 
 <style scoped>
+.tabs {
+  position: fixed;
+  top: 0;
+  max-width: calc(100% - 350px);
+  left: 70px;
+  overflow-x: hidden;
+  height: 40px;
+  overflow-y: hidden;
+}
+.tabs:hover {
+  overflow-x: scroll;
+}
 .navi-button {
   opacity: 0.5;
   transition: opacity 0.2s ease;
@@ -170,7 +188,7 @@ const addBar = async () => {
 }
 ::-webkit-scrollbar {
   width: 7px;
-  height: 2px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
 
