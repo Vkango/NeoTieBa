@@ -5,6 +5,7 @@ import { tieBaAPI } from '../tieba-api.js';
 import PinnedThread from '../components/PinnedThread.vue';
 import Thread from '../components/Thread.vue';
 import Loading from '../components/Loading.vue';
+import Container from '../components/Container.vue';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
@@ -32,16 +33,15 @@ onMounted(async() => {
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
-  watch(() => props.scrollPosition, () => {
-  const container = props.container;
-  if ((container.scrollTop + container.clientHeight + 20 >= container.scrollHeight)) {
-    if (isThreadsLoading.value) {
+});
+const onScroll = (target) => {
+  if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
+    if (isThreadsLoading.value || returnData.value.page.has_more != 1) {
       return;
     }
     nextPage();
+  }
 }
-});
-});
 const handleClick = (id) => {
   emit('threadClick', id);
 }
@@ -51,15 +51,6 @@ const nextPage = async () => {
     loadData();
 }
 const props = defineProps({
-  scrollPosition: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  container: {
-    required: true,
-    default: null
-  },
   barName: {
     type: String,
     required: true,
@@ -76,6 +67,7 @@ const props = defineProps({
 </script>
 
 <template>
+  <Container @yscroll="onScroll">
   <div v-if="!isLoading">
   <div class="bar-banner">
     <div class="image-container">
@@ -87,7 +79,7 @@ const props = defineProps({
         <div class="title">{{ returnData.forum.name }}吧</div>
         <div class="description">{{ returnData.forum.slogan }}</div>
         <div class="level">
-          Lv.8 铁杆8u
+          登录以签到
         </div>
       </div>
     </div>
@@ -103,6 +95,7 @@ const props = defineProps({
   <transition name="fade1">
     <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
   </transition>
+  </Container>
 </template>
 
 <style scoped>

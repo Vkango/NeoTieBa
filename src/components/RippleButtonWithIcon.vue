@@ -1,5 +1,5 @@
 <template>
-  <RippleButton id="RippleButton">
+  <RippleButton id="RippleButton" @click="emit('click')">
     <div style="font-variation-settings: 'FILL' 0, 'wght' 100;">
       <span class="material-symbols-outlined">{{ icon }}</span>
     </div>

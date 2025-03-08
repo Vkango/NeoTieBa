@@ -4,11 +4,10 @@
       <div class="tab-content">
         <img class="icon" :src="getIconPath(i.icon)" referrerpolicy="no-referrer"/>
         <div class="title">{{ i.title }}</div>
-        <span class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop @click="handleDelete(i.id)" >close</span>
+        <span v-if="i.key != 10001" class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop @click="handleDelete(i.id)" >close</span>
       </div>
     </RippleButton>
   </div>
-
 </template>
 <script setup>
 import { defineEmits, markRaw } from 'vue';
@@ -87,6 +86,7 @@ const setIcon = (key, icon) => {
 const tabs = ref([]);
 const emit = defineEmits(['click', 'onSwitchTabs', 'onTabDelete']);
 const getIconPath = (icon) => {
+  
   return new URL(`${icon}`, import.meta.url).href;
 };
 defineExpose({

@@ -10,38 +10,58 @@ const naviListItem = ref([
 </script>
 
 <template>
-  <div class="list-title">关注的吧</div>
-  <div style="display: flex; gap: 10px; flex-direction: column;">
-    <button class="bar-button" v-for="item in naviListItem">
-      <img class="avatar" :src="item.icon" referrerpolicy="no-referrer">
-      <div class="bar-name">{{ item.title }}</div>
-    </button>
+  <div class="bgr">
+    <div class="list-title">关注的吧</div>
+    <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
+      <button class="bar-button" v-for="item in naviListItem">
+        <img class="avatar" :src="item.icon" referrerpolicy="no-referrer">
+        <div>
+          <div class="bar-name">{{ item.title }}</div>
+          <div class="desc">已签</div>
+        </div>
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.bar-name {
+.bgr {
+  width: 80%;
+  justify-self: center;
+}
+.desc {
   font-size: 13px;
+  opacity: 0.5;
+  margin-top: 2px;
+}
+.bar-name {
+  font-size: 14px;
+  font-weight: bold;
+  width: fit-content;
 }
 .bar-button {
   display: flex;
   gap: 10px;
   background-color: rgba(255, 255, 255, 0.05);
   box-shadow: none;
+  width: fit-content;
+  text-align: left;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px 15px;
+  border-radius: 5px;
 }
 .avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
 }
 .list-title {
   padding: 10px 5px;
-}
-.bar-button {
-  width: 100%;
-  text-align: left;
-  align-items: center;
-  padding: 10px 15px;
-  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  position: relative;
 }
 </style>

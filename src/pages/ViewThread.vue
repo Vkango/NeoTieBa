@@ -1,9 +1,9 @@
 <script setup>
-import RippleButtonWithIcon from '../components/RippleButtonWithIcon.vue';
 import Reply from '../components/Reply.vue';
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onActivated } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
 import Loading from '../components/Loading.vue';
+import Container from '../components/Container.vue';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
@@ -24,16 +24,15 @@ onMounted(async() => {
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
-  watch(() => props.scrollPosition, () => {
-  const container = props.container;
-  if ((container.scrollTop + container.clientHeight + 20 >= container.scrollHeight)) {
+});
+const onScroll = (target) => {
+  if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
     if (isThreadsLoading.value || returnData.value.page.has_more != 1) {
       return;
     }
     nextPage();
+  }
 }
-});
-});
 const nextPage = async () => {
     currentPage.value++;
     loadData();
@@ -62,16 +61,17 @@ const props = defineProps({
 </script>
 
 <template>
-  <div v-if="!isLoading">
-
-  <div class="thread-list">
-    <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
-  </div>
-  <div class="thread-title">{{ threadTitle }}</div>
-  </div>
-  <transition name="fade1">
-    <Loading class="loading-box" v-if="isLoading"></Loading>
-  </transition>
+  <Container @yscroll="onScroll">
+    <div v-if="!isLoading">
+    <div class="thread-list">
+      <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
+    </div>
+    <div class="thread-title">{{ threadTitle }}</div>
+    </div>
+    <transition name="fade1">
+      <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
+    </transition>
+  </Container>
 </template>
 
 <style scoped>

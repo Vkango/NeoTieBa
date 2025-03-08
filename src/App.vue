@@ -8,6 +8,7 @@ import TitleBar from './components/TitleBar.vue';
 import ViewThread from './pages/ViewThread.vue';
 import Loading from './components/Loading.vue';
 import { KeepAliveHandler } from './handler';
+
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
   { icon: 'home', title: '首页', selected: false },
@@ -20,15 +21,12 @@ const TabsRef = ref(null);
 const scrollPosition = ref(0);
 const container = ref();
 const cachedTabs = ref([]);
-function handleScroll(event) {
-  const target = event.target;
-  scrollPosition.value = target.scrollTop;
-  container.value = event.target;
-}
+
 const onBarThreadClick = (id) => {
   TabsRef.value.addTab(id, "../assets/loading.svg", "正在加载", ViewThread, { scrollPosition: scrollPosition, container: container, tid: id, key_: id, onSetTabInfo: setTabInfo })
 }
 const setTabInfo = (info) => {
+  console.log('settingTabInfo', info.key)
   TabsRef.value.setTitle(info.key, info.title);
   TabsRef.value.setIcon(info.key, info.icon);
 }
@@ -36,7 +34,8 @@ const instance = getCurrentInstance();
 const handler = new KeepAliveHandler();
 
 onMounted(() => {
-  TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { scrollPosition: scrollPosition, key_: 1, container: container, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(10001, "../assets/apps.svg", "进吧", FollowBar, { key_: 10001, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: 1, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
   handler.bind(keepAlive);
@@ -54,20 +53,26 @@ const onTabDelete = (key) => {
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
 }
 
-
+const addBar = async () => {
+  const value = prompt("请输入贴吧名称", "")
+  if (value === null) {
+    return;
+  }
+  const key = String(Date.now())
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: value, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
+  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+}
 </script>
 
 <template>
   <div id="container">
   <div class="navi">
-    <RippleButtonWithIcon class="navi-button" v-for="item in naviListItem" :class="{ 'selected' : item.selected}" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
+    <RippleButtonWithIcon @click="addBar" class="navi-button" v-for="item in naviListItem" :class="{ 'selected' : item.selected}" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
   </div>
   <div class="container">
-    <div class="content" @scroll="handleScroll">
-      <keep-alive ref="keepAlive">
-        <component :is="activeTab.component" :key="activeTab.key" v-bind="activeTab.props"/>
-      </keep-alive>
-    </div>
+    <keep-alive ref="keepAlive">
+      <component :is="activeTab.component" :key="activeTab.key" v-bind="activeTab.props"/>
+    </keep-alive>
   </div>
   <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"/>
   <Tabs ref="TabsRef" style="position: fixed; top: 0; max-width: calc(100% - 350px); left: 70px; overflow-x: auto; height: 40px;" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"></Tabs>
@@ -105,7 +110,7 @@ const onTabDelete = (key) => {
   top: 45px;
   left: 70px;
   height: calc(100% - 45px);
-  border-radius: 10px 0 0 0;
+  border-radius: 5px 0 0 0;
 }
 .navi {
   top: 0px;
@@ -115,7 +120,7 @@ const onTabDelete = (key) => {
   display: flex;
   flex-direction: column;
   padding: 10px 0;
-  background-color: rgba(30, 31, 32, 0.5);
+  background-color: rgba(30, 31, 32, 0);
 }
 .list {
   top: 0;
@@ -132,20 +137,12 @@ const onTabDelete = (key) => {
   height: 48px;
 
 }
-.content {
-  width: 100%;
-  height: 100%;
-  background-color: rgba(30, 31, 32, 0.1);
-  overflow-y: auto;
-  overflow-x: hidden;
-  border-radius: 5px;
-}
 </style>
 <style>
 .loading-box {
   position: absolute;
-  left: 10px;
-  bottom: 10px;
+  left: 30px;
+  bottom: 20px;
 }
 .fade1-enter-active,
 .fade1-leave-active {
@@ -155,9 +152,6 @@ const onTabDelete = (key) => {
 .fade1-enter-from,
 .fade1-leave-to {
   opacity: 0;
-}
-.list-title {
-  font-size: 13px;
 }
 :root {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -171,6 +165,8 @@ const onTabDelete = (key) => {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
   user-select: none;
+  --text-color: 255, 255, 255;
+  --background-color: 0, 0, 0;
 }
 ::-webkit-scrollbar {
   width: 7px;
