@@ -8,12 +8,13 @@ import TitleBar from './components/TitleBar.vue';
 import ViewThread from './pages/ViewThread.vue';
 import Loading from './components/Loading.vue';
 import { KeepAliveHandler } from './handler';
+import My from './pages/My.vue';
 import QRCodeLogin from './pages/QRCodeLogin.vue';
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
   { icon: 'home', title: '首页', selected: false },
   { icon: 'apps', title: '贴吧', selected: true },
-  { icon: 'favorite', title: '收藏', selected: false },
+  { icon: 'person', title: '我的', selected: false },
   { icon: 'settings', title: '设置', selected: false }
 ]);
 const activeTab = ref({});
@@ -23,7 +24,7 @@ const container = ref();
 const cachedTabs = ref([]);
 
 const onBarThreadClick = (id) => {
-  TabsRef.value.addTab(id, "../assets/loading.svg", "正在加载", ViewThread, { scrollPosition: scrollPosition, container: container, tid: id, key_: id, onSetTabInfo: setTabInfo })
+  TabsRef.value.addTab(id, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: id, onSetTabInfo: setTabInfo })
 }
 const setTabInfo = (info) => {
   console.log('settingTabInfo', info.key)
@@ -32,10 +33,15 @@ const setTabInfo = (info) => {
 }
 const instance = getCurrentInstance();
 const handler = new KeepAliveHandler();
-
+const onBarNameClicked = (barName) => {
+  console.log('')
+  const key = Number(Date.now());
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
+}
 onMounted(() => {
-  TabsRef.value.addTab(10001, "../assets/apps.svg", "进吧", FollowBar, { key_: 10001, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(10001, "../assets/apps.svg", "进吧", FollowBar, { key_: 10001, onBarNameClicked: onBarNameClicked})
   TabsRef.value.addTab(10000, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: 10001, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(10002, "../assets/qr.svg", "我的", My, { key_: 10001, onSetTabInfo: setTabInfo})
   
   TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: 1, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);

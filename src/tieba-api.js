@@ -1,5 +1,5 @@
 import CryptoJS from "crypto-js";
-import { fetchData } from './request.js'
+import { fetchData, fetchData_with_cookie } from './request.js'
 export class tieBaAPI {
     /**
      * 构造函数
@@ -36,6 +36,17 @@ export class tieBaAPI {
             const data = `_client_type=2&_client_version=8.6.8.0&kw=${encodeURIComponent(barName)}&pn=${page}&q_type=2&rn=50&with_group=1`;
             const responseData = await fetchData('http://c.tieba.baidu.com/c/f/frs/page?' + this.calcSign(data));
             const result = await JSON.parse(responseData); // 解析JSON数据
+            return result;
+        } catch (error) {
+            console.error("请求失败:", error);
+            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
+        }
+    }
+    async FollowBar(cookie, page = 1) {
+        try {
+            const url = `https://tieba.baidu.com/mg/o/getForumHome?st=0&pn=${page}&rn=20&eqid=&refer=`;
+            const response = await fetchData_with_cookie(url, cookie);
+            const result = await JSON.parse(response); // 解析JSON数据
             return result;
         } catch (error) {
             console.error("请求失败:", error);

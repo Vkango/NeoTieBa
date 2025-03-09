@@ -1,9 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod request;
+mod read_file;
 use tauri::Manager;
 use window_vibrancy::*;
-use request::{fetch_data, fetch_data_with_headers};
+use request::{fetch_data, fetch_data_with_headers, fetch_data_with_cookie};
+use read_file::read_file;
 use tauri::command;
 use reqwest::header::HeaderMap;
 use serde_json::Value;
@@ -39,7 +41,7 @@ async fn fetch_data_with_headers_command(url: &str, headers_json: &str) -> Resul
 }
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fetch_data_command, fetch_data_with_headers_command])
+        .invoke_handler(tauri::generate_handler![fetch_data_command, fetch_data_with_headers_command, read_file, fetch_data_with_cookie])
 
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
@@ -49,7 +51,7 @@ fn main() {
                 .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
 
             #[cfg(target_os = "windows")]
-            apply_mica(&window, Some(true));
+            let _ = apply_mica(&window, Some(true));
                 
 
             Ok(())

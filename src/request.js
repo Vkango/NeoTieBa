@@ -8,6 +8,14 @@ export async function fetchData(url) {
         console.error('Error:', error);
     }
 }
+export async function fetchData_with_cookie(url, cookie) {
+    try {
+        const data = await invoke('fetch_data_with_cookie', { url, cookie });
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
 
 export async function fetch_data_with_headers_command(url, headers) {
     try {
