@@ -1,5 +1,9 @@
 <template>
-  <div class="tabs">
+    <transition-group
+      name="tab-list"
+      tag="div"
+      class="tabs"
+    >
     <RippleButton class="tab-ripplebutton" v-for="i in tabs" :class="{'selected': i.selected}" :key="i" @click="handleClick(i.id)">
       <div class="tab-content">
         <img class="icon" :src="getIconPath(i.icon)" referrerpolicy="no-referrer"/>
@@ -7,7 +11,7 @@
         <span v-if="i.key != 10001" class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop @click="handleDelete(i.id)" >close</span>
       </div>
     </RippleButton>
-  </div>
+    </transition-group>
 </template>
 <script setup>
 import { defineEmits, markRaw } from 'vue';
@@ -98,6 +102,17 @@ defineExpose({
 });
 </script>
 <style scoped>
+.tab-list-enter-active,
+.tab-list-leave-active {
+  transition: all 0.3s ease;
+}
+
+.tab-list-enter-from,
+.tab-list-leave-to {
+  opacity: 0;
+  width: 0%;
+  transform: translateX(-100%);
+}
 #close:hover {
   opacity: 0.5;
 }

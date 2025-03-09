@@ -6,36 +6,62 @@ import { read_file } from '../read_file';
 import { tieBaAPI } from '../tieba-api';
 import Container from '../components/Container.vue';
 import Loading from '../components/Loading.vue';
+import ThreadLite from '../components/ThreadLite.vue';
 const naviListItem = ref([]);
 const isLoading = ref(true);
+const isThreadsLoading = ref(true);
+let offset = 0;
+const api = new tieBaAPI;
+let bduss = "";
+const threadList = ref([]);
 onMounted(async () => {
-  const bduss = await read_file('../cookie.txt');
-  const api = new tieBaAPI;
-  
-  naviListItem.value = (await api.FollowBar(bduss, 1)).data.like_forum.list;
-  isLoading.value = false;
+  bduss = "BDUSS=" + await read_file('../bduss.txt');
+  loadData()
 })
-const emit = defineEmits(['BarNameClicked']);
+const loadData = async () => {
+  isThreadsLoading.value = true;
+  const ret = await api.Favourite(bduss, offset);
+  console.log(ret)
+  threadList.value = [...threadList.value, ...ret.store_thread];
+  isLoading.value = false;
+  isThreadsLoading.value = false;
+}
+const onScroll = (target) => {
+  if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
+    if (isThreadsLoading.value) {
+      return;
+    }
+    offset += 20;
+    loadData();
+  }
+}
+const emit = defineEmits(['threadClick']);
+const handleClick = (id) => {
+  emit('threadClick', id);
+}
 </script>
 
 <template>
-  <Container>
-  <div class="bgr">
-    <div class="list-title">关注的吧</div>
+  <Container @yscroll="onScroll">
     <transition name="fade1">
+  <div class="bgr">
+    <div class="list-title">我的收藏</div>
+
     <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;" v-if="!isLoading">
-      <button class="bar-button" v-for="item in naviListItem" @click="emit('BarNameClicked', item.forum_name)">
-        <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
-        <div style="margin-left: 5px;">
-          <div class="bar-name">{{ item.forum_name }} </div>
-          <div class="desc"><div class="level" :class="{ 'color1' : item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16}">{{ item.level_id }}</div>热度 {{ item.hot_num }}</div>
-        </div>
-      </button>
+      <ThreadLite @click="handleClick(item.thread_id)" v-for="item in threadList" 
+      :thread_title="item.title" 
+      :media="item.media" 
+      :user_name="item.author.name_show || item.author.name" 
+      :avatar="item.author.user_portrait" 
+      :create_time="item.last_time"
+      :msg="item.forum_name + '吧 | ' + (item.post_no_msg == '' ? '无更新' : item.post_no_msg)"
+      ></ThreadLite>
     </div>
-    </transition>
+
   </div>
+</transition>
   <transition name="fade1">
-    <Loading class="loading-box" v-if="isLoading"></Loading>
+    <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
   </transition>
   </Container>
 </template>

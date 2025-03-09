@@ -10,6 +10,7 @@ import Loading from './components/Loading.vue';
 import { KeepAliveHandler } from './handler';
 import My from './pages/My.vue';
 import QRCodeLogin from './pages/QRCodeLogin.vue';
+import Favourite from './pages/Favourite.vue';
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
   { icon: 'home', title: '首页', selected: false },
@@ -41,8 +42,8 @@ const onBarNameClicked = (barName) => {
 onMounted(() => {
   TabsRef.value.addTab(10001, "../assets/apps.svg", "进吧", FollowBar, { key_: 10001, onBarNameClicked: onBarNameClicked})
   TabsRef.value.addTab(10000, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: 10001, onSetTabInfo: setTabInfo})
-  TabsRef.value.addTab(10002, "../assets/qr.svg", "我的", My, { key_: 10001, onSetTabInfo: setTabInfo})
-  
+  TabsRef.value.addTab(10002, "../assets/qr.svg", "我 (@shenbiUser)", My, { key_: 10001, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(10003, "../assets/favourite.svg", "我的收藏", Favourite, { key_: 10003, onThreadClick: onBarThreadClick })
   TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: 1, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;

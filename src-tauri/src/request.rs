@@ -14,6 +14,14 @@ pub async fn fetch_data(url: &str) -> Result<String, Error> {
     Ok(text)
 }
 
+#[command]
+pub async fn fetch_data_post(url: &str, body: String) -> Result<String, String> {
+    let client = Client::new();
+    let response = client.post(url).body(body).send().await.map_err(|e| e.to_string())?;
+    let text = response.text().await.map_err(|e| e.to_string())?;
+    Ok(text)
+}
+
 pub async fn fetch_data_with_headers(url: &str, headers: HeaderMap) -> Result<ResponseData, Error> {
     let client = Client::new();
     let response = client.get(url).headers(headers).send().await?;

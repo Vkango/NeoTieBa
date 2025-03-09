@@ -1,5 +1,5 @@
 import CryptoJS from "crypto-js";
-import { fetchData, fetchData_with_cookie } from './request.js'
+import { fetchData, fetchData_post, fetchData_with_cookie } from './request.js'
 export class tieBaAPI {
     /**
      * 构造函数
@@ -53,6 +53,7 @@ export class tieBaAPI {
             throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
         }
     }
+
     async viewThread(id, page = 1) {
         try {
             // 构造请求数据
@@ -65,6 +66,21 @@ export class tieBaAPI {
             throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
         }
     }
+
+    async Favourite(BDUSS,  offset=0) {
+        try {
+            // 构造请求数据
+            const data = `${BDUSS}&offset=${offset}&rn=20`;
+            console.log(this.calcSign(data))
+            const responseData = await fetchData_post('https://c.tieba.baidu.com/c/f/post/threadstore', this.calcSign(data));
+            const result = await JSON.parse(responseData); // 解析JSON数据
+            return result;
+        } catch (error) {
+            console.error("请求失败:", error);
+            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
+        }
+    }
+    
     async viewSubPost(tid, pid, page = 1) {
         try {
             // 构造请求数据

@@ -8,6 +8,16 @@ export async function fetchData(url) {
         console.error('Error:', error);
     }
 }
+
+export async function fetchData_post(url, body) {
+    try {
+        const data = await invoke('fetch_data_post', { url, body });
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
 export async function fetchData_with_cookie(url, cookie) {
     try {
         const data = await invoke('fetch_data_with_cookie', { url, cookie });
