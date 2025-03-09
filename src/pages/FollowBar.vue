@@ -5,12 +5,15 @@ import Tag from '../components/Tag.vue';
 import { read_file } from '../read_file';
 import { tieBaAPI } from '../tieba-api';
 import Container from '../components/Container.vue';
+import Loading from '../components/Loading.vue';
 const naviListItem = ref([]);
+const isLoading = ref(true);
 onMounted(async () => {
   const bduss = await read_file('../bduss.txt');
   const api = new tieBaAPI;
   
   naviListItem.value = (await api.FollowBar(bduss, 1)).data.like_forum.list;
+  isLoading.value = false;
 })
 const emit = defineEmits(['BarNameClicked']);
 </script>
@@ -19,20 +22,44 @@ const emit = defineEmits(['BarNameClicked']);
   <Container>
   <div class="bgr">
     <div class="list-title">关注的吧</div>
-    <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
+    <transition name="fade1">
+    <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;" v-if="!isLoading">
       <button class="bar-button" v-for="item in naviListItem" @click="emit('BarNameClicked', item.forum_name)">
         <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
-        <div>
-          <div class="bar-name">{{ item.forum_name }} <Tag>{{ item.level_id }}</Tag></div>
-          <div class="desc">热度 {{ item.hot_num }}</div>
+        <div style="margin-left: 5px;">
+          <div class="bar-name">{{ item.forum_name }} </div>
+          <div class="desc"><div class="level" :class="{ 'color1' : item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16}">{{ item.level_id }}</div>热度 {{ item.hot_num }}</div>
         </div>
       </button>
     </div>
+    </transition>
   </div>
+  <transition name="fade1">
+    <Loading class="loading-box" v-if="isLoading"></Loading>
+  </transition>
   </Container>
 </template>
 
 <style scoped>
+.level {
+  margin-right: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 3px 10px;
+  border-radius: 5px;
+  display: inline-block;
+}
+.level.color1 {
+  background-color: rgba(0, 255, 166, 0.1);
+}
+.level.color2 {
+  background-color: rgba(0, 119, 255, 0.1);
+}
+.level.color3 {
+  background-color: rgba(255, 255, 0, 0.1);
+}
+.level.color4 {
+  background-color: rgba(255, 0, 0, 0.1);
+}
 .bgr {
   width: 80%;
   justify-self: center;
@@ -40,30 +67,32 @@ const emit = defineEmits(['BarNameClicked']);
 .desc {
   font-size: 13px;
   opacity: 0.5;
-  margin-top: 2px;
+  margin-top: 5px;
 }
 .bar-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: bold;
-  width: fit-content;
+  width: 200px;
+  height: 30px;
+  line-height: 30px;
+  overflow: hidden;
 }
 .bar-button {
   display: flex;
   gap: 10px;
   background-color: rgba(255, 255, 255, 0.05);
   box-shadow: none;
-  width: fit-content;
+  width: 300px;
   text-align: left;
-  align-items: center;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: center;
   padding: 10px 15px;
   border-radius: 5px;
+  align-items: center;
 }
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 50px;
+  height: 50px;
   border-radius: 8px;
 }
 .list-title {

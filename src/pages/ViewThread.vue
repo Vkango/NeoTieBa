@@ -62,12 +62,14 @@ const props = defineProps({
 
 <template>
   <Container @yscroll="onScroll">
+    <transition name="fade1">
     <div v-if="!isLoading">
     <div class="thread-list">
       <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
     </div>
     <div class="thread-title">{{ threadTitle }}</div>
     </div>
+    </transition>
     <transition name="fade1">
       <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
     </transition>

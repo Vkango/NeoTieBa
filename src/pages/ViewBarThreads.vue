@@ -68,6 +68,7 @@ const props = defineProps({
 
 <template>
   <Container @yscroll="onScroll">
+  <transition name="fade1">
   <div v-if="!isLoading">
   <div class="bar-banner">
     <div class="image-container">
@@ -92,6 +93,7 @@ const props = defineProps({
     <Thread @click="handleClick(item.id)" v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
   </div>
   </div>
+  </transition>
   <transition name="fade1">
     <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
   </transition>
