@@ -1,6 +1,6 @@
 <template>
-    <div class="thread">
-      <div class="user-info">
+    <div class="thread" @click.stop>
+      <div class="user-info" @click="userNameClicked">
         <div class="avatar"><img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
         <div class="user-name">{{ user_name }}<span class="level" :class="{ 'color1' : level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level > 16}">{{ level }}</span></div>
       </div>
@@ -22,12 +22,17 @@
 </template>
 
 <script setup>
-import { defineProps, onMounted, ref } from 'vue';
+import { defineProps, onMounted, ref, defineEmits } from 'vue';
 import { tieBaAPI } from '../tieba-api';
 import SubPost from './SubPost.vue';
 const content = ref('')
 const create_time1 = ref('')
 const subpost_list = ref([])
+const emit = defineEmits(['userNameClicked'])
+const userNameClicked = () => {
+  emit('userNameClicked', props.uid);
+  // console.log('clicked', props.uid);
+}
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);
   const yyyy = date.getFullYear();
@@ -52,7 +57,7 @@ onMounted(() => {
         content.value += `<img class="emotion" src="${('../src/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
         break;
       case 3: // image
-        content.value += (index != 0 ? `<br>`:``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src}" referrerpolicy="no-referrer">`;
+        content.value += (index != 0 ? `<br>`:``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
         break;
     }
   });
@@ -71,6 +76,10 @@ const props = defineProps({
         type: String,
         required: true,
         default: ''
+    },
+    uid: {
+      type: Number,
+      required: true,
     },
     user_name: {
         type: String,
@@ -117,26 +126,10 @@ const props = defineProps({
       default: 0
     }
 })
+
 </script>
 <style scoped>
-.level.color1 {
-  background-color: rgba(0, 255, 166, 0.1);
-}
-.level.color2 {
-  background-color: rgba(0, 119, 255, 0.1);
-}
-.level.color3 {
-  background-color: rgba(255, 255, 0, 0.1);
-}
-.level.color4 {
-  background-color: rgba(255, 0, 0, 0.1);
-}
-.level {
-  margin-left: 10px;
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: 3px 10px;
-  border-radius: 5px;
-}
+
 .subpost {
   border-radius: 8px;
   display: flex;
@@ -190,5 +183,11 @@ const props = defineProps({
   display: flex;
   gap: 10px;
   align-items: center;
+  width: fit-content;
+  transition: background-color 0.3s ease;
+  border-radius: 5px;
+}
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 </style>

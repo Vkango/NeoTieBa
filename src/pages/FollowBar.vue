@@ -41,25 +41,6 @@ const emit = defineEmits(['BarNameClicked']);
 </template>
 
 <style scoped>
-.level {
-  margin-right: 10px;
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: 3px 10px;
-  border-radius: 5px;
-  display: inline-block;
-}
-.level.color1 {
-  background-color: rgba(0, 255, 166, 0.1);
-}
-.level.color2 {
-  background-color: rgba(0, 119, 255, 0.1);
-}
-.level.color3 {
-  background-color: rgba(255, 255, 0, 0.1);
-}
-.level.color4 {
-  background-color: rgba(255, 0, 0, 0.1);
-}
 .bgr {
   width: 80%;
   justify-self: center;

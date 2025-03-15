@@ -11,7 +11,7 @@ const threadList = ref([]);
 const currentPage = ref(1);
 const threadTitle = ref("");
 const n = new tieBaAPI;
-const emit = defineEmits(['setTabInfo']);
+const emit = defineEmits(['setTabInfo', 'UserNameClicked']);
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.viewThread(props.tid, currentPage.value);
@@ -32,6 +32,9 @@ const onScroll = (target) => {
     }
     nextPage();
   }
+}
+const onUserNameClicked = (uid) => {
+  emit('UserNameClicked', uid);
 }
 const nextPage = async () => {
     currentPage.value++;
@@ -65,7 +68,7 @@ const props = defineProps({
     <transition name="fade1">
     <div v-if="!isLoading">
     <div class="thread-list">
-      <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
+      <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :uid="item.author.id" @userNameClicked="onUserNameClicked" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
     </div>
     <div class="thread-title">{{ threadTitle }}</div>
     </div>

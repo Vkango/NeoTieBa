@@ -13,6 +13,9 @@ const pinnedThreadList = ref([]);
 const threadList = ref([]);
 const currentPage = ref(1);
 const n = new tieBaAPI;
+const onUserNameClicked = (uid) => {
+  emit('UserNameClicked', uid);
+}
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.browseBar(props.barName, currentPage.value);
@@ -90,7 +93,7 @@ const props = defineProps({
   </div>
   <div class="thread-list">
     <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>
-    <Thread @click="handleClick(item.id)" v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
+    <Thread @UserNameClicked="onUserNameClicked" @click="handleClick(item.id)" v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
   </div>
   </div>
   </transition>

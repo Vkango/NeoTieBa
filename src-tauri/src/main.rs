@@ -4,8 +4,9 @@ mod request;
 mod read_file;
 use tauri::Manager;
 use window_vibrancy::*;
-use request::{fetch_data, fetch_data_with_headers, fetch_data_with_cookie, fetch_data_post};
+use request::{fetch_data, fetch_data_with_headers, fetch_data_with_cookie, fetch_data_post, fetch_data_buffer};
 use read_file::read_file;
+// use api::{ get_user_info };
 use tauri::command;
 use reqwest::header::HeaderMap;
 use serde_json::Value;
@@ -41,7 +42,7 @@ async fn fetch_data_with_headers_command(url: &str, headers_json: &str) -> Resul
 }
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fetch_data_command, fetch_data_with_headers_command, read_file, fetch_data_with_cookie, fetch_data_post])
+        .invoke_handler(tauri::generate_handler![fetch_data_command, fetch_data_with_headers_command, read_file, fetch_data_with_cookie, fetch_data_post, fetch_data_buffer])
 
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

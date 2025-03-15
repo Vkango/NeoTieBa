@@ -1,10 +1,19 @@
 <script setup>
 import { ref, onMounted, watch, defineEmits } from 'vue';
+import { read_file } from '../read_file';
+import { tieBaAPI } from '../tieba-api';
 import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
 import Tag from '../components/Tag.vue';
+import RippleButton from '../components/RippleButton.vue';
+const returnData = ref({});
+const isLoading = ref(true);
 onMounted(async() => {
   isLoading.value = true;
+  const bduss = await read_file('../cookie.txt');
+  const api = new tieBaAPI;
+  returnData.value = await api.myProfile(bduss);
+
   isLoading.value = false;
 });
 </script>
@@ -14,13 +23,13 @@ onMounted(async() => {
   <div v-if="!isLoading">
   <div class="bar-banner">
     <div class="image-container">
-      <img class="background-image" src="" referrerpolicy="no-referrer">
+      <img class="background-image" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.data.user.portrait" referrerpolicy="no-referrer">
     </div>
     <div class="banner-content">
-      <img class="avatar" src="" referrerpolicy="no-referrer">
+      <img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.data.user.portrait" referrerpolicy="no-referrer">
       <div>
-        <div class="title">这东西一次能吃一袋我丢🌈</div>
-        <div class="description">申必简介</div>
+        <div class="title">{{ returnData.data.user.name_show }}</div>
+        <div class="description">{{ returnData.data.user.intro }}</div>
         <div class="tags">
           <Tag>吧0：10.0年</Tag>
           <Tag>发帖：114514</Tag>
@@ -30,8 +39,23 @@ onMounted(async() => {
     </div>
   </div>
   <div class="pinned-thread-list">
-    <div>收藏</div>
-    <div>历史</div>
+    <RippleButton class="my-btn"><span class="material-symbols-outlined">favorite</span>收藏</RippleButton>
+    <RippleButton class="my-btn"><span class="material-symbols-outlined">
+history
+</span>历史</RippleButton>
+    <RippleButton class="my-btn"><span class="material-symbols-outlined">
+gesture
+</span>贴子</RippleButton>
+    <RippleButton class="my-btn"><span class="material-symbols-outlined">
+settings
+</span>设置</RippleButton>
+    <RippleButton class="my-btn"><span class="material-symbols-outlined">
+dark_mode
+</span>夜间</RippleButton>
+    <RippleButton class="my-btn"><span class="material-symbols-outlined">
+medical_services
+</span>服务</RippleButton>
+    
   </div>
   </div>
   <transition name="fade1">
@@ -41,6 +65,10 @@ onMounted(async() => {
 </template>
 
 <style scoped>
+.my-btn {
+  width: 200px;
+  height: 200px;
+}
 .tags {
   margin-top: 5px;
 }
@@ -63,10 +91,11 @@ onMounted(async() => {
   border-radius: 5px;
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
 }
 .banner-content .title {
   font-size: 20px;

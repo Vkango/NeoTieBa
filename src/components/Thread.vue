@@ -1,6 +1,6 @@
 <template>
     <div class="thread">
-      <div class="user-info">
+      <div class="user-info" @click.self="userNameClicked">
         <div class="avatar"><img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
         <div class="user-name">{{ user_name }}</div>
       </div>
@@ -23,6 +23,11 @@
 import { defineProps, onMounted, ref } from 'vue';
 const content = ref('')
 const create_time1 = ref('')
+const emit = defineEmits(['userNameClicked'])
+const userNameClicked = () => {
+  emit('userNameClicked', props.uid);
+  // console.log('clicked', props.uid);
+}
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);
   const yyyy = date.getFullYear();
@@ -144,5 +149,11 @@ const props = defineProps({
   display: flex;
   gap: 10px;
   align-items: center;
+  width: fit-content;
+  transition: background-color 0.3s ease;
+  border-radius: 5px;
+}
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 </style>

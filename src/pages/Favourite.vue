@@ -54,7 +54,8 @@ const handleClick = (id) => {
       :user_name="item.author.name_show || item.author.name" 
       :avatar="item.author.user_portrait" 
       :create_time="item.last_time"
-      :msg="item.forum_name + '吧 | ' + (item.post_no_msg == '' ? '无更新' : item.post_no_msg)"
+      :style="{ opacity: item.is_deleted ? 0.5 : 1 }"
+      :msg="item.is_deleted ? '贴子以被删除' : item.forum_name + '吧 | ' + (item.post_no_msg == '' ? '无更新' : item.post_no_msg)"
       ></ThreadLite>
     </div>
 
@@ -67,25 +68,7 @@ const handleClick = (id) => {
 </template>
 
 <style scoped>
-.level {
-  margin-right: 10px;
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: 3px 10px;
-  border-radius: 5px;
-  display: inline-block;
-}
-.level.color1 {
-  background-color: rgba(0, 255, 166, 0.1);
-}
-.level.color2 {
-  background-color: rgba(0, 119, 255, 0.1);
-}
-.level.color3 {
-  background-color: rgba(255, 255, 0, 0.1);
-}
-.level.color4 {
-  background-color: rgba(255, 0, 0, 0.1);
-}
+
 .bgr {
   width: 80%;
   justify-self: center;

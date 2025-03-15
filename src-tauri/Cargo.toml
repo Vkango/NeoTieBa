@@ -1,8 +1,8 @@
 [package]
 name = "neotieba"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "A third party Baidu TieBa client"
+authors = ["Vkango"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -22,5 +22,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
 window-vibrancy = "0.5.2"
+prost = "0.13.5"
+tokio = { version = "1", features = ["full"] }
