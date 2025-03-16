@@ -11,7 +11,8 @@ const returnData2 = ref({});
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
 const FollowBarList = ref([]);
-const currentPage = ref(1)
+const currentPage = ref(1);
+let has_more = true;
 const props = defineProps({
   uid: {
     type: Number,
@@ -22,20 +23,26 @@ const props = defineProps({
     required: true
   }
 })
-const emit = defineEmits(['setTabInfo']);
-// const nextPage = async () => {
-//     currentPage.value++;
-//     loadData();
-// }
+const emit = defineEmits(['setTabInfo', "threadClicked"]);
+const api = new tieBaAPI;
+const nextPage = async () => {
+    currentPage.value++;
+    isThreadsLoading.value = true;
+    const pageData = await (await api.user_post(props.uid, currentPage.value)).data.postList;
+    returnData2.value = [...returnData2.value, ...pageData];
+    has_more = pageData.length != 0;
+    isThreadsLoading.value = false;
+}
+function onThreadClicked(id) {
+  emit('ThreadClicked', id);
+}
 onMounted(async() => {
   isLoading.value = true;
   isThreadsLoading.value = true;
-  const api = new tieBaAPI;
   returnData.value = (await api.user_info(props.uid, 1)).data;
-  console.log(returnData.value);
   returnData1.value = await api.userCard(returnData.value.user.portrait);
-  console.log(await api.user_post(props.uid));
   returnData2.value = (await api.user_post(props.uid)).data.postList;
+  has_more = returnData2.value.length != 0;
   emit('setTabInfo', { key: props.key_, title: returnData.value.user.nameShow + '的贴吧', icon: 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.value.user.portrait });
   try {
     for (const [level, info] of Object.entries(returnData1.value.data.honor.grade)) {
@@ -53,10 +60,10 @@ onMounted(async() => {
 
 const onScroll = (target) => {
   if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
-    if (isThreadsLoading.value || returnData.value.page.has_more != 1) {
+    if (isThreadsLoading.value || has_more != true) {
       return;
     }
-    // nextPage();
+    nextPage();
   }
 }
 </script>
@@ -90,7 +97,7 @@ const onScroll = (target) => {
       <div class="post-list">
         <h3>回复</h3>
         <div class="reply-list">
-          <UserReply v-for="item in returnData2" msg="" :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title" :avatar="item.userPortrait" :media="item.content" :create_time="item.createTime"></UserReply>
+          <UserReply @ThreadClicked="onThreadClicked(item.threadId)" v-for="item in returnData2" msg="" :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title" :avatar="item.userPortrait" :media="item.content" :create_time="item.createTime" :threadId="item.threadId"></UserReply>
         </div>
       </div>
       <div class="user-cards">

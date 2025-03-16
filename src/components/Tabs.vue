@@ -19,7 +19,6 @@ import RippleButton from './RippleButton.vue';
 import { ref } from 'vue';
 const handleDelete = (id) => {
   tabs.value[id].component = "deletedItem";
-  console.log(id, "component以设置为deleteditem")
   emit('onTabDelete', getTab(id).key);
   if (tabs.value[id].selected == false) {
     tabs.value.splice(id, 1);

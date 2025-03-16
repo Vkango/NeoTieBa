@@ -1,5 +1,5 @@
 <template>
-    <div class="thread">
+    <div class="thread" @click="onThreadClicked">
       <div class="user-info">
         <div class="avatar"><img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
         <div class="user-name">{{ user_name }}</div>
@@ -31,7 +31,10 @@ function formatDate(timestamp) {
   const ss = String(date.getSeconds()).padStart(2, "0");
   return `${yyyy}/${mm}/${dd} ${hh}:${minute}:${ss}`;
 }
-
+const emit = defineEmits("ThreadClicked");
+function onThreadClicked() {
+  emit('ThreadClicked', props.threadId);
+}
 const props = defineProps({
     msg: {
       type: String,
@@ -63,9 +66,13 @@ const props = defineProps({
         required: true,
         default: 0
     },
+    threadId: {
+        type: Number,
+        required: true,
+        default: 0
+    }
 })
 onMounted(() => {
-  console.log('media', props.media);
   create_time1.value = formatDate(props.create_time);
 })
 </script>
@@ -92,7 +99,6 @@ onMounted(() => {
   overflow: hidden;
 }
 .thread {
-  width: 80%;
   padding: 8px 10px;
   display: flex;
   flex-direction: column;

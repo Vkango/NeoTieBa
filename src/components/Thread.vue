@@ -1,6 +1,6 @@
 <template>
-    <div class="thread">
-      <div class="user-info" @click.self="userNameClicked">
+    <div class="thread" @click="emit('threadClicked')">
+      <div class="user-info" @click.stop @click="userNameClicked">
         <div class="avatar"><img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
         <div class="user-name">{{ user_name }}</div>
       </div>
@@ -23,10 +23,9 @@
 import { defineProps, onMounted, ref } from 'vue';
 const content = ref('')
 const create_time1 = ref('')
-const emit = defineEmits(['userNameClicked'])
+const emit = defineEmits(['UserNameClicked', "threadClicked"])
 const userNameClicked = () => {
-  emit('userNameClicked', props.uid);
-  // console.log('clicked', props.uid);
+  emit('UserNameClicked');
 }
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);
@@ -94,7 +93,7 @@ const props = defineProps({
         type: Number,
         required: true,
         default: 0
-    }
+    },
 })
 </script>
 <style scoped>

@@ -48,7 +48,7 @@ const onScroll = (target) => {
 const handleClick = (id) => {
   emit('threadClick', id);
 }
-const emit = defineEmits(['threadClick', 'setTabInfo']);
+const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked']);
 const nextPage = async () => {
     currentPage.value++;
     loadData();
@@ -93,7 +93,7 @@ const props = defineProps({
   </div>
   <div class="thread-list">
     <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>
-    <Thread @UserNameClicked="onUserNameClicked" @click="handleClick(item.id)" v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
+    <Thread @UserNameClicked="onUserNameClicked(item.author.id)" @threadClicked="handleClick(item.id)" v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
   </div>
   </div>
   </transition>

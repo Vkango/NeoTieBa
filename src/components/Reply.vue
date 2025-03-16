@@ -31,7 +31,6 @@ const subpost_list = ref([])
 const emit = defineEmits(['userNameClicked'])
 const userNameClicked = () => {
   emit('userNameClicked', props.uid);
-  // console.log('clicked', props.uid);
 }
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);

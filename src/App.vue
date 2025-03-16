@@ -6,7 +6,6 @@ import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
 import TitleBar from './components/TitleBar.vue';
 import ViewThread from './pages/ViewThread.vue';
-import Loading from './components/Loading.vue';
 import { KeepAliveHandler } from './handler';
 import My from './pages/My.vue';
 import QRCodeLogin from './pages/QRCodeLogin.vue';
@@ -27,7 +26,6 @@ const onBarThreadClick = (id) => {
   TabsRef.value.addTab(id, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: id, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
 }
 const setTabInfo = (info) => {
-  console.log('settingTabInfo', info.key)
   TabsRef.value.setTitle(info.key, info.title);
   TabsRef.value.setIcon(info.key, info.icon);
 }
@@ -38,7 +36,7 @@ const onBarNameClicked = (barName) => {
   TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
 }
 const userNameClicked = (uid) => {
-  TabsRef.value.addTab(uid, "../assets/loading.svg", "正在加载", User, { key_: uid, uid: uid, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(uid, "../assets/loading.svg", "正在加载", User, { key_: uid, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick})
 }
 
 onMounted(() => {
@@ -46,8 +44,8 @@ onMounted(() => {
   TabsRef.value.addTab(10000, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: 10001, onSetTabInfo: setTabInfo})
   TabsRef.value.addTab(10002, "../assets/qr.svg", "我 (@shenbiUser)", My, { key_: 10001, onSetTabInfo: setTabInfo})
   TabsRef.value.addTab(10003, "../assets/favourite.svg", "我的收藏", Favourite, { key_: 10003, onThreadClick: onBarThreadClick })
-  TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: 1, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
-  TabsRef.value.addTab(10004, "../assets/loading.svg", "正在加载", User, { key_: 10004, uid: 3323512645, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: 1, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
+  TabsRef.value.addTab(10004, "../assets/loading.svg", "正在加载", User, { key_: 10004, uid: 3323512645, onThreadClicked: onBarThreadClick, onSetTabInfo: setTabInfo})
   
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
