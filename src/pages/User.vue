@@ -4,11 +4,14 @@ import { tieBaAPI } from '../tieba-api';
 import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
 import Tag from '../components/Tag.vue';
-import RippleButton from '../components/RippleButton.vue';
+import UserReply from '../components/UserReply.vue';
 const returnData = ref({});
 const returnData1 = ref({});
+const returnData2 = ref({});
 const isLoading = ref(true);
+const isThreadsLoading = ref(true);
 const FollowBarList = ref([]);
+const currentPage = ref(1)
 const props = defineProps({
   uid: {
     type: Number,
@@ -20,13 +23,19 @@ const props = defineProps({
   }
 })
 const emit = defineEmits(['setTabInfo']);
+// const nextPage = async () => {
+//     currentPage.value++;
+//     loadData();
+// }
 onMounted(async() => {
   isLoading.value = true;
+  isThreadsLoading.value = true;
   const api = new tieBaAPI;
   returnData.value = (await api.user_info(props.uid, 1)).data;
   console.log(returnData.value);
   returnData1.value = await api.userCard(returnData.value.user.portrait);
   console.log(await api.user_post(props.uid));
+  returnData2.value = (await api.user_post(props.uid)).data.postList;
   emit('setTabInfo', { key: props.key_, title: returnData.value.user.nameShow + '的贴吧', icon: 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.value.user.portrait });
   try {
     for (const [level, info] of Object.entries(returnData1.value.data.honor.grade)) {
@@ -39,11 +48,22 @@ onMounted(async() => {
     console.error(e);
   }
   isLoading.value = false;
+  isThreadsLoading.value = false;
 });
+
+const onScroll = (target) => {
+  if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
+    if (isThreadsLoading.value || returnData.value.page.has_more != 1) {
+      return;
+    }
+    // nextPage();
+  }
+}
 </script>
 
 <template>
   <Container @yscroll="onScroll">
+  <transition name="fade1">
   <div v-if="!isLoading">
   <div class="bar-banner">
     <div class="image-container">
@@ -68,7 +88,10 @@ onMounted(async() => {
   <div class="content">
     <div style="width: 80%; display: flex;">
       <div class="post-list">
-        <h3>发帖</h3>
+        <h3>回复</h3>
+        <div class="reply-list">
+          <UserReply v-for="item in returnData2" msg="" :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title" :avatar="item.userPortrait" :media="item.content" :create_time="item.createTime"></UserReply>
+        </div>
       </div>
       <div class="user-cards">
         <div><h3>关注的吧</h3>
@@ -83,6 +106,7 @@ onMounted(async() => {
     </div>
   </div>
   </div>
+  </transition>
   <transition name="fade1">
     <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
   </transition>
