@@ -29,8 +29,12 @@ const nextPage = async () => {
     currentPage.value++;
     isThreadsLoading.value = true;
     const pageData = await (await api.user_post(props.uid, currentPage.value)).data.postList;
-    returnData2.value = [...returnData2.value, ...pageData];
-    has_more = pageData.length != 0;
+    if (Array.isArray(pageData)) {
+      returnData2.value = [...returnData2.value, ...pageData];
+      has_more = pageData.length != 0;
+    }
+    else { has_more = false }
+
     isThreadsLoading.value = false;
 }
 function onThreadClicked(id) {
@@ -42,7 +46,10 @@ onMounted(async() => {
   returnData.value = (await api.user_info(props.uid, 1)).data;
   returnData1.value = await api.userCard(returnData.value.user.portrait);
   returnData2.value = (await api.user_post(props.uid)).data.postList;
-  has_more = returnData2.value.length != 0;
+  if (Array.isArray(returnData2.value)) {
+      has_more = returnData2.value.length != 0;
+    }
+  else { has_more = false }
   emit('setTabInfo', { key: props.key_, title: returnData.value.user.nameShow + '的贴吧', icon: 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.value.user.portrait });
   try {
     for (const [level, info] of Object.entries(returnData1.value.data.honor.grade)) {
@@ -97,7 +104,9 @@ const onScroll = (target) => {
       <div class="post-list">
         <h3>回复</h3>
         <div class="reply-list">
+          <div v-if="returnData2 == undefined">还没有回复</div>
           <UserReply @ThreadClicked="onThreadClicked(item.threadId)" v-for="item in returnData2" msg="" :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title" :avatar="item.userPortrait" :media="item.content" :create_time="item.createTime" :threadId="item.threadId"></UserReply>
+          <div v-if="has_more">到底了</div>
         </div>
       </div>
       <div class="user-cards">
