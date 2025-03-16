@@ -23,13 +23,20 @@ const emit = defineEmits(['setTabInfo']);
 onMounted(async() => {
   isLoading.value = true;
   const api = new tieBaAPI;
-  returnData.value = (await api.user_info_protobuf(props.uid, 1)).data;
-  returnData1.value = await api.userCard(returnData.value.user.portraith);
+  returnData.value = (await api.user_info(props.uid, 1)).data;
+  console.log(returnData.value);
+  returnData1.value = await api.userCard(returnData.value.user.portrait);
+  console.log(await api.user_post(props.uid));
   emit('setTabInfo', { key: props.key_, title: returnData.value.user.nameShow + '的贴吧', icon: 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.value.user.portrait });
-  for (const [level, info] of Object.entries(returnData1.value.data.honor.grade)) {
-    for (const forumName of info.forum_list) {
-      FollowBarList.value.push({ forum_name: forumName, level_id: level });
+  try {
+    for (const [level, info] of Object.entries(returnData1.value.data.honor.grade)) {
+      for (const forumName of info.forum_list) {
+        FollowBarList.value.push({ forum_name: forumName, level_id: level });
+      }
     }
+  }
+  catch (e) {
+    console.error(e);
   }
   isLoading.value = false;
 });
@@ -46,7 +53,7 @@ onMounted(async() => {
       <img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait" referrerpolicy="no-referrer">
       <div>
         <div class="title">{{ returnData.user.nameShow }} ({{ returnData.user.name }})</div>
-        <div class="description">{{ returnData.user.intro }}</div>
+        <div class="description">{{ returnData.user.intro == "" ? '没有签名喵' : returnData.user.intro }}</div>
         <div class="tags">
           <Tag>吧龄：{{ returnData.user.tbAge }}年</Tag>
           <Tag>发帖：{{ returnData.user.postNum }}</Tag>
@@ -72,28 +79,7 @@ onMounted(async() => {
           </div>
         </div>
         </div>
-
-
-        <div><h3>关注的人</h3>
-      <div class="bar-buttons">
-          <div class="bar-button" v-for="item in FollowBarList" @click="emit('BarNameClicked', item.forum_name)">
-            <span class="bar-name">{{ item.forum_name }} </span>
-            <span class="desc"><span class="level" :class="{ 'color1' : item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16}">{{ item.level_id }}</span></span>
-          </div>
-        </div>
-        </div>
-
-        <div><h3>粉丝</h3>
-      <div class="bar-buttons">
-          <div class="bar-button" v-for="item in FollowBarList" @click="emit('BarNameClicked', item.forum_name)">
-            <span class="bar-name">{{ item.forum_name }} </span>
-            <span class="desc"><span class="level" :class="{ 'color1' : item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16}">{{ item.level_id }}</span></span>
-          </div>
-        </div>
-        </div>
       </div>
-
-      
     </div>
   </div>
   </div>

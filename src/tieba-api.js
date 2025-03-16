@@ -1,8 +1,8 @@
+// HTTP API 与 Protobuf API
 import CryptoJS from "crypto-js";
-import { fetchData, fetchData_post, fetchData_with_cookie, fetch_data_buffer } from './request.js'
-import * as userProfileReq from "./protos/profile/ProfileRequest.js";
-import * as userProfileRes from "./protos/profile/ProfileResIdl.js";
-
+import { fetchData, fetchData_post, fetchData_with_cookie } from './request.js'
+import { user_info_protobuf } from "./protobuf/user-info.js";
+import { user_post_protobuf } from "./protobuf/user-post.js";
 export class tieBaAPI {
     /**
      * 构造函数
@@ -27,36 +27,14 @@ export class tieBaAPI {
         // 将哈希值转为大写，并拼接到原始数据中
         return originalData + "&sign=" + hash.toUpperCase();
     }
-
-    async user_info_protobuf(userId) {
-        const commonReq = userProfileReq.tieba.CommonRequest.create({
-            _clientType: 2,
-            _clientVersion: "12.79.1.0",
-        });
-        const profileRequestData = userProfileReq.tieba.profile.ProfileRequestData.create({
-            uid: userId,
-            needPostCount: 1,
-            page: 1,
-            common: commonReq,
-        });
-        const profileRequest = userProfileReq.tieba.profile.ProfileRequest.create({
-            data: profileRequestData,
-        });
-        const pack_head = new Uint8Array([]);
-        const encodedData = userProfileReq.tieba.profile.ProfileRequest.encode(profileRequest).finish();
-        const buffer = new Uint8Array(pack_head.length + encodedData.length);
-        buffer.set(pack_head);
-        buffer.set(encodedData, pack_head.length);
-        const responseBuffer = await fetch_data_buffer('http://tiebac.baidu.com/c/u/user/profile?cmd=303012', buffer);
-        try {
-            const UserInfoResponse = userProfileRes.ProfileResIdl;
-            const response = UserInfoResponse.decode(new Uint8Array(responseBuffer));
-            return response.toJSON();
-        } catch (error) {
-            console.error("Protobuf Decoding Error:", error);
-        }
+    async user_info(userId, page = 1) {
+        return await user_info_protobuf(userId, page);
+    }
+    async user_post(userId, page = 1) {
+        return await user_post_protobuf(userId, page);
     }
 
+    
     /**
      * 浏览贴吧
      * @param {string} barName - 贴吧名称

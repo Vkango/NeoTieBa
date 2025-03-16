@@ -49,7 +49,7 @@ pub async fn fetch_data_buffer(url: &str, buffer: Vec<u8>, file_name: &str) -> R
     headers.insert("Host", HeaderValue::from_str("tiebac.baidu.com").unwrap());
     headers.insert("User-Agent", HeaderValue::from_str("neotieba").unwrap());
     headers.insert("x_bd_data_type", HeaderValue::from_str("protobuf").unwrap());
-    headers.insert("Accept-Encoding", HeaderValue::from_str("gzip").unwrap());
+    // headers.insert("Accept-Encoding", HeaderValue::from_str("gzip").unwrap());
     headers.insert("Connection", HeaderValue::from_str("keep-alive").unwrap());
     headers.insert("Accept", HeaderValue::from_str("*/*").unwrap());
 
