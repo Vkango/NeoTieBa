@@ -133,7 +133,7 @@ const props = defineProps({
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 .thread-info {
   display: flex;
@@ -167,7 +167,7 @@ const props = defineProps({
   transition: background-color 0.3s ease;
 }
 .thread:hover {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 .thread-preview {
   display: flex;
@@ -187,6 +187,6 @@ const props = defineProps({
   border-radius: 5px;
 }
 .user-info:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(var(--text-color), 0.1);
 }
 </style>

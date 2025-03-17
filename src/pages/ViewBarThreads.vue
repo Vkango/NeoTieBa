@@ -150,8 +150,8 @@ const props = defineProps({
   object-fit: cover;
 }
 .image-container img {
-  -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.2), transparent);
-  mask-image: linear-gradient(rgba(0, 0, 0, 0.2), transparent);
+  -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
+  mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   filter: blur(50px);
 }
 .bar-banner .avatar {

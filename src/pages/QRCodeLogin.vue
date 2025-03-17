@@ -84,7 +84,7 @@ const login = async () => {
     border-radius: 110px;
 }
 .login-success {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(var(--text-color), 0.1);
     padding: 20px 25px;
     border-radius: 8px;
     text-align: center;
@@ -117,7 +117,7 @@ const login = async () => {
     height: 225px;
 }
 .qr-content {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(var(--text-color), 0.1);
     padding: 20px 25px;
     border-radius: 8px;
     display: flex;

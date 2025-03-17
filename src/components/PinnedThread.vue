@@ -25,7 +25,7 @@ defineProps({
 
 .pinned-thread {
   width: 80%;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.1);
   padding: 8px 10px;
   display: flex;
   border-radius: 8px;

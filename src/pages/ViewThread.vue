@@ -63,7 +63,7 @@ const props = defineProps({
       <h3 class="thread-title">
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
           <RippleButton style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;" @click="barNameClicked(returnData.forum.name)">
-            <div style="display: flex; align-items: center; gap: 10px; background-color: rgba(255, 255, 255, 0.1); padding: 5px 8px;">
+            <div style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
             <img :src="returnData.forum.avatar" class="avatar" referrerpolicy="no-referrer">
             <span style="font-size: 14px; margin-right: 5px;">{{ returnData.forum.name }}吧</span>
             </div>
@@ -138,8 +138,8 @@ const props = defineProps({
   object-fit: cover;
 }
 .image-container img {
-  -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.2), transparent);
-  mask-image: linear-gradient(rgba(0, 0, 0, 0.2), transparent);
+  -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
+  mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   filter: blur(50px);
 }
 .bar-banner .avatar {

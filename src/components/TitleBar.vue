@@ -90,6 +90,9 @@ const closeWindow = async () => {
 
   
   <style scoped>
+  .icon {
+    filter: invert(var(--invert));
+  }
   .search-box {
     position: relative;
     left: 30px;
@@ -159,7 +162,7 @@ const closeWindow = async () => {
   
   .control-button:hover {
     color: rgba(var(--text-color), 1);
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(var(--text-color), 0.1);
   }
 
   #close:hover {
@@ -167,6 +170,6 @@ const closeWindow = async () => {
     background-color: rgba(255, 0, 0, 0.5);
   }
   .control-button:active {
-    background-color: rgba(var(--text-color), 0.2);
+    background-color: rgba(var(--text-color), 0.1);
   }
   </style>

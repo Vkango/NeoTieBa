@@ -55,13 +55,13 @@ const userNameClicked = (uid) => {
 
 onMounted(() => {
   let key = generateUniqueId('FollowBar');
-  TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked})
+  TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked}, true)
   key = generateUniqueId('QRCodeLogin');
-  TabsRef.value.addTab(key, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(key, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo}, true)
   key = generateUniqueId('My');
-  TabsRef.value.addTab(key, "../assets/qr.svg", "我", My, { key_: key, onSetTabInfo: setTabInfo})
+  TabsRef.value.addTab(key, "../assets/qr.svg", "我", My, { key_: key, onSetTabInfo: setTabInfo}, true)
   key = generateUniqueId('Favourite');
-  TabsRef.value.addTab(key, "../assets/favourite.svg", "我的收藏", Favourite, { key_: key, onThreadClick: onBarThreadClick })
+  TabsRef.value.addTab(key, "../assets/favourite.svg", "我的收藏", Favourite, { key_: key, onThreadClick: onBarThreadClick }, true)
   key = generateUniqueId('ViewBarThreads' + '孙笑川');
   TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
   key = generateUniqueId('User' + 3323512645);
@@ -140,7 +140,6 @@ const onTabScroll = (event) => {
   opacity: 1;
 }
 #container {
-  background: url("");
   background-size: cover;
   background-position: center;
   width: 100%;
@@ -201,7 +200,7 @@ const onTabScroll = (event) => {
   background-color: rgba(255, 0, 0, 0.1);
 }
 .level {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.1);
   padding: 3px 10px;
   border-radius: 5px;
   width: fit-content;
@@ -233,8 +232,9 @@ const onTabScroll = (event) => {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
   user-select: none;
-  --text-color: 255, 255, 255;
+  --text-color: 0, 0, 0;
   --background-color: 0, 0, 0;
+  --invert: 1;
 }
 ::-webkit-scrollbar {
   width: 7px;
@@ -246,14 +246,14 @@ border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(var(--text-color), 0.3);
   border-radius: 0;
   transition: background-color 0.2s;
   cursor: pointer;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(var(--text-color), 0.5);
 }
 a {
   font-weight: 500;
@@ -279,7 +279,7 @@ button {
   color: #0f0f0f;
   background-color: #ffffff;
   transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
 }
 
 button {
@@ -306,7 +306,9 @@ button {
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
-    background-color: transparent
+    background-color: transparent;
+    --text-color: 255, 255, 255;
+    --invert: 0;
   }
 
   a:hover {

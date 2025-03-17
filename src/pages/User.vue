@@ -138,7 +138,7 @@ hr {
 }
 .bar-button {
   padding: 10px 15px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(var(--text-color), 0.05);
   border-radius: 5px;
 }
 .user-cards {
@@ -205,8 +205,8 @@ hr {
   object-fit: cover;
 }
 .image-container img {
-  -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.2), transparent);
-  mask-image: linear-gradient(rgba(0, 0, 0, 0.2), transparent);
+  -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
+  mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   filter: blur(50px);
 }
 .bar-banner .avatar {

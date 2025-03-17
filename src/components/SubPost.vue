@@ -76,7 +76,7 @@ const props = defineProps({
   transition: background-color 0.3s ease;
 }
 .subpost-1:hover {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 .subpost-preview {
   display: flex;

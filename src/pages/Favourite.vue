@@ -89,7 +89,7 @@ const handleClick = (id) => {
 .bar-button {
   display: flex;
   gap: 10px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(var(--text-color), 0.05);
   box-shadow: none;
   width: 300px;
   text-align: left;

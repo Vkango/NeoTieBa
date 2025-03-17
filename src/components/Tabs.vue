@@ -4,7 +4,7 @@
       tag="div"
       class="tabs"
     >
-    <RippleButton class="tab-ripplebutton" v-for="i in tabs" :class="{'selected': i.selected}" :key="i" @click="handleClick(i.id)">
+    <RippleButton class="tab-ripplebutton" v-for="i in tabs" :class="{'selected': i.selected, 'invert': i.icon_invert}" :key="i" @click="handleClick(i.id)">
       <div class="tab-content">
         <img class="icon" :src="getIconPath(i.icon)" referrerpolicy="no-referrer"/>
         <div class="title">{{ i.title }}</div>
@@ -51,7 +51,7 @@ const handleClick = (id) => {
   });
   emit('onSwitchTabs', id);
 };
-const addTab = (key, icon, title, component, props) => {
+const addTab = (key, icon, title, component, props, icon_invert = false) => {
   let found = false;
   tabs.value.forEach(element => {
     if (element.key == key) {
@@ -63,7 +63,7 @@ const addTab = (key, icon, title, component, props) => {
     element.selected = false;
   });
   if (found) { return; }
-  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props });
+  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert });
   emit('onSwitchTabs', tabs.value.length - 1);
 };
 const getTab = (id) => {
@@ -127,6 +127,9 @@ defineExpose({
   gap: 5px;
   padding: 5px 0px;
 }
+.tab-ripplebutton:hover {
+  background-color: rgba(var(--text-color), 0.1);
+}
 .tab-ripplebutton {
   text-align: left;
   background-color: transparent;
@@ -138,6 +141,7 @@ defineExpose({
   height: 35px;
   max-width: 200px;
   min-width: 100px;
+  transition: all 0.3s ease;
 }
 .tab-content {
   display: flex;
@@ -155,11 +159,13 @@ defineExpose({
   margin-top: 5px;
 }
 .tab-ripplebutton.selected {
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  background-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 5px 10px 5px rgba(0, 0, 0, 0.1);
+  background-color: rgba(var(--text-color), 0.1);
+  box-shadow: none;
   font-weight: bold;
   backdrop-filter: blur(10px);
+}
+.tab-ripplebutton.invert .icon {
+  filter: invert(var(--invert));
 }
 #RippleButton {
   background-color: transparent;

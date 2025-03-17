@@ -32,7 +32,7 @@ onMounted(() => {
 .component-container {
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(var(--text-color), 0.02);
   overflow-y: auto;
   overflow-x: hidden;
   border-radius: 5px;
