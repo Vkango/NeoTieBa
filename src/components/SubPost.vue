@@ -55,7 +55,6 @@ const props = defineProps({
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.2);
 }
 .emotion {
   width: 24px;

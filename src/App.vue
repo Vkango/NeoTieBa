@@ -23,7 +23,8 @@ const TabsRef = ref(null);
 const cachedTabs = ref([]);
 
 const onBarThreadClick = (id) => {
-  TabsRef.value.addTab(id, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: id, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
+  const key = generateUniqueId('ViewThread' + id);
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked})
 }
 const setTabInfo = (info) => {
   TabsRef.value.setTitle(info.key, info.title);
@@ -31,21 +32,40 @@ const setTabInfo = (info) => {
 }
 const instance = getCurrentInstance();
 const handler = new KeepAliveHandler();
+function generateUniqueId(text) {
+    let hash = 0;
+    if (text.length === 0) return hash;
+
+    for (let i = 0; i < text.length; i++) {
+        let char = text.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash;
+    }
+
+    return Math.abs(hash);
+}
 const onBarNameClicked = (barName) => {
-  const key = Number(Date.now());
+  const key = generateUniqueId('ViewBarThreads' + barName);
   TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
 }
 const userNameClicked = (uid) => {
-  TabsRef.value.addTab(uid, "../assets/loading.svg", "正在加载", User, { key_: uid, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick})
+  const key = generateUniqueId('User' + uid);
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick})
 }
 
 onMounted(() => {
-  TabsRef.value.addTab(10001, "../assets/apps.svg", "进吧", FollowBar, { key_: 10001, onBarNameClicked: onBarNameClicked})
-  TabsRef.value.addTab(10000, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: 10001, onSetTabInfo: setTabInfo})
-  TabsRef.value.addTab(10002, "../assets/qr.svg", "我 (@shenbiUser)", My, { key_: 10001, onSetTabInfo: setTabInfo})
-  TabsRef.value.addTab(10003, "../assets/favourite.svg", "我的收藏", Favourite, { key_: 10003, onThreadClick: onBarThreadClick })
-  TabsRef.value.addTab(1, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: 1, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
-  TabsRef.value.addTab(10004, "../assets/loading.svg", "正在加载", User, { key_: 10004, uid: 3323512645, onThreadClicked: onBarThreadClick, onSetTabInfo: setTabInfo})
+  let key = generateUniqueId('FollowBar');
+  TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked})
+  key = generateUniqueId('QRCodeLogin');
+  TabsRef.value.addTab(key, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo})
+  key = generateUniqueId('My');
+  TabsRef.value.addTab(key, "../assets/qr.svg", "我", My, { key_: key, onSetTabInfo: setTabInfo})
+  key = generateUniqueId('Favourite');
+  TabsRef.value.addTab(key, "../assets/favourite.svg", "我的收藏", Favourite, { key_: key, onThreadClick: onBarThreadClick })
+  key = generateUniqueId('ViewBarThreads' + '孙笑川');
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
+  key = generateUniqueId('User' + 3323512645);
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", User, { key_: key, uid: 3323512645, onThreadClicked: onBarThreadClick, onSetTabInfo: setTabInfo})
   
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
@@ -148,7 +168,7 @@ const onTabScroll = (event) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 10px 0;
+  padding: 5px 0;
   background-color: rgba(30, 31, 32, 0);
 }
 .list {

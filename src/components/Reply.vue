@@ -106,7 +106,7 @@ const props = defineProps({
         default: 0
     },
     tid: {
-      type: Number,
+      type: String,
         required: true,
         default: ''
     },

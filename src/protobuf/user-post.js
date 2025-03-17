@@ -26,7 +26,7 @@ export async function user_post_protobuf(userId, page = 1) {
             'https://tiebac.baidu.com/c/u/feed/userpost?cmd=303002', 
             encodedData
         ));
-        UserPostResIdlModule = await import("../protos/userPost/UserPostResponse.js?t=" + Date.now());
+        UserPostResIdlModule = await import("../protos/userPost/UserPostResponse.js?t=" + Date.now()); // 防止缓存
         const UserPostResponse = UserPostResIdlModule.tieba.userPost.UserPostResponse;
         const response = UserPostResponse.decode(responseBuffer);
         if (response.error && response.error.errorno) {

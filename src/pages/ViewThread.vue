@@ -4,6 +4,7 @@ import { ref, onMounted, onActivated } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
 import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
+import RippleButton from '../components/RippleButton.vue';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
@@ -11,7 +12,7 @@ const threadList = ref([]);
 const currentPage = ref(1);
 const threadTitle = ref("");
 const n = new tieBaAPI;
-const emit = defineEmits(['setTabInfo', 'UserNameClicked']);
+const emit = defineEmits(['setTabInfo', 'UserNameClicked', 'barNameClicked']);
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.viewThread(props.tid, currentPage.value);
@@ -36,30 +37,21 @@ const onScroll = (target) => {
 const onUserNameClicked = (uid) => {
   emit('UserNameClicked', uid);
 }
+const barNameClicked = (barName) => {
+  emit('barNameClicked', barName);
+}
 const nextPage = async () => {
     currentPage.value++;
     loadData();
 }
 const props = defineProps({
-  scrollPosition: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  container: {
-    required: true,
-  },
   tid: {
-    type: Number,
+    type: String,
     required: true,
   },
   key_: {
     required: true
   },
-  setTabInfo: {
-    type: Function,
-    required: false,
-  }
 });
 </script>
 
@@ -68,9 +60,20 @@ const props = defineProps({
     <transition name="fade1">
     <div v-if="!isLoading">
     <div class="thread-list">
+      <h3 class="thread-title">
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+          <RippleButton style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;" @click="barNameClicked(returnData.forum.name)">
+            <div style="display: flex; align-items: center; gap: 10px; background-color: rgba(255, 255, 255, 0.1); padding: 5px 8px;">
+            <img :src="returnData.forum.avatar" class="avatar" referrerpolicy="no-referrer">
+            <span style="font-size: 14px; margin-right: 5px;">{{ returnData.forum.name }}吧</span>
+            </div>
+          </RippleButton>
+          {{ threadTitle }}
+        </div>
+      </h3>
       <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :uid="item.author.id" @userNameClicked="onUserNameClicked" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
     </div>
-    <div class="thread-title">{{ threadTitle }}</div>
+
     </div>
     </transition>
     <transition name="fade1">
@@ -81,18 +84,14 @@ const props = defineProps({
 
 <style scoped>
 .thread-title {
-  height: 40px;
-  position: absolute;
-  width: fit-content;
-  border-radius: 5px;
-  margin: 10px 0;
-  backdrop-filter: blur(20px);
-  top: 0px;
-  left: 10%;
-  font-weight: bold;
-  line-height: 40px;
-  padding: 0 15px;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 80%;
+  height: fit-content;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.avatar {
+  width: 24px;
+  border-radius: 32px;
 }
 .thread-filter {
   width: 80%;
@@ -106,7 +105,6 @@ const props = defineProps({
   gap: 8px;
   align-items: center;
   justify-content: center;
-  top: 50px;
 }
 
 .pinned-thread-list {
