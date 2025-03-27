@@ -11,6 +11,9 @@ import My from './pages/My.vue';
 import QRCodeLogin from './pages/QRCodeLogin.vue';
 import Favourite from './pages/Favourite.vue';
 import User from './pages/User.vue';
+import Search from './pages/Search.vue';
+import Welcome from './pages/Welcome.vue';
+import TabList from './components/TabList.vue';
 const naviListItem = ref([
   { icon: 'search', title: '搜索', selected: false },
   { icon: 'home', title: '首页', selected: false },
@@ -21,7 +24,7 @@ const naviListItem = ref([
 const activeTab = ref({});
 const TabsRef = ref(null);
 const cachedTabs = ref([]);
-
+const showTabList = ref(false);
 const onBarThreadClick = (id) => {
   const key = generateUniqueId('ViewThread' + id);
   TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked})
@@ -54,18 +57,22 @@ const userNameClicked = (uid) => {
 }
 
 onMounted(() => {
-  let key = generateUniqueId('FollowBar');
+  let key = generateUniqueId('Welcome');
+  TabsRef.value.addTab(key, "../assets/apps.svg", "欢迎", Welcome, { key_: key }, true, false)
+  key = generateUniqueId('FollowBar');
   TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked}, true)
   key = generateUniqueId('QRCodeLogin');
   TabsRef.value.addTab(key, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo}, true)
   key = generateUniqueId('My');
-  TabsRef.value.addTab(key, "../assets/qr.svg", "我", My, { key_: key, onSetTabInfo: setTabInfo}, true)
+  TabsRef.value.addTab(key, "../assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo}, true)
   key = generateUniqueId('Favourite');
-  TabsRef.value.addTab(key, "../assets/favourite.svg", "我的收藏", Favourite, { key_: key, onThreadClick: onBarThreadClick }, true)
+  TabsRef.value.addTab(key, "../assets/favourite.svg", "收藏", Favourite, { key_: key, onThreadClick: onBarThreadClick }, true)
   key = generateUniqueId('ViewBarThreads' + '孙笑川');
   TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
   key = generateUniqueId('User' + 3323512645);
   TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", User, { key_: key, uid: 3323512645, onThreadClicked: onBarThreadClick, onSetTabInfo: setTabInfo})
+  key = generateUniqueId('Search');
+  TabsRef.value.addTab(key, "../assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked })
   
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
@@ -99,6 +106,10 @@ const onTabScroll = (event) => {
   const deltaX = event.deltaY;
   container.scrollLeft += deltaX;
 };
+
+const onShowTabs = () => {
+  showTabList.value = !showTabList.value;
+}
 </script>
 
 <template>
@@ -111,12 +122,40 @@ const onTabScroll = (event) => {
       <component :is="activeTab.component" :key="activeTab.key" v-bind="activeTab.props"/>
     </keep-alive>
   </div>
-  <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"/>
+  <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs"/>
   <Tabs @wheel="onTabScroll" ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"></Tabs>
+  <Transition name="tab-list">
+    <TabList class="tab-list" v-if="showTabList" :tabsRef="TabsRef"></TabList>
+  </Transition> 
   </div>  
 </template>
 
 <style scoped>
+.tab-list-enter-active,
+.tab-list-leave-active {
+  transition: all 0.3s ease;
+}
+
+.tab-list-enter-from,
+.tab-list-leave-to {
+  opacity: 0;
+  width: 0%;
+  transform: translateY(-10%);
+}
+
+
+.tab-list {
+  position: absolute;
+  right: 10px;
+  top: 45px;
+  width: 200px;
+  background-color: rgba(var(--background-color), 0.5);
+  padding: 10px;
+  border-radius: 5px;
+  backdrop-filter: blur(20px);
+  max-height: calc(100% - 80px);
+  overflow-y: auto;
+}
 .tabs {
   position: fixed;
   top: 0;
@@ -202,6 +241,7 @@ const onTabScroll = (event) => {
 .level {
   background-color: rgba(0, 0, 0, 0.1);
   padding: 3px 10px;
+  margin-left: 10px;
   border-radius: 5px;
   width: fit-content;
   margin-bottom: 5px;
@@ -235,6 +275,7 @@ const onTabScroll = (event) => {
   --text-color: 0, 0, 0;
   --background-color: 0, 0, 0;
   --invert: 1;
+  --background-color: 255, 255, 255;
 }
 ::-webkit-scrollbar {
   width: 7px;
@@ -309,6 +350,7 @@ button {
     background-color: transparent;
     --text-color: 255, 255, 255;
     --invert: 0;
+    --background-color: 0, 0, 0;
   }
 
   a:hover {

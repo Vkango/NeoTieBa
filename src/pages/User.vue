@@ -87,13 +87,13 @@ const onScroll = (target) => {
       <img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait" referrerpolicy="no-referrer">
       <div>
         <div class="title">{{ returnData.user.nameShow }} ({{ returnData.user.name }})</div>
-        <div class="description">{{ returnData.user.intro == "" ? '没有签名喵' : returnData.user.intro }}</div>
+        <div class="description" v-html="returnData.user.intro == '' ? '没有签名喵' : returnData.user.intro"></div>
         <div class="tags">
           <Tag>吧龄：{{ returnData.user.tbAge }}年</Tag>
           <Tag>发帖：{{ returnData.user.postNum }}</Tag>
           <Tag>获赞：{{ returnData.user.totalAgreeNum }}</Tag>
           <Tag>{{ returnData.user.sex == 1 ? '♂' : '♀' }}</Tag>
-          <Tag>IP属地：{{ returnData.user.ipAddress }}</Tag>
+          <Tag>IP属地：{{ returnData.user.ipAddress == '' ? '未知' : returnData.user.ipAddress }}</Tag>
         </div>
       </div>
     </div>

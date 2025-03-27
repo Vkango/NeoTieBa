@@ -34,7 +34,48 @@ export class tieBaAPI {
         return await user_post_protobuf(userId, page);
     }
 
-    
+    async searchBar(keyword) {
+        try {
+            // 构造请求数据
+            const data = `word=${encodeURIComponent(keyword)}`;
+            console.log(this.calcSign(data))
+            const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/forum', this.calcSign(data));
+            const result = await JSON.parse(responseData); // 解析JSON数据
+            return result;
+        } catch (error) {
+            console.error("请求失败:", error);
+            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
+        }
+    }
+
+
+    async searchUser(keyword) {
+        try {
+            // 构造请求数据
+            const data = `word=${encodeURIComponent(keyword)}`;
+            console.log(this.calcSign(data))
+            const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/user', this.calcSign(data));
+            const result = await JSON.parse(responseData); // 解析JSON数据
+            return result;
+        } catch (error) {
+            console.error("请求失败:", error);
+            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
+        }
+    }
+
+    async searchThread(keyword, pn, st, tt = 1, rn = 20, fname = "", ct = 1, is_use_zonghe = 1, cv = "99.9.101") {
+        try {
+            // 构造请求数据
+            const data = `word=${encodeURIComponent(keyword)}&pn=${pn}&st=${st}&tt=${tt}&rn=${rn}&fname=${encodeURIComponent(fname)}&ct=${ct}&is_use_zonghe=${is_use_zonghe}&cv=${cv}`;
+            console.log(this.calcSign(data))
+            const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/thread', this.calcSign(data));
+            const result = await JSON.parse(responseData); // 解析JSON数据
+            return result;
+        } catch (error) {
+            console.error("请求失败:", error);
+            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
+        }
+    }
     /**
      * 浏览贴吧
      * @param {string} barName - 贴吧名称

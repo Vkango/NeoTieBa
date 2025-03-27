@@ -4,11 +4,11 @@
       tag="div"
       class="tabs"
     >
-    <RippleButton class="tab-ripplebutton" v-for="i in tabs" :class="{'selected': i.selected, 'invert': i.icon_invert}" :key="i" @click="handleClick(i.id)">
+    <RippleButton class="tab-ripplebutton" v-for="i in tabs" :class="{'selected': i.selected, 'invert': i.icon_invert, 'show': !i.show}" :key="i" @click="handleClick(i.id)">
       <div class="tab-content">
         <img class="icon" :src="getIconPath(i.icon)" referrerpolicy="no-referrer"/>
         <div class="title">{{ i.title }}</div>
-        <span v-if="i.key != 10001" class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop @click="handleDelete(i.id)" >close</span>
+        <span class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop @click="handleDelete(i.id)" >close</span>
       </div>
     </RippleButton>
     </transition-group>
@@ -51,7 +51,7 @@ const handleClick = (id) => {
   });
   emit('onSwitchTabs', id);
 };
-const addTab = (key, icon, title, component, props, icon_invert = false) => {
+const addTab = (key, icon, title, component, props, icon_invert = false, show = true) => {
   let found = false;
   tabs.value.forEach(element => {
     if (element.key == key) {
@@ -63,7 +63,7 @@ const addTab = (key, icon, title, component, props, icon_invert = false) => {
     element.selected = false;
   });
   if (found) { return; }
-  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert });
+  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert, show: show });
   emit('onSwitchTabs', tabs.value.length - 1);
 };
 const getTab = (id) => {
@@ -97,7 +97,9 @@ defineExpose({
   getTab,
   setTitle,
   setIcon,
-  tabs
+  tabs,
+  handleClick,
+  handleDelete
 });
 </script>
 <style scoped>
@@ -166,6 +168,9 @@ defineExpose({
 }
 .tab-ripplebutton.invert .icon {
   filter: invert(var(--invert));
+}
+.tab-ripplebutton.show {
+  display: none;
 }
 #RippleButton {
   background-color: transparent;

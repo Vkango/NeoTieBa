@@ -46,7 +46,6 @@ const nextPage = async () => {
 }
 const props = defineProps({
   tid: {
-    type: String,
     required: true,
   },
   key_: {

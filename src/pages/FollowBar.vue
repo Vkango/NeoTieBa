@@ -28,7 +28,7 @@ const emit = defineEmits(['BarNameClicked']);
         <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
         <div style="margin-left: 5px;">
           <div class="bar-name">{{ item.forum_name }} </div>
-          <div class="desc"><div class="level" :class="{ 'color1' : item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16}">{{ item.level_id }}</div>热度 {{ item.hot_num }}</div>
+          <div class="desc"><span class="level" :class="{ 'color1' : item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16}">{{ item.level_id }}</span><span>热度 {{ item.hot_num }}</span></div>
         </div>
       </button>
     </div>
@@ -41,6 +41,9 @@ const emit = defineEmits(['BarNameClicked']);
 </template>
 
 <style scoped>
+.level {
+  margin: 0;
+}
 .bgr {
   width: 80%;
   justify-self: center;
@@ -48,7 +51,9 @@ const emit = defineEmits(['BarNameClicked']);
 .desc {
   font-size: 13px;
   opacity: 0.5;
-  margin-top: 5px;
+  display: flex;
+  align-items : center;
+  gap: 5px;
 }
 .bar-name {
   font-size: 16px;

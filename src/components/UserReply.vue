@@ -67,7 +67,7 @@ const props = defineProps({
         default: 0
     },
     threadId: {
-        type: Number,
+        type: String,
         required: true,
         default: 0
     }

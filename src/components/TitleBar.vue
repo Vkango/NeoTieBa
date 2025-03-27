@@ -9,6 +9,9 @@
     >
       <div class="title">{{ title }}</div>
       <div class="controls" @mouseup.stop @mouseleave.stop @mousedown.stop>
+        <RippleButton class="control-button" @click="emit('showTabs')"> <!--Tabs-->
+          <img class="icon" src="../assets/list.svg">
+        </RippleButton>
         <RippleButton class="control-button" @click="minimizeWindow">
           <img class="icon" src="../assets/minimize.svg">
         </RippleButton>
@@ -85,7 +88,9 @@ const closeWindow = async () => {
   const window = getCurrentWindow();
   await window.close();
 };
-  
+
+const emit = defineEmits(['showTabs']);
+
   </script>
 
   
