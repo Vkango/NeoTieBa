@@ -107,11 +107,6 @@ onMounted(() => {
   gap: 10px;
 }
 
-.thread-preview .thread-title {
-  font-weight: bold;
-  font-size: 16px;
-}
-
 .user-info {
   display: flex;
   gap: 10px;

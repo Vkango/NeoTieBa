@@ -3,7 +3,10 @@
     <div class="user-info" @click.stop @click="userNameClicked">
       <div class="avatar"><img class="avatar"
           :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
-      <div class="user-name">{{ user_name }}</div>
+      <div>
+        <div class="user-name">{{ user_name }}</div>
+        <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>
+      </div>
     </div>
     <div class="thread-preview">
       <div class="thread-title">{{ thread_title }}</div>
@@ -13,7 +16,7 @@
         <img class="thread-img" v-for="i in media" :src="i.big_pic" referrerpolicy="no-referrer">
       </div>
       <div class="thread-info">
-        <span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>{{ create_time1 }}
+        <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">forum</span> {{ reply_num }}
       </div>
     </div>
@@ -22,6 +25,7 @@
 
 <script setup>
 import { defineProps, onMounted, ref } from 'vue';
+import { getTimeInterval } from '../helper';
 const content = ref('')
 const create_time1 = ref('')
 const emit = defineEmits(['UserNameClicked', "threadClicked"])
@@ -116,27 +120,6 @@ const props = defineProps({
   flex-wrap: wrap;
 }
 
-.thread .avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.thread {
-  width: 80%;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  font-size: 13px;
-  gap: 10px;
-  transition: background-color 0.3s ease;
-}
-
-.thread:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
 
 .thread-img {
   max-height: 450px;
@@ -151,7 +134,7 @@ const props = defineProps({
 
 .thread-preview .thread-title {
   font-weight: bold;
-  font-size: 16px;
+  font-size: 130%;
 }
 
 .user-info {

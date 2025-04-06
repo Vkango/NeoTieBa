@@ -219,6 +219,11 @@ defineExpose({
   transform: translateX(-100%);
 }
 
+#close {
+  position: absolute;
+  right: 10px;
+}
+
 #close:hover {
   opacity: 0.5;
 }
@@ -251,8 +256,10 @@ defineExpose({
   font-size: 13px;
   font-weight: normal;
   height: 35px;
-  max-width: 200px;
+  width: 180px;
   min-width: 100px;
+  /* max-width: 200px;
+  min-width: 100px; */
   transition: all 0.3s ease;
   touch-action: none;
   position: relative;
@@ -272,10 +279,15 @@ defineExpose({
 }
 
 .title {
-  white-space: nowrap;
+  left: 35px;
+  width: calc(100% - 60px);
   overflow: hidden;
-  text-overflow: ellipsis;
+  position: absolute;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(to right, black, black, black, black, transparent);
+  mask-image: linear-gradient(to right, black, black, black, black, transparent);
 }
+
 
 .ripple-button-title {
   font-size: 13px;

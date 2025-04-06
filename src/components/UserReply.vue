@@ -96,25 +96,9 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.thread .avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  overflow: hidden;
-}
 
 .thread {
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  font-size: 13px;
-  gap: 10px;
-  transition: background-color 0.3s ease;
-}
-
-.thread:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  width: calc(100% - 10px);
 }
 
 .thread-img {

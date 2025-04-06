@@ -71,7 +71,8 @@ const props = defineProps({
 }
 
 .subpost-1 {
-  padding: 8px 10px;
+  box-sizing: border-box;
+  padding: 8px 15px;
   display: flex;
   flex-direction: column;
   border-radius: 8px;
@@ -81,7 +82,7 @@ const props = defineProps({
 }
 
 .subpost-1:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(var(--text-color), 0.1);
 }
 
 .subpost-preview {

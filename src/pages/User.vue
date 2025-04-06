@@ -125,7 +125,7 @@ const onScroll = (target) => {
                     <span class="bar-name">{{ item.forum_name }} </span>
                     <span class="desc"><span class="level"
                         :class="{ 'color1': item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16 }">{{
-                        item.level_id }}</span></span>
+                          item.level_id }}</span></span>
                   </div>
                 </div>
               </div>
@@ -141,6 +141,12 @@ const onScroll = (target) => {
 </template>
 
 <style scoped>
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 hr {
   opacity: 0.1;
 }

@@ -22,14 +22,19 @@ defineProps({
 })
 </script>
 <style scoped>
-
 .pinned-thread {
-  width: 80%;
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 8px 10px;
-  display: flex;
-  border-radius: 8px;
-  font-size: 13px;
-  gap: 5px;
+    width: 80%;
+    box-sizing: border-box;
+    background-color: rgba(var(--text-color), 0.02);
+    padding: 8px 10px;
+    display: flex;
+    border-radius: 8px;
+    font-size: 13px;
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+
+.pinned-thread:hover {
+    background-color: rgba(var(--text-color), 0.1);
 }
 </style>

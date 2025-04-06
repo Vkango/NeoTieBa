@@ -1,6 +1,6 @@
 <script setup>
 import RippleButtonWithIcon from './components/RippleButtonWithIcon.vue';
-import { onMounted, ref, computed, getCurrentInstance  } from 'vue';
+import { onMounted, ref, computed, getCurrentInstance } from 'vue';
 import FollowBar from './pages/FollowBar.vue';
 import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
@@ -28,7 +28,7 @@ const cachedTabs = ref([]);
 const showTabList = ref(false);
 const onBarThreadClick = (id) => {
   const key = generateUniqueId('ViewThread' + id);
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked})
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked })
 }
 const setTabInfo = (info) => {
   TabsRef.value.setTitle(info.key, info.title);
@@ -37,24 +37,24 @@ const setTabInfo = (info) => {
 const instance = getCurrentInstance();
 const handler = new KeepAliveHandler();
 function generateUniqueId(text) {
-    let hash = 0;
-    if (text.length === 0) return hash;
+  let hash = 0;
+  if (text.length === 0) return hash;
 
-    for (let i = 0; i < text.length; i++) {
-        let char = text.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash = hash & hash;
-    }
+  for (let i = 0; i < text.length; i++) {
+    let char = text.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
 
-    return Math.abs(hash);
+  return Math.abs(hash);
 }
 const onBarNameClicked = (barName) => {
   const key = generateUniqueId('ViewBarThreads' + barName);
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
 }
 const userNameClicked = (uid) => {
   const key = generateUniqueId('User' + uid);
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick})
+  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick })
 }
 
 onMounted(() => {
@@ -124,17 +124,17 @@ const addBar = async (id) => {
       break;
     case 2:
       key = generateUniqueId('FollowBar');
-      TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked}, true)
+      TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 3:
       key = generateUniqueId('My');
-      TabsRef.value.addTab(key, "../assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo}, true)
+      TabsRef.value.addTab(key, "../assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 4:
       key = generateUniqueId('Setting');
-      TabsRef.value.addTab(key, "../assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo}, true)
+      TabsRef.value.addTab(key, "../assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     default:
@@ -155,20 +155,22 @@ const onShowTabs = () => {
 
 <template>
   <div id="container">
-  <div class="navi">
-    <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem" :class="{ 'selected' : item.selected}" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
+    <div class="navi">
+      <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem"
+        :class="{ 'selected': item.selected }" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
+    </div>
+    <div class="container">
+      <keep-alive ref="keepAlive">
+        <component :is="activeTab.component" :key="activeTab.key" v-bind="activeTab.props" />
+      </keep-alive>
+    </div>
+    <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs" />
+    <Tabs @wheel="onTabScroll" ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete">
+    </Tabs>
+    <Transition name="tab-list">
+      <TabList class="tab-list" v-if="showTabList" :tabsRef="TabsRef"></TabList>
+    </Transition>
   </div>
-  <div class="container">
-    <keep-alive ref="keepAlive">
-      <component :is="activeTab.component" :key="activeTab.key" v-bind="activeTab.props"/>
-    </keep-alive>
-  </div>
-  <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs"/>
-  <Tabs @wheel="onTabScroll" ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"></Tabs>
-  <Transition name="tab-list">
-    <TabList class="tab-list" v-if="showTabList" :tabsRef="TabsRef"></TabList>
-  </Transition> 
-  </div>  
 </template>
 
 <style scoped>
@@ -197,6 +199,7 @@ const onShowTabs = () => {
   max-height: calc(100% - 80px);
   overflow-y: auto;
 }
+
 .tabs {
   position: fixed;
   top: 0;
@@ -206,19 +209,24 @@ const onShowTabs = () => {
   height: 40px;
   overflow-y: hidden;
 }
+
 .tabs:hover {
   overflow-x: scroll;
 }
+
 .navi-button {
   opacity: 0.5;
   transition: opacity 0.2s ease;
 }
+
 .navi-button:hover {
   opacity: 0.8;
 }
+
 .navi-button.selected {
   opacity: 1;
 }
+
 #container {
   background-size: cover;
   background-position: center;
@@ -226,10 +234,12 @@ const onShowTabs = () => {
   height: 100%;
   position: fixed;
 }
+
 .flex-content {
   width: 100%;
   height: 100%;
 }
+
 .container {
   display: flex;
   flex-direction: row;
@@ -240,6 +250,7 @@ const onShowTabs = () => {
   height: calc(100% - 45px);
   border-radius: 5px 0 0 0;
 }
+
 .navi {
   top: 0px;
   width: 70px;
@@ -250,6 +261,7 @@ const onShowTabs = () => {
   padding: 5px 0;
   background-color: rgba(30, 31, 32, 0);
 }
+
 .list {
   top: 0;
   height: 100%;
@@ -258,6 +270,7 @@ const onShowTabs = () => {
   padding: 5px 10px;
   background-color: rgba(30, 31, 32, 0.3);
 }
+
 .tab {
   position: relative;
   top: 0px;
@@ -267,18 +280,64 @@ const onShowTabs = () => {
 }
 </style>
 <style>
+.thread .avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.user-info {
+  margin-top: 5px;
+}
+
+.thread {
+  width: 80%;
+  box-sizing: border-box;
+  padding: 5px 15px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  font-size: 13px;
+  gap: 10px;
+  transition: background-color 0.3s ease;
+  background-color: rgba(var(--text-color), 0.02);
+}
+
+.thread:hover {
+  background-color: rgba(var(--text-color), 0.1);
+}
+
+
+.desc {
+  opacity: 0.5;
+}
+
+.user-name {
+  font-weight: bold;
+  font-size: 110%;
+}
+
+.thread-content {
+  font-size: 120%;
+}
+
 .level.color1 {
   background-color: rgba(0, 255, 166, 0.1);
 }
+
 .level.color2 {
   background-color: rgba(0, 119, 255, 0.1);
 }
+
 .level.color3 {
   background-color: rgba(255, 255, 0, 0.1);
 }
+
 .level.color4 {
   background-color: rgba(255, 0, 0, 0.1);
 }
+
 .level {
   background-color: rgba(0, 0, 0, 0.1);
   padding: 3px 10px;
@@ -287,11 +346,13 @@ const onShowTabs = () => {
   width: fit-content;
   margin-bottom: 5px;
 }
+
 .loading-box {
   position: absolute;
   left: 30px;
   bottom: 20px;
 }
+
 .fade1-enter-active,
 .fade1-leave-active {
   transition: opacity 0.5s ease;
@@ -301,6 +362,7 @@ const onShowTabs = () => {
 .fade1-leave-to {
   opacity: 0;
 }
+
 :root {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 16px;
@@ -318,13 +380,15 @@ const onShowTabs = () => {
   --invert: 1;
   --background-color: 255, 255, 255;
 }
+
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
 }
+
 ::-webkit-scrollbar-track {
 
-border-radius: 0;
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -337,6 +401,7 @@ border-radius: 0;
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(var(--text-color), 0.5);
 }
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -371,6 +436,7 @@ button {
 button:hover {
   border-color: #396cd8;
 }
+
 button:active {
   border-color: #396cd8;
   background-color: #e8e8e8;
@@ -403,9 +469,9 @@ button {
     color: #ffffff;
     background-color: #0f0f0f98;
   }
+
   button:active {
     background-color: #0f0f0f69;
   }
 }
-
 </style>

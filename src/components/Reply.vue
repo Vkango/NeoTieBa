@@ -3,22 +3,28 @@
     <div class="user-info" @click="userNameClicked">
       <div class="avatar"><img class="avatar"
           :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
-      <div class="user-name">{{ user_name }}<span class="level"
-          :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level > 16 }">{{
-          level }}</span></div>
+      <div>
+        <div class="user-name">{{ user_name }}<span class="level"
+            :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level > 16 }">{{
+              level }}</span>
+        </div>
+        <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>
+      </div>
+
+
     </div>
     <div class="thread-preview">
       <div class="thread-content" v-html="content">
       </div>
       <div class="thread-info">
 
-        <span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>{{ create_time1 }}
+        <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">floor</span> {{ floor }} 楼
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;"
           v-if="reply_num > 0">forum</span> <span v-if="reply_num > 0">{{ reply_num }}</span>
 
       </div>
-      <div class="subpost">
+      <div class="subpost" v-if="reply_num > 0">
         <SubPost v-for="item in subpost_list" :thread_content="item.content" :avatar="item.author.portrait"
           :user_name="item.author.name_show || item.author.name"></SubPost>
       </div>
@@ -30,6 +36,7 @@
 import { defineProps, onMounted, ref, defineEmits } from 'vue';
 import { tieBaAPI } from '../tieba-api';
 import SubPost from './SubPost.vue';
+import { getTimeInterval } from '../helper';
 const content = ref('')
 const create_time1 = ref('')
 const subpost_list = ref([])
@@ -137,7 +144,9 @@ const props = defineProps({
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(var(--text-color), 0.02);
+  gap: 8px;
+  border: 1px solid rgba(var(--text-color), 0.03);
 }
 
 .thread-info {
@@ -158,27 +167,6 @@ const props = defineProps({
   flex-wrap: wrap;
 }
 
-.thread .avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.thread {
-  width: 80%;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  font-size: 13px;
-  gap: 10px;
-  transition: background-color 0.3s ease;
-}
-
-.thread:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
 
 .thread-preview {
   display: flex;
