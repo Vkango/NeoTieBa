@@ -32,7 +32,7 @@ const loadData = async () => {
   }
   isThreadsLoading.value = false;
 }
-onMounted(async() => {
+onMounted(async () => {
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
@@ -50,8 +50,8 @@ const handleClick = (id) => {
 }
 const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked']);
 const nextPage = async () => {
-    currentPage.value++;
-    loadData();
+  currentPage.value++;
+  loadData();
 }
 const props = defineProps({
   barName: {
@@ -71,43 +71,46 @@ const props = defineProps({
 
 <template>
   <Container @yscroll="onScroll">
-  <transition name="fade1">
-  <div v-if="!isLoading">
-  <div class="bar-banner">
-    <div class="image-container">
-      <img class="background-image" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
-    </div>
-    <div class="banner-content">
-      <img class="avatar" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
-      <div>
-        <div class="title">{{ returnData.forum.name }}吧</div>
-        <div class="description">{{ returnData.forum.slogan }}</div>
-        <div class="level">
-          登录以签到
+    <transition name="fade1">
+      <div v-if="!isLoading">
+        <div class="bar-banner">
+          <div class="image-container">
+            <img class="background-image" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
+          </div>
+          <div class="banner-content">
+            <img class="avatar" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
+            <div>
+              <div class="title">{{ returnData.forum.name }}吧</div>
+              <div class="description">{{ returnData.forum.slogan }}</div>
+              <div class="level">
+                登录以签到
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pinned-thread-list">
+          <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)" />
+        </div>
+        <div class="thread-list">
+          <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>
+          <Thread @UserNameClicked="onUserNameClicked(item.author.id)" @threadClicked="handleClick(item.id)"
+            v-for="item in threadList" :thread_title="item.title" :media="item.media"
+            :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait"
+            :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
         </div>
       </div>
-    </div>
-  </div>
-  <div class="pinned-thread-list">
-    <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)"/>
-  </div>
-  <div class="thread-list">
-    <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>
-    <Thread @UserNameClicked="onUserNameClicked(item.author.id)" @threadClicked="handleClick(item.id)" v-for="item in threadList" :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait" :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
-  </div>
-  </div>
-  </transition>
-  <transition name="fade1">
-    <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
-  </transition>
+    </transition>
+    <transition name="fade1">
+      <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
+    </transition>
   </Container>
 </template>
 
 <style scoped>
-
 .thread-filter {
   width: 80%;
 }
+
 .thread-list {
   padding: 10px;
   border-radius: 5px;
@@ -129,14 +132,17 @@ const props = defineProps({
   align-items: center;
   justify-content: center;
 }
+
 .banner-content .title {
   font-size: 20px;
   font-weight: bold;
 }
+
 .banner-content .description {
   margin-top: 5px;
   opacity: 0.5;
 }
+
 .banner-content {
   position: absolute;
   top: 60px;
@@ -144,21 +150,25 @@ const props = defineProps({
   display: flex;
   gap: 30px;
 }
+
 .bar-banner .background-image {
   width: 100%;
   height: 300px;
   object-fit: cover;
 }
+
 .image-container img {
   -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   filter: blur(50px);
 }
+
 .bar-banner .avatar {
   width: 80px;
   height: 80px;
   border-radius: 10px;
 }
+
 .bar-banner {
   width: 100%;
   height: 200px;

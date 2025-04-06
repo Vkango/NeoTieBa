@@ -143,7 +143,7 @@ export class tieBaAPI {
         }
     }
 
-    async Favourite(BDUSS,  offset=0) {
+    async Favourite(BDUSS, offset = 0) {
         try {
             // 构造请求数据
             const data = `${BDUSS}&offset=${offset}&rn=20`;
@@ -156,7 +156,7 @@ export class tieBaAPI {
             throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
         }
     }
-    
+
     async myProfile(cookie) {
         try {
             const url = `https://tieba.baidu.com/mg/o/profile?format=json&eqid=&refer=`;

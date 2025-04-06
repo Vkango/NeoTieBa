@@ -23,7 +23,7 @@ export async function user_post_protobuf(userId, page = 1) {
         });
         const encodedData = UserPostRequest.encode(userPostRequest).finish();
         const responseBuffer = new Uint8Array(await fetch_data_buffer(
-            'https://tiebac.baidu.com/c/u/feed/userpost?cmd=303002', 
+            'https://tiebac.baidu.com/c/u/feed/userpost?cmd=303002',
             encodedData
         ));
         UserPostResIdlModule = await import("../protos/userPost/UserPostResponse.js?t=" + Date.now()); // 防止缓存

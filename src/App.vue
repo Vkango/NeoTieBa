@@ -14,12 +14,13 @@ import User from './pages/User.vue';
 import Search from './pages/Search.vue';
 import Welcome from './pages/Welcome.vue';
 import TabList from './components/TabList.vue';
+import Setting from './pages/Setting.vue';
 const naviListItem = ref([
-  { icon: 'search', title: '搜索', selected: false },
-  { icon: 'home', title: '首页', selected: false },
-  { icon: 'apps', title: '贴吧', selected: true },
-  { icon: 'person', title: '我的', selected: false },
-  { icon: 'settings', title: '设置', selected: false }
+  { id: 0, icon: 'search', title: '搜索', selected: false },
+  { id: 1, icon: 'home', title: '首页', selected: false },
+  { id: 2, icon: 'apps', title: '贴吧', selected: false },
+  { id: 3, icon: 'person', title: '我的', selected: false },
+  { id: 4, icon: 'settings', title: '设置', selected: false }
 ]);
 const activeTab = ref({});
 const TabsRef = ref(null);
@@ -59,21 +60,6 @@ const userNameClicked = (uid) => {
 onMounted(() => {
   let key = generateUniqueId('Welcome');
   TabsRef.value.addTab(key, "../assets/apps.svg", "欢迎", Welcome, { key_: key }, true, false)
-  key = generateUniqueId('FollowBar');
-  TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked}, true)
-  key = generateUniqueId('QRCodeLogin');
-  TabsRef.value.addTab(key, "../assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo}, true)
-  key = generateUniqueId('My');
-  TabsRef.value.addTab(key, "../assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo}, true)
-  key = generateUniqueId('Favourite');
-  TabsRef.value.addTab(key, "../assets/favourite.svg", "收藏", Favourite, { key_: key, onThreadClick: onBarThreadClick }, true)
-  key = generateUniqueId('ViewBarThreads' + '孙笑川');
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: "孙笑川", onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked})
-  key = generateUniqueId('User' + 3323512645);
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", User, { key_: key, uid: 3323512645, onThreadClicked: onBarThreadClick, onSetTabInfo: setTabInfo})
-  key = generateUniqueId('Search');
-  TabsRef.value.addTab(key, "../assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked })
-  
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
   handler.bind(keepAlive);
@@ -85,20 +71,75 @@ function onSwitchTabs(id) {
   activeTab.value.props = tabItem.props;
   activeTab.value.key = tabItem.key;
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+  naviListItem.value.forEach(element => {
+    element.selected = false;
+  });
+  switch (activeTab.value.component.__name) {
+    case 'User':
+      naviListItem.value[2].selected = true;
+      break;
+    case 'ViewThread':
+      naviListItem.value[2].selected = true;
+      break;
+    case 'ViewBarThreads':
+      naviListItem.value[2].selected = true;
+      break;
+    case 'FollowBar':
+      naviListItem.value[2].selected = true;
+      break;
+    case 'Favourite':
+      naviListItem.value[3].selected = true;
+      break;
+    case 'My':
+      naviListItem.value[3].selected = true;
+      break;
+    case 'QRCodeLogin':
+      naviListItem.value[4].selected = true;
+      break;
+    case 'Search':
+      naviListItem.value[0].selected = true;
+      break;
+    default:
+      break;
+  }
 }
 const onTabDelete = (key) => {
   handler.remove(key);
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
 }
 
-const addBar = async () => {
-  const value = prompt("请输入贴吧名称", "")
-  if (value === null) {
-    return;
+const addBar = async (id) => {
+  naviListItem.value.forEach(element => {
+    element.selected = false;
+  });
+  naviListItem.value[id].selected = true;
+  let key;
+  switch (id) {
+    case 0:
+      key = generateUniqueId('Search');
+      TabsRef.value.addTab(key, "../assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked })
+      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      break;
+    case 1:
+      break;
+    case 2:
+      key = generateUniqueId('FollowBar');
+      TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked}, true)
+      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      break;
+    case 3:
+      key = generateUniqueId('My');
+      TabsRef.value.addTab(key, "../assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo}, true)
+      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      break;
+    case 4:
+      key = generateUniqueId('Setting');
+      TabsRef.value.addTab(key, "../assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo}, true)
+      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      break;
+    default:
+      break;
   }
-  const key = String(Date.now())
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: value, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo})
-  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
 }
 
 const onTabScroll = (event) => {
@@ -115,7 +156,7 @@ const onShowTabs = () => {
 <template>
   <div id="container">
   <div class="navi">
-    <RippleButtonWithIcon @click="addBar" class="navi-button" v-for="item in naviListItem" :class="{ 'selected' : item.selected}" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
+    <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem" :class="{ 'selected' : item.selected}" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
   </div>
   <div class="container">
     <keep-alive ref="keepAlive">

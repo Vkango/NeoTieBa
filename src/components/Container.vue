@@ -14,7 +14,7 @@ const restoreScrollPosition = () => {
   }
 }
 onActivated(() => {
-  restoreScrollPosition();  
+  restoreScrollPosition();
 });
 onMounted(() => {
   const savedPosition = sessionStorage.getItem('scrollPosition');
@@ -24,9 +24,9 @@ onMounted(() => {
 });
 </script>
 <template>
-    <div ref="scrollContainer" class="component-container" @scroll="handleScroll">
-        <slot></slot>
-    </div>
+  <div ref="scrollContainer" class="component-container" @scroll="handleScroll">
+    <slot></slot>
+  </div>
 </template>
 <style lang="css" scoped>
 .component-container {

@@ -1,7 +1,7 @@
 <template>
   <div v-if="tabsRef != undefined">
     
-    <div style="font-weight: bold; margin-left: 10px; margin-top: 3px; font-size: 13px;">打开的标签 ({{ tabsRef.tabs.length }})</div>
+    <div style="font-weight: bold; margin-left: 10px; margin-top: 3px; font-size: 13px;">打开的标签 ({{ tabsRef.tabs.length - 1 }})</div>
     <div class="tabs-list-">
       <transition-group
       name="tab-list"
@@ -24,7 +24,6 @@
 import { defineProps } from 'vue';
 import RippleButton from './RippleButton.vue';
 const getIconPath = (icon) => {
-  
   return new URL(`${icon}`, import.meta.url).href;
 };
 defineProps({

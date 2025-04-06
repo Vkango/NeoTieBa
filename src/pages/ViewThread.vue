@@ -21,7 +21,7 @@ const loadData = async () => {
   threadList.value = [...threadList.value, ...returnData.value.post_list];
   isThreadsLoading.value = false;
 }
-onMounted(async() => {
+onMounted(async () => {
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
@@ -41,8 +41,8 @@ const barNameClicked = (barName) => {
   emit('barNameClicked', barName);
 }
 const nextPage = async () => {
-    currentPage.value++;
-    loadData();
+  currentPage.value++;
+  loadData();
 }
 const props = defineProps({
   tid: {
@@ -57,23 +57,28 @@ const props = defineProps({
 <template>
   <Container @yscroll="onScroll">
     <transition name="fade1">
-    <div v-if="!isLoading">
-    <div class="thread-list">
-      <h3 class="thread-title">
-        <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-          <RippleButton style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;" @click="barNameClicked(returnData.forum.name)">
-            <div style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
-            <img :src="returnData.forum.avatar" class="avatar" referrerpolicy="no-referrer">
-            <span style="font-size: 14px; margin-right: 5px;">{{ returnData.forum.name }}吧</span>
+      <div v-if="!isLoading">
+        <div class="thread-list">
+          <h3 class="thread-title">
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+              <RippleButton style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;"
+                @click="barNameClicked(returnData.forum.name)">
+                <div
+                  style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
+                  <img :src="returnData.forum.avatar" class="avatar" referrerpolicy="no-referrer">
+                  <span style="font-size: 14px; margin-right: 5px;">{{ returnData.forum.name }}吧</span>
+                </div>
+              </RippleButton>
+              {{ threadTitle }}
             </div>
-          </RippleButton>
-          {{ threadTitle }}
+          </h3>
+          <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :uid="item.author.id"
+            @userNameClicked="onUserNameClicked" :avatar="item.author.portrait" :thread_content="item.content"
+            :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor"
+            :level="item.author.level_id"></Reply>
         </div>
-      </h3>
-      <Reply v-for="item in threadList" :user_name="item.author.name || item.author.name_show" :uid="item.author.id" @userNameClicked="onUserNameClicked" :avatar="item.author.portrait" :thread_content="item.content" :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor" :level="item.author.level_id"></Reply>
-    </div>
 
-    </div>
+      </div>
     </transition>
     <transition name="fade1">
       <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
@@ -88,13 +93,16 @@ const props = defineProps({
   margin-top: 0;
   margin-bottom: 10px;
 }
+
 .avatar {
   width: 24px;
   border-radius: 32px;
 }
+
 .thread-filter {
   width: 80%;
 }
+
 .thread-list {
   padding: 10px;
   border-radius: 5px;
@@ -116,14 +124,17 @@ const props = defineProps({
   align-items: center;
   justify-content: center;
 }
+
 .banner-content .title {
   font-size: 20px;
   font-weight: bold;
 }
+
 .banner-content .description {
   margin-top: 5px;
   opacity: 0.5;
 }
+
 .banner-content {
   position: absolute;
   top: 60px;
@@ -131,21 +142,25 @@ const props = defineProps({
   display: flex;
   gap: 30px;
 }
+
 .bar-banner .background-image {
   width: 100%;
   height: 300px;
   object-fit: cover;
 }
+
 .image-container img {
   -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   filter: blur(50px);
 }
+
 .bar-banner .avatar {
   width: 80px;
   height: 80px;
   border-radius: 10px;
 }
+
 .bar-banner {
   width: 100%;
   height: 200px;

@@ -1,7 +1,7 @@
 <template>
     <div class="loading">
-    <img src="../assets/loading.svg">
-    <span>Loading...</span>
+        <img src="../assets/loading.svg">
+        <span>Loading...</span>
     </div>
 </template>
 <style scoped>
