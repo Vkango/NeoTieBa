@@ -2,7 +2,6 @@ export function getTimeInterval(previousTimestamp) {
     const currentTimestamp = Date.now(); // 获取当前时间戳（单位为毫秒）
     // 计算两个时间戳之间的差值（单位为秒）
     const diffInSeconds = (currentTimestamp - previousTimestamp) / 1000;
-    console.log(diffInSeconds)
     if (diffInSeconds < 60) {
         // 不足1分钟
         return "刚刚";

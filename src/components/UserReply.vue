@@ -123,4 +123,8 @@ onMounted(() => {
   gap: 10px;
   align-items: center;
 }
+
+.user-info:hover {
+  background-color: transparent;
+}
 </style>

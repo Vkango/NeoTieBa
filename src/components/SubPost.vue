@@ -1,25 +1,31 @@
 <template>
   <div class="subpost-1">
-    <div class="user-info">
+    <div class="user-info" @click="emit('userNameClicked', props.uid)">
       <div class="avatar"><img class="avatar"
           :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
       <div class="user-name">{{ user_name }}</div>
     </div>
     <div class="subpost-preview">
-      <div class="thread-content" v-html="content">
+      <div class="thread-content" @click="handleClick" v-html="content">
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { defineProps, onMounted, ref } from 'vue';
+import { defineProps, onMounted, ref, defineEmits } from 'vue';
 const content = ref('')
+const emit = defineEmits(['userNameClicked'])
+const handleClick = (event) => {
+  if (event.target.classList.contains('at-button')) {
+    emit('userNameClicked', event.target.getAttribute('uid'));
+  }
+}
 onMounted(() => {
   props.thread_content.forEach((ele, index) => {
     switch (ele.type) {
       case 0: // text
-        if (index != 0) {
+        if (index != 0 && props.thread_content[index - 1].type == 0) {
           content.value += props.thread_content[index].type == 0 ? `<br>` : ``;
         }
         content.value += ele.text;
@@ -29,6 +35,9 @@ onMounted(() => {
         break;
       case 3: // image
         content.value += (index != 0 ? `<br>` : ``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
+        break;
+      case 4:
+        content.value += `<button class="at-button" uid="onUserNameClicked('${ele.uid}')">${ele.text}</button>`;
         break;
     }
   });
@@ -49,6 +58,9 @@ const props = defineProps({
     required: true,
     default: []
   },
+  uid: {
+    required: true,
+  }
 })
 </script>
 <style scoped>

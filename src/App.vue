@@ -203,7 +203,7 @@ const onShowTabs = () => {
 .tabs {
   position: fixed;
   top: 0;
-  max-width: calc(100% - 350px);
+  width: calc(100% - 350px);
   left: 70px;
   overflow-x: hidden;
   height: 40px;
@@ -308,6 +308,20 @@ const onShowTabs = () => {
   background-color: rgba(var(--text-color), 0.1);
 }
 
+.at-button {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  color: #46a0ff;
+  font-weight: bold;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.at-button:hover {
+  border: none;
+  opacity: 0.5;
+}
 
 .desc {
   opacity: 0.5;
@@ -320,6 +334,19 @@ const onShowTabs = () => {
 
 .thread-content {
   font-size: 120%;
+}
+
+.user-info {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: fit-content;
+  transition: background-color 0.3s ease;
+  border-radius: 5px;
+}
+
+.user-info:hover {
+  background-color: rgba(var(--text-color), 0.1);
 }
 
 .level.color1 {

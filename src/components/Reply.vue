@@ -1,6 +1,6 @@
 <template>
   <div class="thread" @click.stop>
-    <div class="user-info" @click="userNameClicked">
+    <div class="user-info" @click="userNameClicked(props.uid)">
       <div class="avatar"><img class="avatar"
           :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
       <div>
@@ -25,8 +25,9 @@
 
       </div>
       <div class="subpost" v-if="reply_num > 0">
-        <SubPost v-for="item in subpost_list" :thread_content="item.content" :avatar="item.author.portrait"
-          :user_name="item.author.name_show || item.author.name"></SubPost>
+        <SubPost v-for="item in subpost_list" :thread_content="item.content" @userNameClicked="userNameClicked"
+          :avatar="item.author.portrait" :uid="item.author.id" :user_name="item.author.name_show || item.author.name">
+        </SubPost>
       </div>
     </div>
   </div>
@@ -41,8 +42,8 @@ const content = ref('')
 const create_time1 = ref('')
 const subpost_list = ref([])
 const emit = defineEmits(['userNameClicked'])
-const userNameClicked = () => {
-  emit('userNameClicked', props.uid);
+const userNameClicked = (uid) => {
+  emit('userNameClicked', uid);
 }
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);
@@ -70,6 +71,7 @@ onMounted(() => {
       case 3: // image
         content.value += (index != 0 ? `<br>` : ``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
         break;
+
     }
   });
   if (props.reply_num > 0) {
@@ -147,6 +149,7 @@ const props = defineProps({
   background-color: rgba(var(--text-color), 0.02);
   gap: 8px;
   border: 1px solid rgba(var(--text-color), 0.03);
+  margin-bottom: 10px;
 }
 
 .thread-info {
@@ -177,18 +180,5 @@ const props = defineProps({
 .thread-preview .thread-title {
   font-weight: bold;
   font-size: 16px;
-}
-
-.user-info {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  width: fit-content;
-  transition: background-color 0.3s ease;
-  border-radius: 5px;
-}
-
-.user-info:hover {
-  background-color: rgba(var(--text-color), 0.1);
 }
 </style>
