@@ -1,6 +1,6 @@
 <script setup>
 import RippleButtonWithIcon from './components/RippleButtonWithIcon.vue';
-import { onMounted, ref, computed, getCurrentInstance } from 'vue';
+import { onMounted, ref, computed, getCurrentInstance, provide } from 'vue';
 import FollowBar from './pages/FollowBar.vue';
 import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
@@ -15,6 +15,17 @@ import Search from './pages/Search.vue';
 import Welcome from './pages/Welcome.vue';
 import TabList from './components/TabList.vue';
 import Setting from './pages/Setting.vue';
+import Notification from "./components/Notification.vue";
+import LoadingWithTip from './components/Notification/LoadingWithTip.vue';
+import { errorService } from './error-service';
+
+const notificationComponent = ref(null);
+provide('sendNotification', (title, component, props = {}, duration = 5000) => {
+  notificationComponent.value.addNotification(title, component, props, duration);
+})
+
+
+
 const naviListItem = ref([
   { id: 0, icon: 'search', title: '搜索', selected: false },
   { id: 1, icon: 'home', title: '首页', selected: false },
@@ -28,7 +39,7 @@ const cachedTabs = ref([]);
 const showTabList = ref(false);
 const onBarThreadClick = (id) => {
   const key = generateUniqueId('ViewThread' + id);
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked })
 }
 const setTabInfo = (info) => {
   TabsRef.value.setTitle(info.key, info.title);
@@ -50,16 +61,24 @@ function generateUniqueId(text) {
 }
 const onBarNameClicked = (barName) => {
   const key = generateUniqueId('ViewBarThreads' + barName);
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
 }
 const userNameClicked = (uid) => {
   const key = generateUniqueId('User' + uid);
-  TabsRef.value.addTab(key, "../assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick })
 }
 
 onMounted(() => {
+  errorService.addHandler((error, info) => {
+    notificationComponent.value.addNotification(
+      info,
+      LoadingWithTip,
+      { Tip: error },
+      60000
+    );
+  });
   let key = generateUniqueId('Welcome');
-  TabsRef.value.addTab(key, "../assets/apps.svg", "欢迎", Welcome, { key_: key }, true, false)
+  TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key }, true, false)
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
   handler.bind(keepAlive);
@@ -117,24 +136,24 @@ const addBar = async (id) => {
   switch (id) {
     case 0:
       key = generateUniqueId('Search');
-      TabsRef.value.addTab(key, "../assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked })
+      TabsRef.value.addTab(key, "/assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 1:
       break;
     case 2:
       key = generateUniqueId('FollowBar');
-      TabsRef.value.addTab(key, "../assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked }, true)
+      TabsRef.value.addTab(key, "/assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 3:
       key = generateUniqueId('My');
-      TabsRef.value.addTab(key, "../assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo }, true)
+      TabsRef.value.addTab(key, "/assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 4:
       key = generateUniqueId('Setting');
-      TabsRef.value.addTab(key, "../assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo }, true)
+      TabsRef.value.addTab(key, "/assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     default:
@@ -154,7 +173,9 @@ const onShowTabs = () => {
 </script>
 
 <template>
-  <div id="container">
+  <div id="container" style="background-image: url(../public/assets/background.jpg);">
+    <!-- <div id="container"
+      style="backdrop-filter: blur(100px); background-color: rgba(var(--background-color), 0.65); transition: all 0.3s ease;"> -->
     <div class="navi">
       <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem"
         :class="{ 'selected': item.selected }" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
@@ -170,6 +191,8 @@ const onShowTabs = () => {
     <Transition name="tab-list">
       <TabList class="tab-list" v-if="showTabList" :tabsRef="TabsRef"></TabList>
     </Transition>
+    <Notification ref="notificationComponent" />
+    <!-- </div> -->
   </div>
 </template>
 
@@ -406,6 +429,14 @@ const onShowTabs = () => {
   --background-color: 0, 0, 0;
   --invert: 1;
   --background-color: 255, 255, 255;
+}
+
+.list-title {
+  margin-top: 30px;
+}
+
+h3 {
+  margin-top: 30px;
 }
 
 ::-webkit-scrollbar {

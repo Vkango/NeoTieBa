@@ -1,11 +1,26 @@
 <script setup>
 import Container from '../components/Container.vue';
+import { ref, inject } from 'vue';
+import LoadingWithTip from '../components/Notification/LoadingWithTip.vue';
+const isDev = ref(!import.meta.env.PROD);
+
+const sendNotification = inject('sendNotification');
+
+const notify = () => {
+  sendNotification(
+    '我是米米世界玩家',
+    LoadingWithTip,
+    { Tip: '我是米米世界玩家捏' },
+    3000)
+};
+
 </script>
 
 <template>
   <Container class="page" @yscroll="onScroll">
-    <h1><img src="../assets/ico.svg" width="100px" style="opacity: 0.5;"><br>欢迎</h1>
-
+    <h1><img src="/assets/ico.svg" width="100px" style="opacity: 0.5;"><br>欢迎{{ isDev ? "Debug build" : "" }}</h1>
+    <button @click="notify">弹出申必通知</button>
+    <button @click="throw Error('跌我错了');">千万别点</button>
   </Container>
 </template>
 

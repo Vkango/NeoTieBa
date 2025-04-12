@@ -123,9 +123,9 @@ const onScroll = (target) => {
                   <div class="bar-button" v-for="item in FollowBarList"
                     @click="emit('BarNameClicked', item.forum_name)">
                     <span class="bar-name">{{ item.forum_name }} </span>
-                    <span class="desc"><span class="level"
-                        :class="{ 'color1': item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16 }">{{
-                          item.level_id }}</span></span>
+                    <span class="level"
+                      :class="{ 'color1': item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16 }">{{
+                        item.level_id }}</span>
                   </div>
                 </div>
               </div>

@@ -9,7 +9,7 @@ import Loading from '../components/Loading.vue';
 const naviListItem = ref([]);
 const isLoading = ref(true);
 onMounted(async () => {
-  const bduss = await read_file('../cookie.txt');
+  const bduss = await read_file(import.meta.env.PROD ? './cookie.txt' : '../cookie.txt');
   const api = new tieBaAPI;
 
   naviListItem.value = (await api.FollowBar(bduss, 1)).data.like_forum.list;
@@ -23,14 +23,14 @@ const emit = defineEmits(['BarNameClicked']);
     <div class="bgr">
       <div class="list-title">关注的吧</div>
       <transition name="fade1">
-        <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;" v-if="!isLoading">
+        <div class="list-view" v-if="!isLoading">
           <button class="bar-button" v-for="item in naviListItem" @click="emit('BarNameClicked', item.forum_name)">
             <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
             <div style="margin-left: 5px;">
               <div class="bar-name">{{ item.forum_name }} </div>
               <div class="desc"><span class="level"
                   :class="{ 'color1': item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16 }">{{
-                  item.level_id }}</span><span>热度 {{ item.hot_num }}</span></div>
+                    item.level_id }}</span><span>热度 {{ item.hot_num }}</span></div>
             </div>
           </button>
         </div>
@@ -43,6 +43,13 @@ const emit = defineEmits(['BarNameClicked']);
 </template>
 
 <style scoped>
+.list-view {
+  display: grid;
+  gap: 10px 10px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-items: start;
+}
+
 .level {
   margin: 0;
 }
@@ -74,7 +81,6 @@ const emit = defineEmits(['BarNameClicked']);
   gap: 10px;
   background-color: rgba(var(--text-color), 0.05);
   box-shadow: none;
-  width: 300px;
   text-align: left;
   flex-direction: row;
   flex-wrap: wrap;

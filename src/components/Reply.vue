@@ -66,7 +66,7 @@ onMounted(() => {
         content.value += ele.text;
         break;
       case 2: // emotion
-        content.value += `<img class="emotion" src="${('../src/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
+        content.value += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
         break;
       case 3: // image
         content.value += (index != 0 ? `<br>` : ``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;

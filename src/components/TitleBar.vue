@@ -4,18 +4,18 @@
     <div class="title">{{ title }}</div>
     <div class="controls" @mouseup.stop @mouseleave.stop @mousedown.stop>
       <RippleButton class="control-button" @click="emit('showTabs')"> <!--Tabs-->
-        <img class="icon" src="../assets/list.svg">
+        <img class="icon" src="/assets/list.svg">
       </RippleButton>
       <RippleButton class="control-button" @click="minimizeWindow">
-        <img class="icon" src="../assets/minimize.svg">
+        <img class="icon" src="/assets/minimize.svg">
       </RippleButton>
       <RippleButton v-if="isMaximized" class="control-button" @click="maximizeWindow">
-        <img class="icon" src="../assets/restore.svg">
+        <img class="icon" src="/assets/restore.svg">
       </RippleButton>
       <RippleButton v-if="!isMaximized" class="control-button" @click="maximizeWindow">
-        <img class="icon" src="../assets/maximize.svg">
+        <img class="icon" src="/assets/maximize.svg">
       </RippleButton>
-      <RippleButton class="control-button" id="close" @click="closeWindow"><img class="icon" src="../assets/close1.svg">
+      <RippleButton class="control-button" id="close" @click="closeWindow"><img class="icon" src="/assets/close1.svg">
       </RippleButton>
     </div>
   </div>

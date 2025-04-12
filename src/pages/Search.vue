@@ -12,7 +12,7 @@ const searchResult = ref();
 const searchType = ref(1);
 onMounted(async () => {
   isLoading.value = true;
-  const bduss = await read_file('../cookie.txt');
+  const bduss = await read_file(import.meta.env.PROD ? './cookie.txt' : '../cookie.txt');
   const api = new tieBaAPI;
   returnData.value = await api.myProfile(bduss);
   console.log(await api.searchUser("米米世界大佬"));
@@ -193,6 +193,5 @@ input {
   height: 100%;
   padding: 10px 15px;
   box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 </style>

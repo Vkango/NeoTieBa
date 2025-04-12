@@ -35,46 +35,31 @@ export class tieBaAPI {
     }
 
     async searchBar(keyword) {
-        try {
-            // 构造请求数据
-            const data = `word=${encodeURIComponent(keyword)}`;
-            console.log(this.calcSign(data))
-            const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/forum', this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `word=${encodeURIComponent(keyword)}`;
+        console.log(this.calcSign(data))
+        const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/forum', this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
 
 
     async searchUser(keyword) {
-        try {
-            // 构造请求数据
-            const data = `word=${encodeURIComponent(keyword)}`;
-            console.log(this.calcSign(data))
-            const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/user', this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `word=${encodeURIComponent(keyword)}`;
+        console.log(this.calcSign(data))
+        const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/user', this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
 
     async searchThread(keyword, pn, st, tt = 1, rn = 20, fname = "", ct = 1, is_use_zonghe = 1, cv = "99.9.101") {
-        try {
-            // 构造请求数据
-            const data = `word=${encodeURIComponent(keyword)}&pn=${pn}&st=${st}&tt=${tt}&rn=${rn}&fname=${encodeURIComponent(fname)}&ct=${ct}&is_use_zonghe=${is_use_zonghe}&cv=${cv}`;
-            console.log(this.calcSign(data))
-            const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/thread', this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `word=${encodeURIComponent(keyword)}&pn=${pn}&st=${st}&tt=${tt}&rn=${rn}&fname=${encodeURIComponent(fname)}&ct=${ct}&is_use_zonghe=${is_use_zonghe}&cv=${cv}`;
+        console.log(this.calcSign(data))
+        const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/thread', this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
     /**
      * 浏览贴吧
@@ -83,102 +68,65 @@ export class tieBaAPI {
      * @returns {Promise} - 返回JSON数据
      */
     async browseBar(barName, page = 1) {
-        try {
-            // 构造请求数据
-            const data = `_client_type=2&_client_version=8.6.8.0&kw=${encodeURIComponent(barName)}&pn=${page}&q_type=2&rn=50&with_group=1`;
-            const responseData = await fetchData('http://c.tieba.baidu.com/c/f/frs/page?' + this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `_client_type=2&_client_version=8.6.8.0&kw=${encodeURIComponent(barName)}&pn=${page}&q_type=2&rn=50&with_group=1`;
+        const responseData = await fetchData('http://c.tieba.baidu.com/c/f/frs/page?' + this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
     async FollowBar(cookie, page = 1) {
-        try {
-            const url = `https://tieba.baidu.com/mg/o/getForumHome?st=0&pn=${page}&rn=20&eqid=&refer=`;
-            const response = await fetchData_with_cookie(url, cookie);
-            const result = await JSON.parse(response); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        const url = `https://tieba.baidu.com/mg/o/getForumHome?st=0&pn=${page}&rn=20&eqid=&refer=`;
+        const response = await fetchData_with_cookie(url, cookie);
+        const result = await JSON.parse(response); // 解析JSON数据
+        return result;
+    } catch(error) {
     }
 
     async viewThread(id, page = 1) {
-        try {
-            // 构造请求数据
-            const data = `_client_version=7.2.2&kz=${id}&net_type=1&pn=${page}`;
-            const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/page?' + this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `_client_version=7.2.2&kz=${id}&net_type=1&pn=${page}`;
+        const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/page?' + this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
 
     async userProfile(uid) {
-        try {
-            // 构造请求数据
-            const data = `uid=${uid}`;
-            const responseData = await fetchData('http://c.tieba.baidu.com/c/u/user/profile?' + this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `uid=${uid}`;
+        const responseData = await fetchData('http://c.tieba.baidu.com/c/u/user/profile?' + this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
 
     async userCard(id) {
-        try {
-            // 构造请求数据
-            const responseData = await fetchData('https://tieba.baidu.com/home/get/panel?id=' + id);
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-        }
+        // 构造请求数据
+        const responseData = await fetchData('https://tieba.baidu.com/home/get/panel?id=' + id);
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
 
     async Favourite(BDUSS, offset = 0) {
-        try {
-            // 构造请求数据
-            const data = `${BDUSS}&offset=${offset}&rn=20`;
-            console.log(this.calcSign(data))
-            const responseData = await fetchData_post('https://c.tieba.baidu.com/c/f/post/threadstore', this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `${BDUSS}&offset=${offset}&rn=20`;
+        console.log(this.calcSign(data))
+        const responseData = await fetchData_post('https://c.tieba.baidu.com/c/f/post/threadstore', this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
 
     async myProfile(cookie) {
-        try {
-            const url = `https://tieba.baidu.com/mg/o/profile?format=json&eqid=&refer=`;
-            const response = await fetchData_with_cookie(url, cookie);
-            const result = await JSON.parse(response); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+
+        const url = `https://tieba.baidu.com/mg/o/profile?format=json&eqid=&refer=`;
+        const response = await fetchData_with_cookie(url, cookie);
+        const result = await JSON.parse(response); // 解析JSON数据
+        return result;
     }
 
     async viewSubPost(tid, pid, page = 1) {
-        try {
-            // 构造请求数据
-            const data = `kz=${tid}&pid=${pid}&pn=${page}`;
-            const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/floor?' + this.calcSign(data));
-            const result = await JSON.parse(responseData); // 解析JSON数据
-            return result;
-        } catch (error) {
-            console.error("请求失败:", error);
-            throw new Error("无法获取贴吧数据，请检查网络或API链接的合法性");
-        }
+        // 构造请求数据
+        const data = `kz=${tid}&pid=${pid}&pn=${page}`;
+        const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/floor?' + this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
     }
 }

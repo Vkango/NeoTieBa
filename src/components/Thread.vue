@@ -53,7 +53,7 @@ onMounted(() => {
         content.value += ele.text;
         break;
       case 2: // emotion
-        content.value += `<img class="emotion" src="../src/assets/emotion/${ele.text}.png" alt="${ele.c}" />`;
+        content.value += `<img class="emotion" src="/assets/emotion/${ele.text}.png" alt="${ele.c}" />`;
         break;
     }
   });

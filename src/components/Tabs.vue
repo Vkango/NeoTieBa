@@ -306,9 +306,20 @@ const setIcon = (key, icon) => {
 };
 
 const getIconPath = (icon) => {
-  return new URL(`${icon}`, import.meta.url).href;
+  if (!icon) return '';
+  if (icon.startsWith('http') || icon.startsWith('data:')) {
+    return icon;
+  }
+  if (icon.startsWith('/')) {
+    return icon;
+  }
+  try {
+    return new URL(`${icon}`, import.meta.url).href;
+  } catch (e) {
+    console.error('Failed to load icon:', icon);
+    return '/assets/vue.svg';
+  }
 };
-
 defineExpose({
   addTab,
   getTab,
@@ -398,7 +409,6 @@ defineExpose({
 
 .tab-ripplebutton.dragging {
   opacity: 0.9;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
   background-color: rgba(var(--text-color), 0.2);
   user-select: none;
   pointer-events: none;
@@ -433,7 +443,6 @@ defineExpose({
   background-color: rgba(var(--text-color), 0.1);
   box-shadow: none;
   font-weight: bold;
-  backdrop-filter: blur(10px);
 }
 
 .tab-ripplebutton.invert .icon {

@@ -10,7 +10,7 @@ const returnData = ref({});
 const isLoading = ref(true);
 onMounted(async () => {
   isLoading.value = true;
-  const bduss = await read_file('../cookie.txt');
+  const bduss = await read_file(import.meta.env.PROD ? './cookie.txt' : '../cookie.txt');
   const api = new tieBaAPI;
   returnData.value = await api.myProfile(bduss);
 
