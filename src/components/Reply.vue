@@ -59,9 +59,10 @@ onMounted(() => {
   create_time1.value = ref(formatDate(props.create_time));
   props.thread_content.forEach((ele, index) => {
     switch (ele.type) {
+
       case 0: // text
-        if (index != 0) {
-          content.value += props.thread_content[index].type == 0 ? `<br>` : ``;
+        if (index != 0 && props.thread_content[index - 1].type != 0) {
+          content.value += `<br>`
         }
         content.value += ele.text;
         break;

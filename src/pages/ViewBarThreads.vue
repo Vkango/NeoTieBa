@@ -1,5 +1,5 @@
 <script setup>
-import RippleButtonWithIcon from '../components/RippleButtonWithIcon.vue';
+import RippleButton from '../components/RippleButton.vue';
 import { ref, onMounted, watch, defineEmits } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
 import PinnedThread from '../components/PinnedThread.vue';
@@ -82,17 +82,42 @@ const props = defineProps({
             <div>
               <div class="title">{{ returnData.forum.name }}吧</div>
               <div class="description">{{ returnData.forum.slogan }}</div>
-              <div class="level">
+              <div>
                 登录以签到
               </div>
             </div>
           </div>
         </div>
+
         <div class="pinned-thread-list">
+          <div class="thread-filter">
+            <RippleButton class="filter-button"
+              style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <img src="/assets/chevrondown.svg">
+                <span>全部贴子</span>
+              </div>
+            </RippleButton>
+            <RippleButton class="filter-button"
+              style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: left;">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <img src="/assets/chevrondown.svg">
+                <span>回复时间排序</span>
+              </div>
+            </RippleButton>
+
+            <RippleButton class="filter-button"
+              style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <img src="/assets/search.svg" width="18px">
+                <span>吧内搜索</span>
+              </div>
+            </RippleButton>
+          </div>
           <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)" />
         </div>
         <div class="thread-list">
-          <div class="thread-filter"><span>回复时间排序 </span><span>只看精贴</span></div>
+
           <Thread @UserNameClicked="onUserNameClicked(item.author.id)" @threadClicked="handleClick(item.id)"
             v-for="item in threadList" :thread_title="item.title" :media="item.media"
             :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait"
@@ -107,8 +132,19 @@ const props = defineProps({
 </template>
 
 <style scoped>
+.filter-button {
+  font-size: 80%;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.filter-button:hover {
+  opacity: 1;
+}
+
 .thread-filter {
   width: 80%;
+  display: flex;
 }
 
 .thread-list {

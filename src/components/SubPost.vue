@@ -25,8 +25,8 @@ onMounted(() => {
   props.thread_content.forEach((ele, index) => {
     switch (ele.type) {
       case 0: // text
-        if (index != 0 && props.thread_content[index - 1].type == 0) {
-          content.value += props.thread_content[index].type == 0 ? `<br>` : ``;
+        if (index != 0 && props.thread_content[index - 1].type != 0 && props.thread_content[index - 1].type != 4) {
+          content.value += `<br>`
         }
         content.value += ele.text;
         break;
@@ -37,7 +37,7 @@ onMounted(() => {
         content.value += (index != 0 ? `<br>` : ``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
         break;
       case 4:
-        content.value += `<button class="at-button" uid="onUserNameClicked('${ele.uid}')">${ele.text}</button>`;
+        content.value += `<button class="at-button" uid="${ele.uid}">${ele.text}</button>`;
         break;
     }
   });

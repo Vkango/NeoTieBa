@@ -186,12 +186,6 @@ const emit = defineEmits(['BarNameClicked', 'UserNameClicked']);
 }
 
 input {
-  border: none;
-  outline-style: none;
-  border-radius: 5px;
   width: 100%;
-  height: 100%;
-  padding: 10px 15px;
-  box-sizing: border-box;
 }
 </style>

@@ -2,7 +2,43 @@
 
 基于 `Tauri` + `Vue3` 构建的 **非官方** 贴吧客户端，适用于桌面端应用，缓速更新中……
 
-本程序**不会**收集你的任何个人信息。
+> [!warning]
+>
+> 本程序**不会**收集你的任何个人信息。
+>
+> **此软件仅供学习交流使用，严禁用于商业用途。出现的任何后果作者概不负责！**
+>
+> 迫于学业压力，更新可能会很缓慢 :(
+
+
+
+## 🐛 启动调试
+
+可以自行调试进行体验。
+
+确保你已安装好 Tauri 所需工具链，执行 `npm install` 安装所需 npm 包，以及 Cargo 包。
+
+运行Dev版：`npm run tauri dev`
+
+可临时使用Cookie进行登录（可以在浏览器中打开百度贴吧，登录后开DevTools抓取请求包Cookie内容。
+
+在根目录 (此README.md同目录) 下放置 `bduss.txt` ， `cookie.txt` 对应网页端Cookie：
+
+其中`bduss.txt`内容像这样：
+
+```
+DhuSjZjNDA3cHBTRxxxxxxxxAAAAAAAAAAAAAAAAAAAAAAnw
+```
+
+需要删除`BDUSS=`前缀。
+
+`cookie.txt`内容像这样：
+
+```
+BDUSS=DhuSjZjNDA3cHBTRxxxxxxxxAAAAAAAAAAAAAAAAAAAAAAnw; STOKEN=xxxxxxxxxxxxxxxxxbb;
+```
+
+即BDUSS和STOKEN都要包含。
 
 
 
@@ -50,7 +86,7 @@
 - [ ] 跳页
 - [ ] 签到 (自动签到不在计划内)
 - [ ] 赞踩
-- [ ] ~~回帖~~ (不在计划内，如需发帖请使用官方网页/客户端，以免封号)
+- [ ] ~~回帖~~ (不在计划内，如需回帖请使用官方网页/客户端，以免封号)
 - [ ] ~~发帖~~ (不在计划内，如需发帖请使用官方网页/客户端，以免封号)
 
 ### 🎗️ 组件
@@ -81,9 +117,3 @@
 [lumina37/aiotieba: 贴吧接口合集✨可用于工具箱/吧务管理/数据采集](https://github.com/lumina37/aiotieba)
 
 [解读keep-alive：Vue3中手动清理keep-alive组件缓存的一个解决方案 - 没有星星的夏季 - 博客园](https://www.cnblogs.com/shanfeng1000/p/16692266.html)
-
-
-
-# ⚠ 免责声明
-
-**此软件仅供学习交流使用，严禁用于商业用途。出现的任何后果作者概不负责！**

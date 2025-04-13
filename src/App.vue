@@ -118,6 +118,9 @@ function onSwitchTabs(id) {
     case 'Search':
       naviListItem.value[0].selected = true;
       break;
+    case 'Setting':
+      naviListItem.value[4].selected = true;
+      break;
     default:
       break;
   }
@@ -126,7 +129,11 @@ const onTabDelete = (key) => {
   handler.remove(key);
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
 }
-
+const onFavouriteClicked = () => {
+  const key = generateUniqueId('Favourite');
+  TabsRef.value.addTab(Favourite, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick }, true)
+  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+}
 const addBar = async (id) => {
   naviListItem.value.forEach(element => {
     element.selected = false;
@@ -148,7 +155,7 @@ const addBar = async (id) => {
       break;
     case 3:
       key = generateUniqueId('My');
-      TabsRef.value.addTab(key, "/assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo }, true)
+      TabsRef.value.addTab(key, "/assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo, onFavouriteClicked: onFavouriteClicked }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 4:
@@ -355,8 +362,18 @@ const onShowTabs = () => {
   font-size: 110%;
 }
 
+input {
+  border: none;
+  outline-style: none;
+  border-radius: 5px;
+  height: 100%;
+  padding: 10px 15px;
+  box-sizing: border-box;
+}
+
 .thread-content {
   font-size: 120%;
+  white-space: break-spaces;
 }
 
 .user-info {
@@ -525,7 +542,7 @@ button {
   input,
   button {
     color: #ffffff;
-    background-color: #0f0f0f98;
+    background-color: #0f0f0f5e;
   }
 
   button:active {

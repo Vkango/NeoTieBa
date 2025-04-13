@@ -8,6 +8,7 @@ import Tag from '../components/Tag.vue';
 import RippleButton from '../components/RippleButton.vue';
 const returnData = ref({});
 const isLoading = ref(true);
+const emit = defineEmits(['FavouriteClicked']);
 onMounted(async () => {
   isLoading.value = true;
   const bduss = await read_file(import.meta.env.PROD ? './cookie.txt' : '../cookie.txt');
@@ -46,7 +47,8 @@ onMounted(async () => {
       </div>
       <div class="pinned-thread-list">
         <RippleButton class="my-btn">
-          <div class="button-content"><span class="material-symbols-outlined">favorite</span>收藏</div>
+          <div class="button-content" @click="emit('FavouriteClicked')"><span
+              class="material-symbols-outlined">favorite</span>收藏</div>
         </RippleButton>
         <RippleButton class="my-btn">
           <div class="button-content"><span class="material-symbols-outlined">history</span>历史</div>

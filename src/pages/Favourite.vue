@@ -67,7 +67,12 @@ const handleClick = (id) => {
 <style scoped>
 .bgr {
   width: 80%;
+  padding: 0 10px;
   justify-self: center;
+}
+
+.thread {
+  width: 100%;
 }
 
 .desc {
