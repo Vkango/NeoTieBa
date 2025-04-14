@@ -160,6 +160,7 @@ const props = defineProps({
 
 .pinned-thread-list {
   padding: 10px;
+  padding-bottom: 0;
   border-radius: 5px;
   position: relative;
   display: flex;

@@ -143,7 +143,7 @@ const addBar = async (id) => {
   switch (id) {
     case 0:
       key = generateUniqueId('Search');
-      TabsRef.value.addTab(key, "/assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked }, true)
+      TabsRef.value.addTab(key, "/assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 1:

@@ -61,9 +61,9 @@ onMounted(() => {
     switch (ele.type) {
 
       case 0: // text
-        if (index != 0 && props.thread_content[index - 1].type != 0) {
-          content.value += `<br>`
-        }
+        // if (index != 0 && props.thread_content[index - 1].type != 0) {
+        //   content.value += `<br>`
+        // }
         content.value += ele.text;
         break;
       case 2: // emotion
