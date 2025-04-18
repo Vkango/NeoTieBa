@@ -20,9 +20,7 @@ import LoadingWithTip from './components/Notification/LoadingWithTip.vue';
 import { errorService } from './error-service';
 
 const notificationComponent = ref(null);
-provide('sendNotification', (title, component, props = {}, duration = 5000) => {
-  notificationComponent.value.addNotification(title, component, props, duration);
-})
+
 
 
 
@@ -39,7 +37,7 @@ const cachedTabs = ref([]);
 const showTabList = ref(false);
 const onBarThreadClick = (id) => {
   const key = generateUniqueId('ViewThread' + id);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked }, undefined, undefined, "TID " + id)
 }
 const setTabInfo = (info) => {
   TabsRef.value.setTitle(info.key, info.title);
@@ -65,7 +63,7 @@ const onBarNameClicked = (barName) => {
 }
 const userNameClicked = (uid) => {
   const key = generateUniqueId('User' + uid);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick }, undefined, undefined, "UID " + uid)
 }
 
 onMounted(() => {
@@ -82,6 +80,10 @@ onMounted(() => {
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
   handler.bind(keepAlive);
+
+  provide('sendNotification', (title, component, props = {}, duration = 5000) => {
+    notificationComponent.value.addNotification(title, component, props, duration);
+  })
 });
 function onSwitchTabs(id) {
 
@@ -168,11 +170,7 @@ const addBar = async (id) => {
   }
 }
 
-const onTabScroll = (event) => {
-  const container = document.getElementsByClassName('tabs')[0];
-  const deltaX = event.deltaY;
-  container.scrollLeft += deltaX;
-};
+
 
 const onShowTabs = () => {
   showTabList.value = !showTabList.value;
@@ -193,7 +191,7 @@ const onShowTabs = () => {
       </keep-alive>
     </div>
     <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs" />
-    <Tabs @wheel="onTabScroll" ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete">
+    <Tabs ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete">
     </Tabs>
     <Transition name="tab-list">
       <TabList class="tab-list" v-if="showTabList" :tabsRef="TabsRef"></TabList>
@@ -230,19 +228,9 @@ const onShowTabs = () => {
   overflow-y: auto;
 }
 
-.tabs {
-  position: fixed;
-  top: 0;
-  width: calc(100% - 350px);
-  left: 70px;
-  overflow-x: hidden;
-  height: 40px;
-  overflow-y: hidden;
-}
 
-.tabs:hover {
-  overflow-x: scroll;
-}
+
+
 
 .navi-button {
   opacity: 0.5;
@@ -310,6 +298,16 @@ const onShowTabs = () => {
 }
 </style>
 <style>
+.tabs {
+  position: fixed;
+  top: 5px;
+  width: calc(100% - 350px);
+  left: 70px;
+  overflow-x: hidden;
+  height: 40px;
+  overflow-y: hidden;
+}
+
 .thread .avatar {
   width: 35px;
   height: 35px;

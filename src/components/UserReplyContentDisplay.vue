@@ -41,7 +41,9 @@ onMounted(() => {
   props.content.forEach((ele, index) => {
     switch (ele.type) {
       case 0: // text
-        content.value += ele.text;
+        if (index != 0 && props.thread_content[index - 1].type == 3) {
+          content.value += `<br>`
+        }
         break;
       case 2: // emotion
         content.value += `<img class="emotion" src="/assets/emotion/${ele.text}.png" alt="${ele.c}" />`;

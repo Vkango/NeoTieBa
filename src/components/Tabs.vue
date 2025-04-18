@@ -1,6 +1,7 @@
 <template>
-  <transition-group name="tab-list" tag="div" class="tabs" @before-leave="setItemPosition" @leave="handleLeave"
-    @mousedown="startDragging" @mouseup="stopDragging" @mouseleave="stopDragging">
+  <transition-group name="tab-list" tag="div" class="tabs" @wheel="onTabScroll" @before-leave="setItemPosition"
+    @leave="handleLeave" @mousedown="startDragging" @mouseup="stopDragging"
+    @mouseleave="stopDragging; showTabInfo = false;">
     <RippleButton class="tab-ripplebutton" v-for="tab in visibleTabs" :class="{
       'selected': tab.selected,
       'invert': tab.icon_invert,
@@ -8,26 +9,50 @@
       'dragging': draggingTab && draggingTab.id === tab.id,
       'closing': tab.isClosing
     }" :key="tab.key" :data-tab-id="tab.id" @click="handleClick(tab.id)" @mousedown.stop="startDrag($event, tab)"
-      :style="getTabStyle(tab)">
+      @mouseenter="showTabInfo = true; updateTabInfoPos(tab.id)" :style="getTabStyle(tab)">
       <div class="tab-content">
         <img class="icon" :src="getIconPath(tab.icon)" referrerpolicy="no-referrer" />
         <div class="title">{{ tab.title }}</div>
         <span class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop
-          @click="handleDelete(tab.id)">close</span>
+          @click="showTabInfo = false; handleDelete(tab.id)">close</span>
       </div>
     </RippleButton>
+
   </transition-group>
+  <Transition name="fade1">
+    <TabInfo :title="tabMouseOn.title" :desc="tabMouseOn.desc" v-show="showTabInfo" @mouseenter="showTabInfo = true"
+      @mouseleave="showTabInfo = false" :componentkey="tabMouseOn.component.__name">
+      <div v-html="tabMouseOn.content"></div>
+    </TabInfo>
+  </Transition>
+
 </template>
 
 <script setup>
 import { defineEmits, markRaw, ref, onBeforeUnmount, computed, nextTick } from 'vue';
 import RippleButton from './RippleButton.vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import TabInfo from './TabInfo.vue';
 const isMaximized = ref(false);
+const showTabInfo = ref(false);
 const isMouseDown = ref(false);
 const isMoved = ref(false);
-
+const tabMouseOn = ref({ title: undefined, component: { __name: undefined } });
+const updateTabInfoPos = (id) => {
+  const elem = document.getElementsByClassName('tab-info')[0];
+  const tabEls = document.querySelectorAll('.tab-ripplebutton');
+  const currentTab = Array.from(tabEls)[id];
+  tabMouseOn.value = tabs.value[id];
+  const rect = currentTab.getBoundingClientRect();
+  elem.style.left = rect.left + 'px';
+}
+const onTabScroll = (event) => {
+  const container = document.getElementsByClassName('tabs')[0];
+  const deltaX = event.deltaY;
+  container.scrollLeft += deltaX;
+};
 const startDragging = (event) => {
+  if (event.y > 33) return; // 排除滚动条 &&scrollpos
   isMouseDown.value = true;
   isMoved.value = false;
   if (isMaximized.value) {
@@ -269,7 +294,7 @@ const handleClick = (id) => {
   emit('onSwitchTabs', id);
 };
 
-const addTab = (key, icon, title, component, props, icon_invert = false, show = true) => {
+const addTab = (key, icon, title, component, props, icon_invert = false, show = true, desc = "", content = "") => {
   let found = false;
   tabs.value.forEach(element => {
     if (element.key == key) {
@@ -281,7 +306,7 @@ const addTab = (key, icon, title, component, props, icon_invert = false, show = 
     element.selected = false;
   });
   if (found) { return; }
-  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert, show: show, position: tabs.value.length });
+  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert, show: show, position: tabs.value.length, desc: desc, content: content });
   emit('onSwitchTabs', tabs.value.length - 1);
 };
 
@@ -365,13 +390,15 @@ defineExpose({
   border-radius: 16px;
 }
 
+
 .tabs {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  gap: 5px;
-  padding: 5px 0px;
-  position: relative;
+}
+
+.tabs:hover {
+  overflow-x: scroll;
 }
 
 .tab-ripplebutton:hover {
@@ -388,6 +415,7 @@ defineExpose({
   font-weight: normal;
   height: 35px;
   width: 180px;
+  margin-right: 5px;
   min-width: 100px;
   /* max-width: 200px;
   min-width: 100px; */

@@ -74,13 +74,6 @@ defineProps({
   border-radius: 16px;
 }
 
-.tabs {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 5px;
-  padding: 5px 0px;
-}
 
 .tab-ripplebutton:hover {
   background-color: rgba(var(--text-color), 0.1);
