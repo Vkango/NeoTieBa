@@ -38,10 +38,13 @@ const props = defineProps({
 })
 onMounted(() => {
   create_time1.value = ref(formatDate(props.createTime));
+  console.log(props.content, "content")
   props.content.forEach((ele, index) => {
+    console.log(ele);
     switch (ele.type) {
       case 0: // text
-        if (index != 0 && props.thread_content[index - 1].type == 3) {
+        content.value += ele.text
+        if (index != 0 && props.content[index - 1].type == 3) {
           content.value += `<br>`
         }
         break;

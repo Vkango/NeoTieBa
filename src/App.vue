@@ -1,6 +1,6 @@
 <script setup>
 import RippleButtonWithIcon from './components/RippleButtonWithIcon.vue';
-import { onMounted, ref, computed, getCurrentInstance, provide } from 'vue';
+import { onMounted, ref, computed, getCurrentInstance, provide, nextTick } from 'vue';
 import FollowBar from './pages/FollowBar.vue';
 import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
@@ -18,11 +18,12 @@ import Setting from './pages/Setting.vue';
 import Notification from "./components/Notification.vue";
 import LoadingWithTip from './components/Notification/LoadingWithTip.vue';
 import { errorService } from './error-service';
+import ImageViewer from './components/ImageViewer.vue';
 
 const notificationComponent = ref(null);
 
-
-
+const imageViewerVisibility = ref(false);
+const imageViewerSrc = ref('');
 
 const naviListItem = ref([
   { id: 0, icon: 'search', title: '搜索', selected: false },
@@ -36,13 +37,20 @@ const TabsRef = ref(null);
 const cachedTabs = ref([]);
 const showTabList = ref(false);
 const onBarThreadClick = (id) => {
+  if (id == undefined) throw new Error("贴子ID为空！");
   const key = generateUniqueId('ViewThread' + id);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked }, undefined, undefined, "TID " + id)
-}
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked, onOpenImageViewer: onOpenImageViewer }, undefined, undefined, "TID " + id)
+} 
 const setTabInfo = (info) => {
   TabsRef.value.setTitle(info.key, info.title);
   TabsRef.value.setIcon(info.key, info.icon);
 }
+
+const onOpenImageViewer = (url) => {
+  imageViewerVisibility.value = true;
+  imageViewerSrc.value = url;
+}
+
 const instance = getCurrentInstance();
 const handler = new KeepAliveHandler();
 function generateUniqueId(text) {
@@ -58,16 +66,19 @@ function generateUniqueId(text) {
   return Math.abs(hash);
 }
 const onBarNameClicked = (barName) => {
+  if (barName == undefined) throw new Error("吧名为空！")
   const key = generateUniqueId('ViewBarThreads' + barName);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onOpenImageViewer: onOpenImageViewer })
 }
 const userNameClicked = (uid) => {
+  if (uid == undefined) throw new Error('用户ID为空！')
   const key = generateUniqueId('User' + uid);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick }, undefined, undefined, "UID " + uid)
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick, onOpenImageViewer, onOpenImageViewer }, undefined, undefined, "UID " + uid)
 }
 
 onMounted(() => {
-  errorService.addHandler((error, info) => {
+  nextTick(() => {
+    errorService.addHandler((error, info) => {
     notificationComponent.value.addNotification(
       info,
       LoadingWithTip,
@@ -75,6 +86,8 @@ onMounted(() => {
       60000
     );
   });
+  })
+
   let key = generateUniqueId('Welcome');
   TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key }, true, false)
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
@@ -133,7 +146,7 @@ const onTabDelete = (key) => {
 }
 const onFavouriteClicked = () => {
   const key = generateUniqueId('Favourite');
-  TabsRef.value.addTab(Favourite, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick }, true)
+  TabsRef.value.addTab(Favourite, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick, onOpenImageViewer: onOpenImageViewer }, true)
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
 }
 const addBar = async (id) => {
@@ -198,6 +211,8 @@ const onShowTabs = () => {
     </Transition>
     <Notification ref="notificationComponent" />
     <!-- </div> -->
+    <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
+    </ImageViewer>
   </div>
 </template>
 
@@ -298,13 +313,17 @@ const onShowTabs = () => {
 }
 </style>
 <style>
+.icon_ {
+  filter: invert(var(--invert));
+}
+
 .tabs {
   position: fixed;
   top: 5px;
   width: calc(100% - 350px);
   left: 70px;
   overflow-x: hidden;
-  height: 40px;
+  height: 42px;
   overflow-y: hidden;
 }
 

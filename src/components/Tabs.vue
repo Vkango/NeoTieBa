@@ -21,7 +21,7 @@
   </transition-group>
   <Transition name="fade1">
     <TabInfo :title="tabMouseOn.title" :desc="tabMouseOn.desc" v-show="showTabInfo" @mouseenter="showTabInfo = true"
-      @mouseleave="showTabInfo = false" :componentkey="tabMouseOn.component.__name">
+      @mouseleave="showTabInfo = false" :componentkey="tabMouseOn.component.__name" :icon="tabMouseOn.icon">
       <div v-html="tabMouseOn.content"></div>
     </TabInfo>
   </Transition>

@@ -30,6 +30,16 @@ const loadData = async () => {
   for (let i = previousThreadLen; i < threadList.value.length; i++) {
     threadList.value[i].author = returnData.value.user_list.filter(user => user.id === threadList.value[i].author_id)[0];
   }
+
+  const hex = returnData.value.forum.theme_color.dark.light_color;
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  if (brightness < 50) {
+    returnData.value.forum.theme_color.dark.light_color = undefined;
+  }
   isThreadsLoading.value = false;
 }
 onMounted(async () => {
@@ -94,14 +104,14 @@ const props = defineProps({
             <RippleButton class="filter-button"
               style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;">
               <div style="display: flex; gap: 10px; align-items: center;">
-                <img src="/assets/chevrondown.svg">
+                <img src="/assets/chevrondown.svg" class="icon_">
                 <span>全部贴子</span>
               </div>
             </RippleButton>
             <RippleButton class="filter-button"
               style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: left;">
               <div style="display: flex; gap: 10px; align-items: center;">
-                <img src="/assets/chevrondown.svg">
+                <img src="/assets/schedule.svg" width="18px" class="icon_">
                 <span>回复时间排序</span>
               </div>
             </RippleButton>
@@ -109,12 +119,12 @@ const props = defineProps({
             <RippleButton class="filter-button"
               style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;">
               <div style="display: flex; gap: 10px; align-items: center;">
-                <img src="/assets/search.svg" width="18px">
+                <img src="/assets/search.svg" width="18px" class="icon_">
                 <span>吧内搜索</span>
               </div>
             </RippleButton>
           </div>
-          <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)" />
+          <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)" :color="returnData.forum.theme_color.dark.light_color != undefined ? '#' + returnData.forum.theme_color.dark.light_color : ''" />
         </div>
         <div class="thread-list">
 

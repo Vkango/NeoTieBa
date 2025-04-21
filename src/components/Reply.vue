@@ -14,7 +14,7 @@
 
     </div>
     <div class="thread-preview">
-      <div class="thread-content" v-html="content">
+      <div class="thread-content" v-html="content" style="user-select: text;">
       </div>
       <div class="thread-info">
 
@@ -28,6 +28,7 @@
         <SubPost v-for="item in subpost_list" :thread_content="item.content" @userNameClicked="userNameClicked"
           :avatar="item.author.portrait" :uid="item.author.id" :user_name="item.author.name_show || item.author.name">
         </SubPost>
+        <div v-if="reply_num > 5" style="box-sizing: border-box; margin: 5px 15px;">查看全部 {{ reply_num }} 条回复</div>
       </div>
     </div>
   </div>

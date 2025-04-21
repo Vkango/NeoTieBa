@@ -62,7 +62,7 @@ const onUserNameClicked = (uid) => {
         <div class="result" v-if="searchType == 0 && searchResult">
           <div v-if="searchResult.exactMatch.avatar != undefined">
             <Tag>最佳匹配</Tag>
-            <div style="margin-top: 10px; display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
+            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" @click="emit('BarNameClicked', searchResult.exactMatch.forum_name)">
                 <img class="avatar" :src="searchResult.exactMatch.avatar" referrerpolicy="no-referrer">
                 <div style="margin-left: 5px;">
@@ -74,7 +74,7 @@ const onUserNameClicked = (uid) => {
           </div>
           <div v-if="searchResult.fuzzyMatch[0].avatar != undefined">
             <Tag>相关匹配</Tag>
-            <div style="margin-top: 10px; display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
+            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" v-for="item in searchResult.fuzzyMatch"
                 @click="emit('BarNameClicked', item.forum_name)">
                 <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
@@ -103,7 +103,7 @@ const onUserNameClicked = (uid) => {
         <div class="result" v-if="searchType == 2 && searchResult">
           <div v-if="searchResult.exactMatch.id != undefined">
             <Tag>最佳匹配</Tag>
-            <div style="margin-top: 10px; display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
+            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" @click="emit('UserNameClicked', searchResult.exactMatch.id)">
                 <img class="avatar" :src="searchResult.exactMatch.portrait" referrerpolicy="no-referrer">
                 <div style="margin-left: 5px;">
@@ -116,7 +116,7 @@ const onUserNameClicked = (uid) => {
           </div>
           <div v-if="searchResult.fuzzyMatch[0].id != undefined">
             <Tag>相关匹配</Tag>
-            <div style="margin-top: 10px; display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
+            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" v-for="item in searchResult.fuzzyMatch"
                 @click="emit('UserNameClicked', item.id)">
                 <img class="avatar" :src="item.portrait" referrerpolicy="no-referrer">
@@ -164,11 +164,11 @@ const onUserNameClicked = (uid) => {
   gap: 10px;
   background-color: rgba(var(--text-color), 0.05);
   box-shadow: none;
-  width: 300px;
   text-align: left;
   flex-direction: row;
   flex-wrap: wrap;
   padding: 10px 15px;
+  height: 100%;
   border-radius: 5px;
   align-items: center;
 }
@@ -187,7 +187,7 @@ const onUserNameClicked = (uid) => {
 }
 
 .result {
-  margin-top: 10px;
+  margin: 10px 0;
   display: flex;
   flex-direction: column;
   gap: 10px;

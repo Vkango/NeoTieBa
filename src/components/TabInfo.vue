@@ -1,6 +1,6 @@
 <template>
     <div class="tab-info">
-        <div style="font-weight: bold;">{{ props.title }}</div>
+        <div style="font-weight: bold; max-width: 250px;">{{ props.title }}</div>
         <div style="font-size: 80%; opacity: 0.5; user-select: text;">{{ props.desc }}</div>
         <slot></slot>
         <div style="display: flex; align-items: center; gap: 5px; opacity: 0.5;"><span class="material-symbols-outlined"
@@ -45,6 +45,6 @@ const props = defineProps({
     border-radius: 5px;
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(20px);
-    transition: left 0.3s ease;
+    transition: all 0.3s ease;
 }
 </style>
