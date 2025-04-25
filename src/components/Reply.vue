@@ -6,7 +6,7 @@
       <div>
         <div class="user-name">{{ user_name }}<span class="level"
             :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level > 16 }">{{
-              level }}</span>
+              level }} {{ is_lz ? '楼主' : '' }}</span>
         </div>
         <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>
       </div>
@@ -14,14 +14,15 @@
 
     </div>
     <div class="thread-preview">
-      <div class="thread-content" v-html="content" style="user-select: text;">
+      <div class="thread-content" v-html="content" style="user-select: text;" @click="handleClick">
       </div>
       <div class="thread-info">
-
+        <!-- <button @click="dom2img">申必</button> -->
         <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
+        <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">thumb_up</span> {{ like }} 赞
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">floor</span> {{ floor }} 楼
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;"
-          v-if="reply_num > 0">forum</span> <span v-if="reply_num > 0">{{ reply_num }}</span>
+          v-if="reply_num > 0">forum</span> <span v-if="reply_num > 0">{{ reply_num }} 回复</span>
 
       </div>
       <div class="subpost" v-if="reply_num > 0">
@@ -35,10 +36,12 @@
 </template>
 
 <script setup>
-import { defineProps, onMounted, ref, defineEmits } from 'vue';
+import { defineProps, onMounted, ref, defineEmits, inject } from 'vue';
 import { tieBaAPI } from '../tieba-api';
 import SubPost from './SubPost.vue';
 import { getTimeInterval } from '../helper';
+import DomToImage from 'dom-to-image';
+const openImageViewer = inject('openImageViewer');
 const content = ref('')
 const create_time1 = ref('')
 const subpost_list = ref([])
@@ -46,6 +49,26 @@ const emit = defineEmits(['userNameClicked'])
 const userNameClicked = (uid) => {
   emit('userNameClicked', uid);
 }
+
+const handleClick = (event) => {
+  if (event.target.classList.contains('thread-reply-img')) {
+    openImageViewer(event.target.src);
+  }
+}
+
+// const dom2img = () => {
+//   const node = document.getElementsByClassName('thread')[0];
+//   DomToImage.toPng(node)
+//     .then(function (dataUrl) {
+//       const link = document.createElement('a');
+//       link.download = 'screenshot.png';
+//       link.href = dataUrl;
+//       link.click();
+//     })
+//     .catch(function (error) {
+//       console.error('Oops, something went wrong!', error);
+//     });
+// }
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);
   const yyyy = date.getFullYear();
@@ -71,7 +94,7 @@ onMounted(() => {
         content.value += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
         break;
       case 3: // image
-        content.value += (index != 0 ? `<br>` : ``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
+        content.value += (index != 0 ? `<br>` : ``) + `<img class="thread-reply-img" style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
         break;
 
     }
@@ -105,6 +128,15 @@ const props = defineProps({
     type: Array,
     required: true,
     default: []
+  },
+  like: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  is_lz: {
+    type: Boolean,
+    default: false
   },
   avatar: {
     type: String,

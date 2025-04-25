@@ -1,15 +1,17 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-mod request;
 mod read_file;
+mod request;
+use read_file::read_file;
+use request::{
+    fetch_data, fetch_data_buffer, fetch_data_post, fetch_data_with_cookie, fetch_data_with_headers,
+};
 use tauri::Manager;
 use window_vibrancy::*;
-use request::{fetch_data, fetch_data_with_headers, fetch_data_with_cookie, fetch_data_post, fetch_data_buffer};
-use read_file::read_file;
 // use api::{ get_user_info };
-use tauri::command;
 use reqwest::header::HeaderMap;
 use serde_json::Value;
+use tauri::command;
 #[command]
 async fn fetch_data_command(url: &str) -> Result<Value, String> {
     match fetch_data(url).await {
@@ -26,7 +28,10 @@ async fn fetch_data_with_headers_command(url: &str, headers_json: &str) -> Resul
             if let Value::Object(map) = json {
                 for (key, value) in map {
                     if let Some(value_str) = value.as_str() {
-                        headers.insert(key.as_str().parse::<reqwest::header::HeaderName>().unwrap(), value_str.parse().unwrap());
+                        headers.insert(
+                            key.as_str().parse::<reqwest::header::HeaderName>().unwrap(),
+                            value_str.parse().unwrap(),
+                        );
                     }
                 }
             }
@@ -42,8 +47,14 @@ async fn fetch_data_with_headers_command(url: &str, headers_json: &str) -> Resul
 }
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fetch_data_command, fetch_data_with_headers_command, read_file, fetch_data_with_cookie, fetch_data_post, fetch_data_buffer])
-
+        .invoke_handler(tauri::generate_handler![
+            fetch_data_command,
+            fetch_data_with_headers_command,
+            read_file,
+            fetch_data_with_cookie,
+            fetch_data_post,
+            fetch_data_buffer
+        ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
 
@@ -53,7 +64,8 @@ fn main() {
 
             #[cfg(target_os = "windows")]
             let _ = apply_mica(&window, Some(true));
-                
+            // apply_acrylic(&window, Some((255, 255, 255, 0)))
+            //     .expect("Unsupported platform! 'apply_mica' is only supported on Windows");
 
             Ok(())
         })

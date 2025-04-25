@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, defineEmits } from 'vue';
+import { ref, onMounted, watch, defineEmits, inject } from 'vue';
 import { tieBaAPI } from '../tieba-api';
 import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
@@ -12,6 +12,8 @@ const isLoading = ref(true);
 const isThreadsLoading = ref(true);
 const FollowBarList = ref([]);
 const currentPage = ref(1);
+
+const openImageViewer = inject('openImageViewer');
 let has_more = true;
 const props = defineProps({
   uid: {
@@ -89,7 +91,8 @@ const onScroll = (target) => {
           <div class="banner-content">
             <img class="avatar"
               :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait"
-              referrerpolicy="no-referrer">
+              referrerpolicy="no-referrer"
+              @click="openImageViewer('https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait)">
             <div>
               <div class="title">{{ returnData.user.nameShow }} ({{ returnData.user.name }})</div>
               <div class="description" v-html="returnData.user.intro == '' ? '没有签名喵' : returnData.user.intro"></div>
@@ -114,7 +117,7 @@ const onScroll = (target) => {
                   :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title"
                   :avatar="item.userPortrait" :media="item.content" :create_time="item.createTime"
                   :threadId="item.threadId"></UserReply>
-                <div v-if="has_more">到底了</div>
+                <div v-if="!has_more">到底了</div>
               </div>
             </div>
             <div class="user-cards">
@@ -238,7 +241,7 @@ hr {
 .image-container img {
   -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
-  filter: blur(50px);
+  filter: blur(20px);
 }
 
 .bar-banner .avatar {

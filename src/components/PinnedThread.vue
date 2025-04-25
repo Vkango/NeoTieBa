@@ -1,8 +1,8 @@
 <template>
     <div class="pinned-thread">
-        <span class="material-symbols-outlined">vertical_align_top</span>
+        <span class="material-symbols-outlined" :style="{ color: color }">vertical_align_top</span>
 
-        <span style="font-weight: bold; " :style="{color: color}">置顶</span>
+        <span style="font-weight: bold; " :style="{ color: color }">置顶</span>
         <span class="thread-title">{{ title }}</span>
     </div>
 

@@ -1,6 +1,6 @@
 <script setup>
 import RippleButton from '../components/RippleButton.vue';
-import { ref, onMounted, watch, defineEmits } from 'vue';
+import { ref, onMounted, watch, defineEmits, inject } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
 import PinnedThread from '../components/PinnedThread.vue';
 import Thread from '../components/Thread.vue';
@@ -13,6 +13,7 @@ const pinnedThreadList = ref([]);
 const threadList = ref([]);
 const currentPage = ref(1);
 const n = new tieBaAPI;
+const openImageViewer = inject('openImageViewer');
 const onUserNameClicked = (uid) => {
   emit('UserNameClicked', uid);
 }
@@ -30,7 +31,15 @@ const loadData = async () => {
   for (let i = previousThreadLen; i < threadList.value.length; i++) {
     threadList.value[i].author = returnData.value.user_list.filter(user => user.id === threadList.value[i].author_id)[0];
   }
-
+  if (!returnData.value?.forum?.theme_color?.dark?.light_color) {
+    if (!returnData.value.forum.theme_color) {
+      returnData.value.forum.theme_color = {};
+    }
+    if (!returnData.value.forum.theme_color.dark) {
+      returnData.value.forum.theme_color.dark = {};
+    }
+    returnData.value.forum.theme_color.dark.light_color = '#000000';
+  }
   const hex = returnData.value.forum.theme_color.dark.light_color;
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
@@ -88,7 +97,8 @@ const props = defineProps({
             <img class="background-image" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
           </div>
           <div class="banner-content">
-            <img class="avatar" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
+            <img class="avatar" :src="returnData.forum.avatar" referrerpolicy="no-referrer"
+              @click="openImageViewer(returnData.forum.avatar)">
             <div>
               <div class="title">{{ returnData.forum.name }}吧</div>
               <div class="description">{{ returnData.forum.slogan }}</div>
@@ -124,7 +134,8 @@ const props = defineProps({
               </div>
             </RippleButton>
           </div>
-          <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)" :color="returnData.forum.theme_color.dark.light_color != undefined ? '#' + returnData.forum.theme_color.dark.light_color : ''" />
+          <PinnedThread v-for="item in pinnedThreadList" :title="item.title" @click="handleClick(item.id)"
+            :color="returnData.forum.theme_color.dark.light_color != undefined ? '#' + returnData.forum.theme_color.dark.light_color : ''" />
         </div>
         <div class="thread-list">
 
@@ -207,7 +218,7 @@ const props = defineProps({
 .image-container img {
   -webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
   mask-image: linear-gradient(rgba(0, 0, 0, 0.1), transparent);
-  filter: blur(50px);
+  filter: blur(20px);
 }
 
 .bar-banner .avatar {

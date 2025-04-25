@@ -39,12 +39,16 @@ const showTabList = ref(false);
 const onBarThreadClick = (id) => {
   if (id == undefined) throw new Error("贴子ID为空！");
   const key = generateUniqueId('ViewThread' + id);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked, onOpenImageViewer: onOpenImageViewer }, undefined, undefined, "TID " + id)
-} 
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked }, undefined, undefined, "TID " + id)
+}
 const setTabInfo = (info) => {
   TabsRef.value.setTitle(info.key, info.title);
   TabsRef.value.setIcon(info.key, info.icon);
 }
+
+provide('openImageViewer', (url) => {
+  onOpenImageViewer(url);
+})
 
 const onOpenImageViewer = (url) => {
   imageViewerVisibility.value = true;
@@ -68,24 +72,24 @@ function generateUniqueId(text) {
 const onBarNameClicked = (barName) => {
   if (barName == undefined) throw new Error("吧名为空！")
   const key = generateUniqueId('ViewBarThreads' + barName);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onOpenImageViewer: onOpenImageViewer })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
 }
 const userNameClicked = (uid) => {
   if (uid == undefined) throw new Error('用户ID为空！')
   const key = generateUniqueId('User' + uid);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick, onOpenImageViewer, onOpenImageViewer }, undefined, undefined, "UID " + uid)
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick }, undefined, undefined, "UID " + uid)
 }
 
 onMounted(() => {
   nextTick(() => {
     errorService.addHandler((error, info) => {
-    notificationComponent.value.addNotification(
-      info,
-      LoadingWithTip,
-      { Tip: error },
-      60000
-    );
-  });
+      notificationComponent.value.addNotification(
+        info,
+        LoadingWithTip,
+        { Tip: error },
+        60000
+      );
+    });
   })
 
   let key = generateUniqueId('Welcome');
@@ -146,7 +150,7 @@ const onTabDelete = (key) => {
 }
 const onFavouriteClicked = () => {
   const key = generateUniqueId('Favourite');
-  TabsRef.value.addTab(Favourite, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick, onOpenImageViewer: onOpenImageViewer }, true)
+  TabsRef.value.addTab(Favourite, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick }, true)
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
 }
 const addBar = async (id) => {
@@ -170,7 +174,7 @@ const addBar = async (id) => {
       break;
     case 3:
       key = generateUniqueId('My');
-      TabsRef.value.addTab(key, "/assets/qr.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo, onFavouriteClicked: onFavouriteClicked }, true)
+      TabsRef.value.addTab(key, "/assets/user.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo, onFavouriteClicked: onFavouriteClicked, onUserNameClicked: userNameClicked }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 4:

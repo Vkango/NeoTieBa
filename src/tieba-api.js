@@ -122,6 +122,13 @@ export class tieBaAPI {
         return result;
     }
 
+    async get_self_id(cookie) {
+        const url = `https://tieba.baidu.com/mo/q/sync`;
+        const response = await fetchData_with_cookie(url, cookie);
+        const result = await JSON.parse(response).data.user_id; // 解析JSON数据
+        return result;
+    }
+
     async viewSubPost(tid, pid, page = 1) {
         // 构造请求数据
         const data = `kz=${tid}&pid=${pid}&pn=${page}`;
