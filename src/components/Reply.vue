@@ -5,7 +5,7 @@
           :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
       <div>
         <div class="user-name">{{ user_name }}<span class="level"
-            :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level > 16 }">{{
+            :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level >= 16 }">{{
               level }} {{ is_lz ? '楼主' : '' }}</span>
         </div>
         <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>

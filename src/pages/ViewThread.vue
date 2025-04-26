@@ -11,15 +11,23 @@ const isThreadsLoading = ref(true);
 const threadList = ref([]);
 const currentPage = ref(1);
 const threadTitle = ref("");
+const isDeleted = ref(false);
 const n = new tieBaAPI;
 const emit = defineEmits(['setTabInfo', 'UserNameClicked', 'barNameClicked']);
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.viewThread(props.tid, currentPage.value);
   // console.log(returnData.value);
-  threadTitle.value = returnData.value.thread.title;
-  emit('setTabInfo', { key: props.key_, title: returnData.value.thread.title, icon: returnData.value.forum.avatar });
-  threadList.value = [...threadList.value, ...returnData.value.post_list];
+  if (returnData.value?.thread?.title) {
+    threadTitle.value = returnData.value.thread.title;
+    emit('setTabInfo', { key: props.key_, title: returnData.value.thread.title, icon: returnData.value.forum.avatar });
+    threadList.value = [...threadList.value, ...returnData.value.post_list];
+  }
+  else {
+    emit('setTabInfo', { key: props.key_, title: '贴子已被删除', icon: '/assets/apps.svg' });
+    isDeleted.value = true;
+  }
+
   isThreadsLoading.value = false;
 }
 onMounted(async () => {
@@ -59,7 +67,7 @@ const props = defineProps({
   <Container @yscroll="onScroll">
     <transition name="fade1">
       <div v-if="!isLoading">
-        <div class="thread-list">
+        <div class="thread-list" v-if="!isDeleted">
           <h3 class="thread-title">
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
               <RippleButton style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;"
@@ -80,6 +88,15 @@ const props = defineProps({
             :is_lz="item.author.id === threadList[0].author.id" :level="item.author.level_id"></Reply>
         </div>
 
+      </div>
+    </transition>
+    <transition name="fade1">
+      <div v-if="isDeleted" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
+          justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center;
+          opacity: 0.5; gap: 10px;">
+        <img src="/assets/delete.svg" width="120px" style="margin-bottom: 20px;filter: invert(var(--invert));">
+        <div style="font-size: 220%; font-weight: bold;">贴子已被删除</div>
+        <div style="font-size: 150%; margin-top: 15px; opacity: 0.5; margin-bottom: 84px;">请关闭页面</div>
       </div>
     </transition>
     <transition name="fade1">
