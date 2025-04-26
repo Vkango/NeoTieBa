@@ -1,6 +1,13 @@
-# ⭐ NeoTieBa
+<p align="center">
+<img height="300" width="300" src="./app-icon.png" alt="pic"/>
+</p>
+<div style="align: center">
+
+# NeoTieBa
 
 基于 `Tauri` + `Vue3` 构建的 **非官方** 贴吧客户端，适用于桌面端应用，缓速更新中……
+
+</div>
 
 > [!warning]
 >
@@ -12,7 +19,7 @@
 
 
 
-## 🐛 启动调试
+## 🐛 提前尝鲜
 
 可以自行调试进行体验。
 
@@ -20,25 +27,25 @@
 
 运行Dev版：`npm run tauri dev`
 
-可临时使用Cookie进行登录（可以在浏览器中打开百度贴吧，登录后开DevTools抓取请求包Cookie内容。
+可临时使用 Cookie 进行登录（可以在浏览器中打开百度贴吧，登录后开 DevTools 抓取请求包 Cookie 内容。
 
-在根目录 (此README.md同目录) 下放置 `bduss.txt` ， `cookie.txt` 对应网页端Cookie：
+在根目录 (此 README.md 同目录) 下放置 `bduss.txt` ， `cookie.txt` 对应网页端 Cookie ：
 
-其中`bduss.txt`内容像这样：
+其中 `bduss.txt` 内容像这样：
 
 ```
 DhuSjZjNDA3cHBTRxxxxxxxxAAAAAAAAAAAAAAAAAAAAAAnw
 ```
 
-需要删除`BDUSS=`前缀。
+需要删除 `BDUSS=` 前缀。
 
-`cookie.txt`内容像这样：
+`cookie.txt` 内容像这样：
 
 ```
 BDUSS=DhuSjZjNDA3cHBTRxxxxxxxxAAAAAAAAAAAAAAAAAAAAAAnw; STOKEN=xxxxxxxxxxxxxxxxxbb;
 ```
 
-即BDUSS和STOKEN都要包含。
+即 BDUSS 和 STOKEN 都要包含。
 
 
 
