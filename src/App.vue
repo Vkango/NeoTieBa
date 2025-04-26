@@ -174,7 +174,7 @@ const addBar = async (id) => {
       break;
     case 3:
       key = generateUniqueId('My');
-      TabsRef.value.addTab(key, "/assets/user.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo, onFavouriteClicked: onFavouriteClicked, onUserNameClicked: userNameClicked }, true)
+      TabsRef.value.addTab(key, "/assets/user.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo, onFavouriteClicked: onFavouriteClicked, onUserNameClicked: userNameClicked, onThreadClicked: onBarThreadClick }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 4:
@@ -469,8 +469,29 @@ input {
   --background-color: 255, 255, 255;
 }
 
+.filter-button {
+  font-size: 80%;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.filter-button.selected {
+  opacity: 1;
+  font-weight: bold;
+}
+
+.filter-button:hover {
+  opacity: 1;
+}
+
 .list-title {
   margin-top: 30px;
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 h3 {

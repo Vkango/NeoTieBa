@@ -153,16 +153,6 @@ const props = defineProps({
 </template>
 
 <style scoped>
-.filter-button {
-  font-size: 80%;
-  opacity: 0.5;
-  transition: all 0.3s ease;
-}
-
-.filter-button:hover {
-  opacity: 1;
-}
-
 .thread-filter {
   width: 80%;
   display: flex;

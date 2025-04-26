@@ -44,10 +44,9 @@ const handleClick = (id) => {
 <template>
   <Container @yscroll="onScroll">
     <transition name="fade1">
-      <div class="bgr">
+      <div class="bgr" v-if="!isLoading">
         <div class="list-title">我的收藏</div>
-
-        <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;" v-if="!isLoading">
+        <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
           <ThreadLite @click="handleClick(item.thread_id)" v-for="item in threadList" :thread_title="item.title"
             :media="item.media" :user_name="item.author.name_show || item.author.name"
             :avatar="item.author.user_portrait" :create_time="item.last_time"

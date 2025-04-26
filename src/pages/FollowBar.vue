@@ -57,6 +57,7 @@ const emit = defineEmits(['BarNameClicked']);
 .bgr {
   width: 80%;
   justify-self: center;
+  margin-bottom: 10px;
 }
 
 .desc {

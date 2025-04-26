@@ -38,9 +38,7 @@ const props = defineProps({
 })
 onMounted(() => {
   create_time1.value = ref(formatDate(props.createTime));
-  console.log(props.content, "content")
   props.content.forEach((ele, index) => {
-    console.log(ele);
     switch (ele.type) {
       case 0: // text
         content.value += ele.text

@@ -115,8 +115,8 @@ const onScroll = (target) => {
                 <div v-if="returnData2 == undefined">还没有回复</div>
                 <UserReply @ThreadClicked="onThreadClicked(item.threadId)" v-for="item in returnData2" msg=""
                   :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title"
-                  :avatar="item.userPortrait" :media="item.content" :create_time="item.createTime"
-                  :threadId="item.threadId"></UserReply>
+                  :avatar="item.userPortrait" :media="item.content" :create_time="0" :threadId="item.threadId">
+                </UserReply>
                 <div v-if="!has_more">到底了</div>
               </div>
             </div>
@@ -145,12 +145,6 @@ const onScroll = (target) => {
 </template>
 
 <style scoped>
-.reply-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
 hr {
   opacity: 0.1;
 }

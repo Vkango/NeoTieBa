@@ -10,7 +10,7 @@
       <div class="thread-media">
         <UserReplyContentDisplay v-for="item in media" :content="item.postContent" :createTime="item.createTime" />
       </div>
-      <div class="thread-info">
+      <div class="thread-info" v-if="create_time != 0">
         <span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>{{ create_time1 }}
       </div>
       <div class="thread-info">{{ msg }}</div>

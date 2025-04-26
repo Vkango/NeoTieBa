@@ -129,6 +129,21 @@ export class tieBaAPI {
         return result;
     }
 
+
+    async get_reply_me(cookie, pn = 1) {
+        const data = `BDUSS=${cookie}&pn=${pn}`;
+        const responseData = await fetchData_post('https://c.tieba.baidu.com/c/u/feed/replyme', this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
+    }
+
+    async get_at_me(cookie, pn = 1) {
+        const data = `BDUSS=${cookie}&pn=${pn}`;
+        const responseData = await fetchData_post('https://c.tieba.baidu.com/c/u/feed/atme', this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
+    }
+
     async viewSubPost(tid, pid, page = 1) {
         // 构造请求数据
         const data = `kz=${tid}&pid=${pid}&pn=${page}`;

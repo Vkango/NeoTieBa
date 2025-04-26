@@ -31,7 +31,7 @@ const sendNotification = inject('sendNotification');
   gap: 10px;">
     <img src="/assets/spa.svg" width="120px" style="margin-bottom: 20px;filter: invert(var(--invert));">
     <div style="font-size: 220%; font-weight: bold;">欢迎回来</div>
-    <div style="font-size: 150%; margin-top: 15px; opacity: 0.5; margin-bottom: 42px;">吾等在此，静候君归</div>
+    <div style="font-size: 150%; margin-top: 15px; opacity: 0.5; margin-bottom: 84px;">吾等在此，静候君归</div>
 
   </div>
   <!-- <button @click="notify">弹出申必通知</button>
