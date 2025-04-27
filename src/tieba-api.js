@@ -128,7 +128,35 @@ export class tieBaAPI {
         const result = await JSON.parse(response).data.user_id; // 解析JSON数据
         return result;
     }
+    async getPersonalized(page = 1, loadType = 1) {
 
+        const data = [
+            `load_type=${loadType}`,
+            `pn=${page}`,
+            `_client_version=11.10.8.6`,
+            'need_tags=0',
+            'page_thread_count=15',
+            'pre_ad_thread_count=0',
+            'sug_count=0',
+            'tag_code=0',
+            'q_type=1',
+            'need_forumlist=0',
+            'new_net_type=1',
+            'new_install=0',
+            `request_time=${Date.now()}`,
+            'invoke_source=',
+            'scr_dip=2',
+            'scr_h=1920',
+            'scr_w=1080'
+        ].join('&');
+
+        const responseData = await fetchData_post(
+            'https://c.tieba.baidu.com/c/f/excellent/personalized',
+            this.calcSign(data)
+        );
+
+        return JSON.parse(responseData);
+    }
 
     async get_reply_me(cookie, pn = 1) {
         const data = `BDUSS=${cookie}&pn=${pn}`;

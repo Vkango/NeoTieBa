@@ -15,48 +15,62 @@ const login_info = ref({
     avatar: '',
     finished: false
 });
+const cleanup = () => {
+    if (qr_api.scanTimer) {
+        clearInterval(qr_api.scanTimer);
+        qr_api.scanTimer = null;
+    }
+    qr_api.isCancelled = true;
+    qr_api.isScanning = false;
+};
+
 onBeforeUnmount(() => {
-    qr_api.isCancelled = true; // Rust API will be cancelled
+    cleanup();
+});
+
+defineExpose({
+    cleanup
 });
 const login = async () => {
-      if (qr_api.isScanning) return;
-      qr_api.isScanning = true;
-      let i = 0;
-      qr_api.scanTimer = setInterval(async () => {
+    if (qr_api.isScanning) return;
+    qr_api.isScanning = true;
+    let i = 0;
+    qr_api.scanTimer = setInterval(async () => {
+        console.log("scanTimer", i);
         i++;
         if (i === 120) {
-          qr_api.isScanning = false;
-          clearInterval(qr_api.scanTimer);
-          qr_api.refreshQRCode();
-          return;
-        }
-        try {
-          const status = await qr_api.get_scan_status();
-          console.log("login_status", status);
-          desc.value = '正在等待扫描';
-          if (status.includes('status\\":1')) {
-            desc.value = '扫描成功！请在手机上确认！';
-          }
-          if (status.includes('"status\\":0,\\"v\\":')) {
             qr_api.isScanning = false;
             clearInterval(qr_api.scanTimer);
-            const re = /"v\\":\\"(.*?)\\"/;
-            qr_api.bdussd = re.exec(status)[1];
-            const response = await qr_api.login_with_bduss();
-            const reDisplayName = /displayName": "(.*?)"/;
-            const rePortrait = /portraitUrl": "(.*?)"/;
-            const displayName = reDisplayName.exec(response);
-            const portrait = rePortrait.exec(response);
-            login_info.value.user_name = displayName[1];
-            login_info.value.avatar = portrait[1];
-            login_info.value.finished = true;
-            console.log(login_info.value);
-          }
-        } catch (error) {
-          console.error("Login error:", error);
+            qr_api.refreshQRCode();
+            return;
         }
-      }, 5000);
-    }
+        try {
+            const status = await qr_api.get_scan_status();
+            console.log("login_status", status);
+            desc.value = '正在等待扫描';
+            if (status.includes('status\\":1')) {
+                desc.value = '扫描成功！请在手机上确认！';
+            }
+            if (status.includes('"status\\":0,\\"v\\":')) {
+                qr_api.isScanning = false;
+                clearInterval(qr_api.scanTimer);
+                const re = /"v\\":\\"(.*?)\\"/;
+                qr_api.bdussd = re.exec(status)[1];
+                const response = await qr_api.login_with_bduss();
+                const reDisplayName = /displayName": "(.*?)"/;
+                const rePortrait = /portraitUrl": "(.*?)"/;
+                const displayName = reDisplayName.exec(response);
+                const portrait = rePortrait.exec(response);
+                login_info.value.user_name = displayName[1];
+                login_info.value.avatar = portrait[1];
+                login_info.value.finished = true;
+                console.log(login_info.value);
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+        }
+    }, 5000);
+}
 </script>
 
 <template>
@@ -70,7 +84,7 @@ const login = async () => {
             <div class="tip">{{ tip }}</div>
         </div>
         <div class="login-success" v-if="login_info.finished">
-            <img class="avatar" alt="avatar" :src="login_info.avatar" referrerpolicy="no-referrer"/>
+            <img class="avatar" alt="avatar" :src="login_info.avatar" referrerpolicy="no-referrer" />
             <div class="qr-title">{{ login_info.user_name }}</div>
             <div class="tip">登录成功<br>单击以添加到用户列表</div>
         </div>
@@ -83,6 +97,7 @@ const login = async () => {
     height: 110px;
     border-radius: 110px;
 }
+
 .login-success {
     background-color: rgba(var(--text-color), 0.1);
     padding: 20px 25px;
@@ -93,29 +108,35 @@ const login = async () => {
     align-items: center;
     gap: 10px;
 }
+
 .time {
     opacity: 0.5;
     font-size: 80%;
     text-align: center;
 }
+
 .tip {
     opacity: 0.5;
     text-align: center;
 }
+
 .qr-desc {
     font-size: 18px;
 }
+
 .qr-title {
     font-weight: bold;
     font-size: 30px;
     margin-bottom: 5px;
 }
+
 #qrCodeImg {
     padding: 10px;
     background-color: white;
     width: 225px;
     height: 225px;
 }
+
 .qr-content {
     background-color: rgba(var(--text-color), 0.1);
     padding: 20px 25px;
@@ -125,6 +146,7 @@ const login = async () => {
     gap: 10px;
     text-align: center;
 }
+
 .qrcode-login {
     display: flex;
     justify-content: center;

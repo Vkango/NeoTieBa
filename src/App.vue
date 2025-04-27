@@ -80,6 +80,12 @@ const userNameClicked = (uid) => {
   TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick }, undefined, undefined, "UID " + uid)
 }
 
+const QRLogin = () => {
+  const key = generateUniqueId('QRLogin');
+  TabsRef.value.addTab(key, "/assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key }, true, true)
+}
+
+
 onMounted(() => {
   nextTick(() => {
     errorService.addHandler((error, info) => {
@@ -144,9 +150,23 @@ function onSwitchTabs(id) {
       break;
   }
 }
+
+const onDeactivated = (key) => {
+  const component = instance.refs.keepAlive?.cache?.get(key)?.component;
+  if (component) {
+    component.deactivated?.();
+  }
+};
+
 const onTabDelete = (key) => {
   handler.remove(key);
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+  if (activeTab.value.key === key) {
+    activeTab.value = {};
+  }
+  nextTick(() => {
+    instance.refs.keepAlive.$forceUpdate();
+  });
 }
 const onFavouriteClicked = () => {
   const key = generateUniqueId('Favourite');
@@ -179,7 +199,7 @@ const addBar = async (id) => {
       break;
     case 4:
       key = generateUniqueId('Setting');
-      TabsRef.value.addTab(key, "/assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo }, true)
+      TabsRef.value.addTab(key, "/assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo, onQRLogin: QRLogin }, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     default:
@@ -204,7 +224,8 @@ const onShowTabs = () => {
     </div>
     <div class="container">
       <keep-alive ref="keepAlive">
-        <component :is="activeTab.component" :key="activeTab.key" v-bind="activeTab.props" />
+        <component @deactivated="onDeactivated(activeTab.key)" :is="activeTab.component" :key="activeTab.key"
+          v-bind="activeTab.props" />
       </keep-alive>
     </div>
     <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs" />

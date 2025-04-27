@@ -1,6 +1,8 @@
 <script setup>
 import Container from '../components/Container.vue';
 import RippleButton from '../components/RippleButton.vue';
+import { defineEmits } from 'vue';
+const emit = defineEmits(['QRLogin'])
 </script>
 
 <template>
@@ -20,7 +22,7 @@ import RippleButton from '../components/RippleButton.vue';
           </div>
 
         </div>
-        <RippleButton>账号管理</RippleButton>
+        <RippleButton @click="emit('QRLogin')">账号管理</RippleButton>
         <RippleButton>查看主页</RippleButton>
       </div>
       <h3>通用</h3>
