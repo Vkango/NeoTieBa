@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 bduss.txt
 cookie.txt
+users.json

@@ -96,6 +96,11 @@ function getTabStyle(tab) {
   };
 }
 
+const findIdByKey = (searchKey) => {
+  const tab = tabs.value.find(tab => tab.key == searchKey);
+  return tab ? tab.id : -1;
+};
+
 function startDrag(event, tab) {
   if (tab.isClosing) return;
   if (event.target.id === 'close') return;
@@ -352,7 +357,8 @@ defineExpose({
   setIcon,
   tabs,
   handleClick,
-  handleDelete
+  handleDelete,
+  findIdByKey
 });
 </script>
 

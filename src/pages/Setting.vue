@@ -1,8 +1,13 @@
 <script setup>
 import Container from '../components/Container.vue';
 import RippleButton from '../components/RippleButton.vue';
-import { defineEmits } from 'vue';
+import { defineEmits, onMounted, ref } from 'vue';
+import { getUserList } from '../user-manage';
 const emit = defineEmits(['QRLogin'])
+const user = ref({ user_name: '', avatar: '' });
+onMounted(async () => {
+  user.value = await getUserList();
+})
 </script>
 
 <template>
@@ -10,21 +15,20 @@ const emit = defineEmits(['QRLogin'])
     <div style="width: 80%; justify-self: center;">
       <h2>设置</h2>
       <div>调整设置内容</div>
-      <h3>账户列表</h3>
-      <div class="current-user">
-        <div style="opacity: 0.5;">当前账户</div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-          <img class="avatar" :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/'"
-            referrerpolicy="no-referrer">
+      <h3>账号列表</h3>
+      <div>轻按来切换用户，右键可进行更多操作。若登录信息失效，重新进行登录即可更新用户信息。</div>
+      <RippleButton class="current-user" style="align-items: left; text-align: left;">
+        <div v-for="item in user" style="display: flex; gap: 10px; margin: 10px 0;">
+          <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
           <div class="desc">
-            <div class="title" style="font-weight: bold;">用户名</div>
-            <div class="description">用户描述</div>
+            <div class="title" style="font-weight: bold;">{{ item.user_name }}</div>
+            <div class="description">{{ item.current ? '当前账户' : '已登录' }}</div>
           </div>
 
         </div>
-        <RippleButton @click="emit('QRLogin')">账号管理</RippleButton>
-        <RippleButton>查看主页</RippleButton>
-      </div>
+        <div v-if="user.length == 0">没有登录的账户。请点击添加。</div>
+        <RippleButton @click="emit('QRLogin')">扫码登录</RippleButton>
+      </RippleButton>
       <h3>通用</h3>
       <div>语言 (简体中文)</div>
 
@@ -58,7 +62,12 @@ const emit = defineEmits(['QRLogin'])
   padding: 5px 10px;
   border-radius: 5px;
   background-color: rgba(var(--text-color), 0.1);
-
   gap: 10px;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50px;
 }
 </style>

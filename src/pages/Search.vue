@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch, defineEmits } from 'vue';
-import { read_file } from '../read_file';
+import { read_file } from '../file-io';
 import { tieBaAPI } from '../tieba-api';
 import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
@@ -62,7 +62,8 @@ const onUserNameClicked = (uid) => {
         <div class="result" v-if="searchType == 0 && searchResult">
           <div v-if="searchResult.exactMatch.avatar != undefined">
             <Tag>最佳匹配</Tag>
-            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" @click="emit('BarNameClicked', searchResult.exactMatch.forum_name)">
                 <img class="avatar" :src="searchResult.exactMatch.avatar" referrerpolicy="no-referrer">
                 <div style="margin-left: 5px;">
@@ -74,7 +75,8 @@ const onUserNameClicked = (uid) => {
           </div>
           <div v-if="searchResult.fuzzyMatch[0].avatar != undefined">
             <Tag>相关匹配</Tag>
-            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" v-for="item in searchResult.fuzzyMatch"
                 @click="emit('BarNameClicked', item.forum_name)">
                 <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
@@ -103,7 +105,8 @@ const onUserNameClicked = (uid) => {
         <div class="result" v-if="searchType == 2 && searchResult">
           <div v-if="searchResult.exactMatch.id != undefined">
             <Tag>最佳匹配</Tag>
-            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" @click="emit('UserNameClicked', searchResult.exactMatch.id)">
                 <img class="avatar" :src="searchResult.exactMatch.portrait" referrerpolicy="no-referrer">
                 <div style="margin-left: 5px;">
@@ -116,7 +119,8 @@ const onUserNameClicked = (uid) => {
           </div>
           <div v-if="searchResult.fuzzyMatch[0].id != undefined">
             <Tag>相关匹配</Tag>
-            <div style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" v-for="item in searchResult.fuzzyMatch"
                 @click="emit('UserNameClicked', item.id)">
                 <img class="avatar" :src="item.portrait" referrerpolicy="no-referrer">

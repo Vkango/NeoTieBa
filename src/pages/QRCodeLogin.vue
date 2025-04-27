@@ -1,19 +1,29 @@
 <script setup>
-import { onMounted, ref, onBeforeUnmount } from 'vue';
+import { onMounted, ref, onBeforeUnmount, defineProps, inject } from 'vue';
 import Container from '../components/Container.vue';
 import { ApiLogin } from '../qr-login.js';
+import RippleButton from '../components/RippleButton.vue';
+import { add_user } from '../user-manage.js';
+import Tip from '../components/Notification/Tip.vue';
 const qr_api = new ApiLogin();
 onMounted(async () => {
     await qr_api.get_auth_cookie();
-    console.log('get auth cookie done', qr_api.BAIDUID);
     login();
+})
+const props = defineProps({
+    key_: {
+        type: Number,
+        required: true
+    }
 })
 const desc = ref("正在等待扫描");
 const tip = ref("使用百度贴吧扫一扫以登录")
 const login_info = ref({
     user_name: '',
     avatar: '',
-    finished: false
+    finished: false,
+    bduss: '',
+    stoken: ''
 });
 const cleanup = () => {
     if (qr_api.scanTimer) {
@@ -36,7 +46,7 @@ const login = async () => {
     qr_api.isScanning = true;
     let i = 0;
     qr_api.scanTimer = setInterval(async () => {
-        console.log("scanTimer", i);
+        // console.log("scanTimer", i);
         i++;
         if (i === 120) {
             qr_api.isScanning = false;
@@ -59,17 +69,40 @@ const login = async () => {
                 const response = await qr_api.login_with_bduss();
                 const reDisplayName = /displayName": "(.*?)"/;
                 const rePortrait = /portraitUrl": "(.*?)"/;
+                const bduss = /bduss": "(.*?)"/;
+                const stoken = /stoken": "(.*?)"/;
                 const displayName = reDisplayName.exec(response);
                 const portrait = rePortrait.exec(response);
                 login_info.value.user_name = displayName[1];
                 login_info.value.avatar = portrait[1];
                 login_info.value.finished = true;
-                console.log(login_info.value);
+                login_info.value.bduss = bduss.exec(response)[1];
+                login_info.value.stoken = stoken.exec(response)[1];
+                console.log(login_info.value, response);
             }
         } catch (error) {
             console.error("Login error:", error);
         }
     }, 5000);
+}
+const sendNotification = inject('sendNotification');
+const deleteTab = inject('deleteTab');
+const finishLogin = async () => {
+    cleanup();
+
+    const is_update = await add_user({
+        user_name: login_info.value.user_name,
+        avatar: login_info.value.avatar,
+        bduss: login_info.value.bduss,
+        stoken: login_info.value.stoken
+    });
+    deleteTab(props.key_);
+    sendNotification(
+        '大功告成',
+        Tip,
+        { Tip: is_update ? '更新用户信息：' + login_info.value.user_name : '添加新用户：' + login_info.value.user_name },
+        3000)
+
 }
 </script>
 
@@ -83,11 +116,11 @@ const login = async () => {
             </div>
             <div class="tip">{{ tip }}</div>
         </div>
-        <div class="login-success" v-if="login_info.finished">
+        <RippleButton class="login-success" v-if="login_info.finished" @click="finishLogin()">
             <img class="avatar" alt="avatar" :src="login_info.avatar" referrerpolicy="no-referrer" />
             <div class="qr-title">{{ login_info.user_name }}</div>
-            <div class="tip">登录成功<br>单击以添加到用户列表</div>
-        </div>
+            <div class="tip">登录成功<br>轻按来添加到用户列表</div>
+        </RippleButton>
     </Container>
 </template>
 

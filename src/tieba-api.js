@@ -79,7 +79,6 @@ export class tieBaAPI {
         const response = await fetchData_with_cookie(url, cookie);
         const result = await JSON.parse(response); // 解析JSON数据
         return result;
-    } catch(error) {
     }
 
     async viewThread(id, page = 1) {
@@ -114,6 +113,14 @@ export class tieBaAPI {
         return result;
     }
 
+    async followbar_list(bduss, stoken) {
+        // 构造请求数据
+        const data = `BDUSS=${bduss}&stoken=${stoken}`;
+        console.log(this.calcSign(data))
+        const responseData = await fetchData_post('https://c.tieba.baidu.com/c/f/forum/getforumlist', this.calcSign(data));
+        const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
+    }
     async myProfile(cookie) {
 
         const url = `https://tieba.baidu.com/mg/o/profile?format=json&eqid=&refer=`;

@@ -2,17 +2,16 @@
 import RippleButton from '../components/RippleButton.vue';
 import { onMounted, ref } from 'vue';
 import Tag from '../components/Tag.vue';
-import { read_file } from '../read_file';
+import { get_current_user_cookies, get_current_user } from '../user-manage';
 import { tieBaAPI } from '../tieba-api';
 import Container from '../components/Container.vue';
 import Loading from '../components/Loading.vue';
 const naviListItem = ref([]);
 const isLoading = ref(true);
 onMounted(async () => {
-  const bduss = await read_file(import.meta.env.PROD ? './cookie.txt' : '../cookie.txt');
+  const cookie = await get_current_user();
   const api = new tieBaAPI;
-
-  naviListItem.value = (await api.FollowBar(bduss, 1)).data.like_forum.list;
+  naviListItem.value = (await api.followbar_list(cookie.bduss, cookie.stoken)).forum_info.sort((a, b) => b.user_level - a.user_level);;
   isLoading.value = false;
 })
 const emit = defineEmits(['BarNameClicked']);
@@ -29,8 +28,9 @@ const emit = defineEmits(['BarNameClicked']);
             <div style="margin-left: 5px;">
               <div class="bar-name">{{ item.forum_name }} </div>
               <div class="desc"><span class="level"
-                  :class="{ 'color1': item.level_id >= 0 && item.level_id < 4, 'color2': item.level_id >= 4 && item.level_id < 10, 'color3': item.level_id >= 10 && item.level_id < 16, 'color4': item.level_id > 16 }">{{
-                    item.level_id }}</span><span>热度 {{ item.hot_num }}</span></div>
+                  :class="{ 'color1': item.user_level >= 0 && item.user_level < 4, 'color2': item.user_level >= 4 && item.user_level < 10, 'color3': item.user_level >= 10 && item.user_level < 16, 'color4': item.user_level > 16 }">{{
+                    item.user_level }}</span><span>{{ item.user_level_name }} | {{ item.is_sign_in ? `已签` : `未签` }}</span>
+              </div>
             </div>
           </button>
         </div>

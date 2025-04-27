@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch, defineEmits, inject } from 'vue';
-import { read_file } from '../read_file';
+import { get_current_user_bduss, get_current_user_cookies } from '../user-manage';
 import { tieBaAPI } from '../tieba-api';
 import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
@@ -13,6 +13,7 @@ const returnData2 = ref();
 const returnData3 = ref();
 const currentPage = ref(1);
 const openImageViewer = inject('openImageViewer');
+const deleteTab = inject('deleteTab');
 const isThreadsLoading = ref(true);
 const atReplyPage = ref(true);
 let uid = undefined;
@@ -21,11 +22,11 @@ const api = new tieBaAPI;
 const emit = defineEmits(['FavouriteClicked', 'userNameClicked', 'ThreadClicked']);
 onMounted(async () => {
   isLoading.value = true;
-  const cookie = await read_file(import.meta.env.PROD ? './cookie.txt' : '../cookie.txt');
+  const cookie = await get_current_user_cookies();
 
   uid = await api.get_self_id(cookie);
   returnData.value = (await api.user_info(uid, 1)).data;
-  const bduss = await read_file(import.meta.env.PROD ? './bduss.txt' : '../bduss.txt')
+  const bduss = await get_current_user_bduss();
   returnData2.value = (await api.get_reply_me(bduss, 1)).reply_list;
   console.log(await api.get_at_me(bduss, 1))
   has_more = returnData2.length != 0;
@@ -37,7 +38,7 @@ onMounted(async () => {
 const switchPage = async () => {
   currentPage.value = 1;
   isThreadsLoading.value = true;
-  const bduss = await read_file(import.meta.env.PROD ? './bduss.txt' : '../bduss.txt')
+  const bduss = await get_current_user_bduss();
   if (atReplyPage.value) {
     returnData2.value = (await api.get_reply_me(bduss, 1)).reply_list;
     has_more = returnData2.length != 0;
@@ -61,7 +62,7 @@ const onScroll = (target) => {
 }
 const nextPage = async () => {
   currentPage.value++;
-  const bduss = await read_file(import.meta.env.PROD ? './bduss.txt' : '../bduss.txt')
+  const bduss = await get_current_user_bduss();
   isThreadsLoading.value = true;
   let pageData = [];
   if (atReplyPage.value) {
@@ -87,6 +88,17 @@ const nextPage = async () => {
 
 function onThreadClicked(id) {
   emit('ThreadClicked', id);
+}
+
+const props = defineProps({
+  key_: {
+    type: Number,
+    required: true
+  }
+})
+
+const history = () => {
+  deleteTab(props.key_); // 自爆测试
 }
 </script>
 
@@ -124,7 +136,8 @@ function onThreadClicked(id) {
                 class="material-symbols-outlined">favorite</span>收藏</div>
           </RippleButton>
           <RippleButton class="my-btn">
-            <div class="button-content"><span class="material-symbols-outlined">history</span>历史</div>
+            <div class="button-content" @click="history()"><span class="material-symbols-outlined">history</span>历史
+            </div>
           </RippleButton>
           <RippleButton class="my-btn">
             <div class="button-content" @click="emit('userNameClicked', uid)"><span

@@ -49,6 +49,9 @@ const setTabInfo = (info) => {
 provide('openImageViewer', (url) => {
   onOpenImageViewer(url);
 })
+provide('deleteTab', (key) => {
+  TabsRef.value.handleDelete(TabsRef.value.findIdByKey(key));
+})
 
 const onOpenImageViewer = (url) => {
   imageViewerVisibility.value = true;

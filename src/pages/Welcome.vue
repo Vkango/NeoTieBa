@@ -1,18 +1,23 @@
 <script setup>
 import Container from '../components/Container.vue';
 import { ref, inject } from 'vue';
-import LoadingWithTip from '../components/Notification/LoadingWithTip.vue';
+import Tip from '../components/Notification/Tip.vue';
 const isDev = ref(!import.meta.env.PROD);
-
-const sendNotification = inject('sendNotification');
-
-// const notify = () => {
-//   sendNotification(
-//     '我是米米世界玩家',
-//     LoadingWithTip,
-//     { Tip: '我是米米世界玩家捏' },
-//     3000)
-// };
+const props = defineProps({
+  key_: {
+    type: Number,
+    required: true
+  }
+})
+const sendNotification = inject('deleteTab');
+const notify = () => {
+  sendNotification(props.key_);
+  // sendNotification(
+  //   '我是米米世界玩家',
+  //   Tip,
+  //   { Tip: '我是米米世界玩家捏' },
+  //   3000)
+};
 
 </script>
 
@@ -34,8 +39,8 @@ const sendNotification = inject('sendNotification');
     <div style="font-size: 150%; margin-top: 15px; opacity: 0.5; margin-bottom: 84px;">吾等在此，静候君归</div>
 
   </div>
-  <!-- <button @click="notify">弹出申必通知</button>
-    <button @click="throw Error('跌我错了');">千万别点</button> -->
+  <!-- <button @click="notify">弹出申必通知</button> -->
+  <!--<button @click="throw Error('跌我错了');">千万别点</button> -->
 </template>
 
 <style scoped></style>

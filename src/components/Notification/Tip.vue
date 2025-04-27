@@ -1,6 +1,5 @@
 <template>
     <div id="loading-with-tip">
-        <img src="/assets/loading.svg" width="16" height="16"></img>
         <div id="content">{{ Tip }}</div>
     </div>
 </template>
@@ -25,11 +24,9 @@ defineProps({
 }
 
 #content {
-    left: 32px;
     display: inline-block;
-    margin: auto;
     height: fit-content;
-    margin-left: 10px;
     word-break: break-all;
+    text-align: left;
 }
 </style>

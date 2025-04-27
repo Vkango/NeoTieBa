@@ -2,7 +2,7 @@
 import RippleButton from '../components/RippleButton.vue';
 import { onMounted, ref } from 'vue';
 import Tag from '../components/Tag.vue';
-import { read_file } from '../read_file';
+import { get_current_user_bduss } from '../user-manage';
 import { tieBaAPI } from '../tieba-api';
 import Container from '../components/Container.vue';
 import Loading from '../components/Loading.vue';
@@ -15,7 +15,7 @@ const api = new tieBaAPI;
 let bduss = "";
 const threadList = ref([]);
 onMounted(async () => {
-  bduss = "BDUSS=" + await read_file(import.meta.env.PROD ? './bduss.txt' : '../bduss.txt');
+  bduss = "BDUSS=" + await get_current_user_bduss();
   loadData()
 })
 const loadData = async () => {

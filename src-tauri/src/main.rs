@@ -1,8 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-mod read_file;
+mod file_io;
 mod request;
-use read_file::read_file;
+use file_io::{read_file, write_file};
 use request::{
     fetch_data, fetch_data_buffer, fetch_data_post, fetch_data_with_cookie, fetch_data_with_headers,
 };
@@ -51,6 +51,7 @@ fn main() {
             fetch_data_command,
             fetch_data_with_headers_command,
             read_file,
+            write_file,
             fetch_data_with_cookie,
             fetch_data_post,
             fetch_data_buffer

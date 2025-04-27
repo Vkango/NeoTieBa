@@ -27,25 +27,9 @@
 
 运行Dev版：`npm run tauri dev`
 
-可临时使用 Cookie 进行登录（可以在浏览器中打开百度贴吧，登录后开 DevTools 抓取请求包 Cookie 内容。
+添加你的账号：设置-账号列表-扫码登录。
 
-在根目录 (此 README.md 同目录) 下放置 `bduss.txt` ， `cookie.txt` 对应网页端 Cookie ：
-
-其中 `bduss.txt` 内容像这样：
-
-```
-DhuSjZjNDA3cHBTRxxxxxxxxAAAAAAAAAAAAAAAAAAAAAAnw
-```
-
-需要删除 `BDUSS=` 前缀。
-
-`cookie.txt` 内容像这样：
-
-```
-BDUSS=DhuSjZjNDA3cHBTRxxxxxxxxAAAAAAAAAAAAAAAAAAAAAAnw; STOKEN=xxxxxxxxxxxxxxxxxbb;
-```
-
-即 BDUSS 和 STOKEN 都要包含。
+扫码登录可使用支持扫码的任意百度旗下产品：贴吧、网盘、百度客户端等。
 
 
 
@@ -77,7 +61,7 @@ BDUSS=DhuSjZjNDA3cHBTRxxxxxxxxAAAAAAAAAAAAAAAAAAAAAAnw; STOKEN=xxxxxxxxxxxxxxxxx
 
 #### 搜索相关
 
-- [ ] 搜索页
+- [x] 搜索页
 
 #### 程序相关
 
