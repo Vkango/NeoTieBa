@@ -1,7 +1,7 @@
 <p align="center">
 <img height="300" width="300" src="./app-icon.png" alt="pic"/>
 </p>
-<div style="align: center">
+<div align="center">
 
 # NeoTieBa
 
