@@ -5,6 +5,7 @@ import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
 import Tag from '../components/Tag.vue';
 import UserReply from '../components/UserReply.vue';
+
 const returnData = ref({});
 const returnData1 = ref({});
 const returnData2 = ref({});

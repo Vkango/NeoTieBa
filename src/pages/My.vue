@@ -7,6 +7,7 @@ import Container from '../components/Container.vue';
 import Tag from '../components/Tag.vue';
 import RippleButton from '../components/RippleButton.vue';
 import UserReply from '../components/UserReply.vue';
+import { replaceEmoticonsWithImages } from '../emotion2code.js';
 const returnData = ref({});
 const isLoading = ref(true);
 const returnData2 = ref();
@@ -23,12 +24,10 @@ const emit = defineEmits(['FavouriteClicked', 'userNameClicked', 'ThreadClicked'
 onMounted(async () => {
   isLoading.value = true;
   const cookie = await get_current_user_cookies();
-
   uid = await api.get_self_id(cookie);
   returnData.value = (await api.user_info(uid, 1)).data;
   const bduss = await get_current_user_bduss();
   returnData2.value = (await api.get_reply_me(bduss, 1)).reply_list;
-  console.log(await api.get_at_me(bduss, 1))
   has_more = returnData2.length != 0;
   isLoading.value = false;
   isThreadsLoading.value = false;
@@ -180,9 +179,9 @@ const history = () => {
           <TransitionGroup name="fade1">
             <div class="reply-list" v-if="atReplyPage">
               <UserReply @ThreadClicked="onThreadClicked(item.thread_id)" v-for="item in returnData2" msg=""
-                :user_name="item.replyer.name || item.replyer.name_show" :thread_title="item.content"
-                :avatar="item.replyer.portrait"
-                :media="[{ postContent: [{ type: 0, text: item.quote_content }], createTime: String(item.time) }]"
+                :user_name="item.replyer.name || item.replyer.name_show"
+                :thread_title="replaceEmoticonsWithImages(item.content)" :avatar="item.replyer.portrait"
+                :media="[{ postContent: [{ type: 0, text: replaceEmoticonsWithImages(item.quote_content) }], createTime: String(item.time) }]"
                 :create_time="0" :threadId="item.thread_id">
               </UserReply>
             </div>

@@ -3,6 +3,12 @@
     @mousemove="handleDraggingMaxized">
     <div class="title">{{ title }}</div>
     <div class="controls" @mouseup.stop @mouseleave.stop @mousedown.stop>
+      <RippleButton class="control-button" style="padding: 0; width: 48px; height: 45px;" id="avatar"
+        @click="emit('showNotificationBox')">
+        <img class="avatar" style="width: 20px; height: 20px; border-radius: 20px; padding: 0; margin-top: 5px;"
+          :src="user.avatar">
+        <div id="msgCount" v-if="msgCount > 0">{{ msgCount > 99 ? `99+` : msgCount }}</div>
+      </RippleButton>
       <RippleButton class="control-button" @click="emit('showTabs')"> <!--Tabs-->
         <img class="icon" src="/assets/list.svg">
       </RippleButton>
@@ -25,13 +31,18 @@
 import { ref, onMounted, defineEmits } from 'vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import RippleButton from './RippleButton.vue';
+import { get_current_user } from '../user-manage';
 const isMaximized = ref(false);
 const isMouseDown = ref(false);
 const isMoved = ref(false);
 const msgCount = ref(0);
+const user = ref({ user_name: '', avatar: '' });
 onMounted(async () => {
   isMaximized.value = !getCurrentWindow().isMaximized();
   await getCurrentWindow().onResized(handleResize);
+  const usr = await get_current_user()
+  user.value.name = usr.name;
+  user.value.avatar = usr.avatar;
 })
 const handleResize = async () => {
   const window = getCurrentWindow();
@@ -85,14 +96,30 @@ const closeWindow = async () => {
   await window.close();
 };
 
-const emit = defineEmits(['showTabs']);
+const emit = defineEmits(['showTabs', 'showNotificationBox']);
 
 </script>
 
 
 <style scoped>
+#avatar:hover {
+  opacity: 1;
+}
+
+#avatar {
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
 .icon {
   filter: invert(var(--invert));
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+
+  overflow: hidden;
 }
 
 .search-box {
@@ -104,15 +131,17 @@ const emit = defineEmits(['showTabs']);
 }
 
 #msgCount {
+  opacity: 1;
   position: absolute;
   right: 6px;
-  bottom: 3px;
+  bottom: 10px;
   padding: 0 3px;
-  background-color: rgba(var(--text-color), 0.1);
+  background-color: rgba(var(--background-color), 0.288);
   backdrop-filter: blur(10px);
   min-width: 10px;
   height: 16px;
   border-radius: 10px;
+  color: white;
 
 }
 

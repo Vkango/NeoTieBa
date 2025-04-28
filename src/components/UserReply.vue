@@ -6,7 +6,7 @@
       <div class="user-name">{{ user_name }}</div>
     </div>
     <div class="thread-preview">
-      <div class="thread-title">{{ thread_title }}</div>
+      <div class="thread-title" v-html="thread_title"></div>
       <div class="thread-media">
         <UserReplyContentDisplay v-for="item in media" :content="item.postContent" :createTime="item.createTime" />
       </div>

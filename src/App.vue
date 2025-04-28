@@ -19,7 +19,7 @@ import Notification from "./components/Notification.vue";
 import LoadingWithTip from './components/Notification/LoadingWithTip.vue';
 import { errorService } from './error-service';
 import ImageViewer from './components/ImageViewer.vue';
-
+import NotificationBox from './components/NotificationBox.vue';
 const notificationComponent = ref(null);
 
 const imageViewerVisibility = ref(false);
@@ -36,6 +36,7 @@ const activeTab = ref({});
 const TabsRef = ref(null);
 const cachedTabs = ref([]);
 const showTabList = ref(false);
+const showNotificationBox = ref(false);
 const onBarThreadClick = (id) => {
   if (id == undefined) throw new Error("贴子ID为空！");
   const key = generateUniqueId('ViewThread' + id);
@@ -215,6 +216,10 @@ const addBar = async (id) => {
 const onShowTabs = () => {
   showTabList.value = !showTabList.value;
 }
+
+const onshowNotificationBox = () => {
+  showNotificationBox.value = !showNotificationBox.value;
+}
 </script>
 
 <template>
@@ -231,47 +236,50 @@ const onShowTabs = () => {
           v-bind="activeTab.props" />
       </keep-alive>
     </div>
-    <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs" />
+    <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs"
+      @showNotificationBox="onshowNotificationBox" />
     <Tabs ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete">
     </Tabs>
-    <Transition name="tab-list">
-      <TabList class="tab-list" v-if="showTabList" :tabsRef="TabsRef"></TabList>
+    <Transition name="notification-box">
+      <TabList class="notification-box" v-if="showTabList" :tabsRef="TabsRef"></TabList>
+    </Transition>
+    <Transition name="notification-box">
+      <NotificationBox class="notification-box" v-if="showNotificationBox" :tabsRef="TabsRef"></NotificationBox>
     </Transition>
     <Notification ref="notificationComponent" />
-    <!-- </div> -->
     <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
     </ImageViewer>
   </div>
 </template>
 
 <style scoped>
-.tab-list-enter-active,
-.tab-list-leave-active {
+.notification-box-enter-active,
+.notification-box-leave-active {
   transition: all 0.3s ease;
 }
 
-.tab-list-enter-from,
-.tab-list-leave-to {
-  opacity: 0;
+.notification-box-enter-from,
+.notification-box-leave-to {
+
   width: 0%;
-  transform: translateY(-10%);
+  transform: translateX(100%);
 }
 
 
-.tab-list {
+.notification-box {
   position: absolute;
   right: 10px;
-  top: 45px;
-  width: 200px;
-  background-color: rgba(var(--background-color), 0.5);
-  padding: 10px;
-  border-radius: 5px;
+  top: 55px;
+  width: 320px;
+  background-color: rgba(34, 34, 34, 1);
+  /* background-blend-mode: overlay; */
+  padding: 0 10px;
+  border-radius: 7px;
   backdrop-filter: blur(20px);
-  max-height: calc(100% - 80px);
+  max-height: calc(100% - 70px);
   overflow-y: auto;
+  border: 1.5px solid rgba(var(--text-color), 0.1);
 }
-
-
 
 
 

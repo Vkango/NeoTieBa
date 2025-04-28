@@ -1,11 +1,10 @@
 <template>
-  <div v-if="tabsRef != undefined" style="padding-bottom: 10px;">
+  <div class="notification-box-container" v-if="tabsRef != undefined">
 
-    <div style="font-weight: bold; margin-left: 10px; margin: 10px; font-size: 15px;">打开的标签 ({{ tabsRef.tabs.length
-      -
+    <div style="font-weight: bold; margin-left: 10px; margin: 10px; font-size: 15px;">通知 ({{ tabsRef.tabs.length -
       1 }})</div>
     <div class="tabs-list-">
-      <transition-group name="tab-list" tag="div" class="tabs-list-">
+      <transition-group name="notification-bo" tag="div" class="tabs-list-">
         <RippleButton class="tab-ripplebutton" v-for="i in tabsRef.tabs"
           :class="{ 'selected': i.selected, 'invert': i.icon_invert, 'show': !i.show }" :key="i"
           @click="tabsRef.handleClick(i.id)">
@@ -48,16 +47,9 @@ defineProps({
 </script>
 
 <style scoped>
-.tab-list-enter-active,
-.tab-list-leave-active {
-  transition: all 0.3s ease;
-}
-
-.tab-list-enter-from,
-.tab-list-leave-to {
-  opacity: 0;
-  width: 0%;
-  transform: translateY(100%);
+.notification-box-container {
+  width: 100%;
+  height: 100%;
 }
 
 #close {
