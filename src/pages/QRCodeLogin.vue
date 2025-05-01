@@ -99,6 +99,7 @@ const finishLogin = async () => {
     deleteTab(props.key_);
     sendNotification(
         '大功告成',
+        '<span class="material-symbols-outlined">user</span>用户管理',
         Tip,
         { Tip: is_update ? '更新用户信息：' + login_info.value.user_name : '添加新用户：' + login_info.value.user_name },
         3000)

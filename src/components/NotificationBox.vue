@@ -1,11 +1,11 @@
 <template>
   <div class="notification-box-container" v-if="tabsRef != undefined">
 
-    <div style="font-weight: bold; margin-left: 10px; margin: 10px; font-size: 15px;">通知 ({{ tabsRef.tabs.length -
-      1 }})</div>
+    <div style="font-weight: bold; margin-left: 10px; margin: 10px; font-size: 15px;">通知 ({{
+      tabsRef.notifications.length }})</div>
     <div class="tabs-list-">
       <transition-group name="notification-bo" tag="div" class="tabs-list-">
-        <RippleButton class="tab-ripplebutton" v-for="i in tabsRef.tabs"
+        <!-- <RippleButton class="tab-ripplebutton" v-for="i in tabsRef.tabs"
           :class="{ 'selected': i.selected, 'invert': i.icon_invert, 'show': !i.show }" :key="i"
           @click="tabsRef.handleClick(i.id)">
           <div class="tab-content">
@@ -14,7 +14,21 @@
             <span class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop
               @click="tabsRef.handleDelete(i.id)">close</span>
           </div>
-        </RippleButton>
+        </RippleButton> -->
+
+        <div v-for="item in tabsRef.notifications" :key="item.id" :data-id="item.id" v-show="item.visible"
+          class="notification">
+          <RippleButton class="notification-content">
+            <div class="notification-title" v-html="item.title"></div>
+            <div class="notification-message">
+              <component :is="item.component" v-bind="item.props"></component>
+            </div>
+            <Button class="notification-close">
+              <span class="material-symbols-outlined" @click="close(item.id)" @mouseup.stop id="close"
+                style="font-size: 12px;">close</span>
+            </Button>
+          </RippleButton>
+        </div>
       </transition-group>
     </div>
   </div>

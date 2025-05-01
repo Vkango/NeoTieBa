@@ -20,18 +20,33 @@ import LoadingWithTip from './components/Notification/LoadingWithTip.vue';
 import { errorService } from './error-service';
 import ImageViewer from './components/ImageViewer.vue';
 import NotificationBox from './components/NotificationBox.vue';
+import Tip from './components/Notification/Tip.vue';
+import Debug from './pages/Debug.vue';
 const notificationComponent = ref(null);
 
 const imageViewerVisibility = ref(false);
 const imageViewerSrc = ref('');
+const naviListItem = ref([]);
+if (! import.meta.env.PROD) {
+  naviListItem.value = [
+    { id: 0, icon: 'search', title: '搜索', selected: false },
+    { id: 1, icon: 'home', title: '首页', selected: false },
+    { id: 2, icon: 'apps', title: '贴吧', selected: false },
+    { id: 3, icon: 'person', title: '我的', selected: false },
+    { id: 4, icon: 'settings', title: '设置', selected: false },
+    { id: 5, icon: 'bug_report', title: '调试', selected: false }
+  ];
+}
+else {
+  naviListItem.value = [
+    { id: 0, icon: 'search', title: '搜索', selected: false },
+    { id: 1, icon: 'home', title: '首页', selected: false },
+    { id: 2, icon: 'apps', title: '贴吧', selected: false },
+    { id: 3, icon: 'person', title: '我的', selected: false },
+    { id: 4, icon: 'settings', title: '设置', selected: false },
+  ];
+}
 
-const naviListItem = ref([
-  { id: 0, icon: 'search', title: '搜索', selected: false },
-  { id: 1, icon: 'home', title: '首页', selected: false },
-  { id: 2, icon: 'apps', title: '贴吧', selected: false },
-  { id: 3, icon: 'person', title: '我的', selected: false },
-  { id: 4, icon: 'settings', title: '设置', selected: false }
-]);
 const activeTab = ref({});
 const TabsRef = ref(null);
 const cachedTabs = ref([]);
@@ -93,21 +108,26 @@ const QRLogin = () => {
 onMounted(() => {
   nextTick(() => {
     errorService.addHandler((error, info) => {
-      notificationComponent.value.addNotification(
-        info,
-        LoadingWithTip,
-        { Tip: error },
-        60000
-      );
+      try {
+        notificationComponent.value.addNotification(
+          info,
+          '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
+          Tip,
+          { Tip: error },
+          60000
+        )
+      }
+      catch {
+        alert('Error in application, failed to pop notification: please restart: \n' + error + '\n' + info);
+      }
+
     });
   })
-
   let key = generateUniqueId('Welcome');
   TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key }, true, false)
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
   handler.bind(keepAlive);
-
   provide('sendNotification', (title, component, props = {}, duration = 5000) => {
     notificationComponent.value.addNotification(title, component, props, duration);
   })
@@ -115,9 +135,16 @@ onMounted(() => {
 function onSwitchTabs(id) {
 
   const tabItem = TabsRef.value.getTab(id);
-  activeTab.value.component = tabItem.component;
-  activeTab.value.props = tabItem.props;
-  activeTab.value.key = tabItem.key;
+  activeTab.value = {
+    component: tabItem.component,
+    props: tabItem.props,
+    key: tabItem.key,
+    if: true,
+    origin: {
+      icon: tabItem.origin.icon,
+      title: tabItem.origin.title
+    }
+  };
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   naviListItem.value.forEach(element => {
     element.selected = false;
@@ -150,9 +177,60 @@ function onSwitchTabs(id) {
     case 'Setting':
       naviListItem.value[4].selected = true;
       break;
+    case 'Debug':
+      naviListItem.value[5].selected = true;
+      break;
     default:
       break;
   }
+}
+
+function onRefreshTab(id) {
+  const tabItem = TabsRef.value.getTab(id);
+  const key = tabItem.key;
+  const isActiveTab = activeTab.value.key === key;
+  const originalState = {
+    activeTab: isActiveTab ? { ...activeTab.value } : null,
+    tabItem: { ...tabItem }
+  };
+  handler.remove(key, true);
+  cachedTabs.value = cachedTabs.value.filter(k => k !== key);
+  if (isActiveTab) {
+    activeTab.value = {
+      ...activeTab.value,
+      if: false,
+      icon: originalState.activeTab.origin.icon,
+      title: originalState.activeTab.origin.title
+    };
+  }
+  TabsRef.value.setTab(id, {
+    ...originalState.tabItem,
+    if: false,
+    icon: originalState.tabItem.origin.icon,
+    title: originalState.tabItem.origin.title
+  });
+  const refreshPromise = new Promise((resolve) => {
+    setTimeout(() => {
+      if (isActiveTab && activeTab.value.key === key) {
+        activeTab.value = {
+          ...originalState.activeTab, if: true, icon: originalState.tabItem.origin.icon,
+          title: originalState.tabItem.origin.title
+        };
+      }
+      TabsRef.value.setTab(id, {
+        ...originalState.tabItem, if: true, icon: originalState.tabItem.origin.icon,
+        title: originalState.tabItem.origin.title
+      });
+      cachedTabs.value = [...cachedTabs.value, key];
+      resolve();
+    }, 0);
+  });
+
+  refreshPromise.then(() => {
+    nextTick(() => {
+      instance.refs.keepAlive.$forceUpdate();
+    });
+  });
 }
 
 const onDeactivated = (key) => {
@@ -203,7 +281,12 @@ const addBar = async (id) => {
       break;
     case 4:
       key = generateUniqueId('Setting');
-      TabsRef.value.addTab(key, "/assets/qr.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo, onQRLogin: QRLogin }, true)
+      TabsRef.value.addTab(key, "/assets/settings.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo, onQRLogin: QRLogin }, true)
+      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      break;
+    case 5:
+      key = generateUniqueId('Debug');
+      TabsRef.value.addTab(key, "/assets/bug.svg", "调试", Debug, { key_: key }, true, true)
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     default:
@@ -233,20 +316,23 @@ const onshowNotificationBox = () => {
     <div class="container">
       <keep-alive ref="keepAlive">
         <component @deactivated="onDeactivated(activeTab.key)" :is="activeTab.component" :key="activeTab.key"
-          v-bind="activeTab.props" />
+          v-if="activeTab.if" v-bind="activeTab.props" />
       </keep-alive>
     </div>
     <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs"
       @showNotificationBox="onshowNotificationBox" />
-    <Tabs ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete">
+    <Tabs ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"
+      @onTabRefresh="onRefreshTab">
     </Tabs>
     <Transition name="notification-box">
       <TabList class="notification-box" v-if="showTabList" :tabsRef="TabsRef"></TabList>
     </Transition>
-    <Transition name="notification-box">
-      <NotificationBox class="notification-box" v-if="showNotificationBox" :tabsRef="TabsRef"></NotificationBox>
-    </Transition>
+
     <Notification ref="notificationComponent" />
+    <Transition name="notification-box">
+      <NotificationBox class="notification-box" v-if="showNotificationBox" :tabsRef="notificationComponent">
+      </NotificationBox>
+    </Transition>
     <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
     </ImageViewer>
   </div>

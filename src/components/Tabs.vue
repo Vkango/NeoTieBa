@@ -21,7 +21,8 @@
   </transition-group>
   <Transition name="fade1">
     <TabInfo :title="tabMouseOn.title" :desc="tabMouseOn.desc" v-show="showTabInfo" @mouseenter="showTabInfo = true"
-      @mouseleave="showTabInfo = false" :componentkey="tabMouseOn.component.__name" :icon="tabMouseOn.icon">
+      @mouseleave="showTabInfo = false" :componentkey="tabMouseOn.component.__name" :icon="tabMouseOn.icon"
+      :id="tabMouseOn.id" @refresh="emit('onTabRefresh', tabMouseOn.id)">
       <div v-html="tabMouseOn.content"></div>
     </TabInfo>
   </Transition>
@@ -67,7 +68,7 @@ const stopDragging = () => {
   isMouseDown.value = false;
 };
 const tabs = ref([]);
-const emit = defineEmits(['click', 'onSwitchTabs', 'onTabDelete']);
+const emit = defineEmits(['click', 'onSwitchTabs', 'onTabDelete', 'onTabRefresh']);
 
 const closingTabs = ref([]);
 const itemPositions = ref(new Map());
@@ -311,12 +312,20 @@ const addTab = (key, icon, title, component, props, icon_invert = false, show = 
     element.selected = false;
   });
   if (found) { return; }
-  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert, show: show, position: tabs.value.length, desc: desc, content: content });
+  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert, show: show, position: tabs.value.length, desc: desc, content: content, if: true, origin: { icon: icon, title: title } });
   emit('onSwitchTabs', tabs.value.length - 1);
 };
 
 const getTab = (id) => {
   return tabs.value[id];
+};
+
+const setTab = (id, tab) => {
+  const index = tabs.value.findIndex(t => t.id === id);
+  if (index !== -1) {
+    console.log('setTab', id, tab);
+    tabs.value[index] = tab;
+  }
 };
 
 const setTitle = (key, title) => {
@@ -358,7 +367,8 @@ defineExpose({
   tabs,
   handleClick,
   handleDelete,
-  findIdByKey
+  findIdByKey,
+  setTab
 });
 </script>
 

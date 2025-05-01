@@ -5,6 +5,7 @@
         @mouseenter="pauseTimer(item.id)" @mouseleave="startTimer(item.id, item.duration)"
         @mousedown="startDrag($event, item.id)" @mouseup="endDrag(item.id)">
         <RippleButton class="notification-content">
+          <div class="notification-source" v-html="item.source"></div>
           <div class="notification-title" v-html="item.title"></div>
           <div class="notification-message">
             <component :is="item.component" v-bind="item.props"></component>
@@ -35,13 +36,14 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const addNotification = async (title, component, props = {}, duration = 5000) => {
+const addNotification = async (title, source, component, props = {}, duration = 5000) => {
   while (isClosing.value) {
     await delay(100);
   }
   const id = `${Date.now()}-${notificationCounter++}`;
   notifications.value.unshift({
     id,
+    source,
     title,
     component: markRaw(component),
     props,
@@ -130,7 +132,8 @@ defineExpose({
   addNotification,
   close,
   startTimer,
-  pauseTimer
+  pauseTimer,
+  notifications,
 });
 </script>
 <style scoped>
@@ -163,6 +166,18 @@ defineExpose({
   margin: 10px;
   margin-top: 0px;
 
+}
+
+.notification-source {
+  font-size: 12px;
+  margin-bottom: 4px;
+  text-align: left;
+  width: 250px;
+  opacity: 0.5;
+  word-wrap: break-word;
+  align-items: center;
+  display: flex;
+  gap: 5px;
 }
 
 .notification-title {
