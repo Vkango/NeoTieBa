@@ -70,6 +70,7 @@ function formatDate(timestamp) {
 }
 onMounted(() => {
   create_time1.value = ref(formatDate(props.create_time));
+  console.log(props.thread_content);
   props.thread_content.forEach((ele, index) => {
     switch (ele.type) {
 

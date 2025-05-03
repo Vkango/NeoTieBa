@@ -83,7 +83,7 @@ const props = defineProps({
           <Reply v-for="item in threadList" :like="item.agree.agree_num - item.agree.disagree_num"
             :user_name="item.author.name || item.author.name_show" :uid="item.author.id"
             @userNameClicked="onUserNameClicked" :avatar="item.author.portrait"
-            :thread_content="item.content = [] ? [{ type: 0, text: threadTitle }] : item.content"
+            :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
             :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor"
             :is_lz="item.author.id === threadList[0].author.id" :level="item.author.level_id"></Reply>
         </div>

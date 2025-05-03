@@ -64,7 +64,6 @@ const addNotification = async (title, source, component, clickHandler, props = {
   while (isClosing.value) {
     await delay(100);
   }
-  console.log(title, source, component, clickHandler, props, duration)
   const id = `${Date.now()}-${notificationCounter++}`;
   const notification = {
     id,
