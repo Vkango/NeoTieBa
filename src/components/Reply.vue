@@ -40,7 +40,6 @@ import { defineProps, onMounted, ref, defineEmits, inject } from 'vue';
 import { tieBaAPI } from '../tieba-api';
 import SubPost from './SubPost.vue';
 import { getTimeInterval } from '../helper';
-import DomToImage from 'dom-to-image';
 const openImageViewer = inject('openImageViewer');
 const content = ref('')
 const create_time1 = ref('')
@@ -72,7 +71,6 @@ function formatDate(timestamp) {
 onMounted(() => {
   create_time1.value = ref(formatDate(props.create_time));
   props.thread_content.forEach((ele, index) => {
-    console.log(ele);
     switch (ele.type) {
 
       case 0: // text
@@ -156,7 +154,6 @@ const props = defineProps({
     default: 0
   },
   tid: {
-    type: Number,
     required: true,
     default: ''
   },

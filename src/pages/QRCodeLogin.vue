@@ -46,7 +46,6 @@ const login = async () => {
     qr_api.isScanning = true;
     let i = 0;
     qr_api.scanTimer = setInterval(async () => {
-        // console.log("scanTimer", i);
         i++;
         if (i === 120) {
             qr_api.isScanning = false;
@@ -56,7 +55,6 @@ const login = async () => {
         }
         try {
             const status = await qr_api.get_scan_status();
-            console.log("login_status", status);
             desc.value = '正在等待扫描';
             if (status.includes('status\\":1')) {
                 desc.value = '扫描成功！请在手机上确认！';
@@ -78,7 +76,6 @@ const login = async () => {
                 login_info.value.finished = true;
                 login_info.value.bduss = bduss.exec(response)[1];
                 login_info.value.stoken = stoken.exec(response)[1];
-                console.log(login_info.value, response);
             }
         } catch (error) {
             console.error("Login error:", error);

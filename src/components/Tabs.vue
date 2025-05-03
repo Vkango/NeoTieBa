@@ -323,7 +323,6 @@ const getTab = (id) => {
 const setTab = (id, tab) => {
   const index = tabs.value.findIndex(t => t.id === id);
   if (index !== -1) {
-    console.log('setTab', id, tab);
     tabs.value[index] = tab;
   }
 };

@@ -1,22 +1,22 @@
 <script setup>
 import Container from '../components/Container.vue';
-import { ref, inject } from 'vue';
+import { inject } from 'vue';
 import Tip from '../components/Notification/Tip.vue';
-const isDev = ref(!import.meta.env.PROD);
 const props = defineProps({
   key_: {
     type: Number,
     required: true
   }
 })
-const sendNotification = inject('deleteTab');
+const sendNotification = inject('sendNotification');
 const notify = () => {
-  sendNotification(props.key_);
   sendNotification(
-    '我是米米世界玩家',
+    '你有一条新回复',
+    '<span class="material-symbols-outlined" style="font-size: 17px;">reply</span>消息',
     Tip,
-    { Tip: '我是米米世界玩家捏' },
-    3000)
+    { Tip: '米线山🐉：你说什么？【米线山吧】' },
+    60000
+  )
 };
 
 </script>

@@ -1,171 +1,288 @@
 <template>
-  <div class="notification-box-container" v-if="tabsRef != undefined">
-
-    <div style="font-weight: bold; margin-left: 10px; margin: 10px; font-size: 15px;">通知 ({{
-      tabsRef.notifications.length }})</div>
-    <div class="tabs-list-">
-      <transition-group name="notification-bo" tag="div" class="tabs-list-">
-        <!-- <RippleButton class="tab-ripplebutton" v-for="i in tabsRef.tabs"
-          :class="{ 'selected': i.selected, 'invert': i.icon_invert, 'show': !i.show }" :key="i"
-          @click="tabsRef.handleClick(i.id)">
-          <div class="tab-content">
-            <img class="icon" :src="getIconPath(i.icon)" referrerpolicy="no-referrer" />
-            <div class="title">{{ i.title }}</div>
-            <span class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop
-              @click="tabsRef.handleDelete(i.id)">close</span>
-          </div>
-        </RippleButton> -->
-
-        <div v-for="item in tabsRef.notifications" :key="item.id" :data-id="item.id" v-show="item.visible"
-          class="notification">
+  <div class="notification-box-container" v-if="tabsRef">
+    <div class="notification-header"
+      style="font-weight: bold; margin-left: 10px; margin-top: 10px; font-size: 15px; display: flex; align-content: center; gap: 10px">
+      <span class="notification-count">全部通知 ({{ allNotifications.length }})</span>
+      <RippleButton style="background-color: transparent; box-shadow: none; padding: 5px 10px;"
+        @click="clearNotification()">
+        <span class="material-symbols-outlined" style="font-size: 18px; align-self: center;">clear_all</span>
+      </RippleButton>
+    </div>
+    <div class="notification-list">
+      <transition-group name="fade-notify" tag="div">
+        <div v-for="item in allNotifications" :key="item.id" :data-box-id="item.id" class="notification-box-item"
+          @mousedown="startDrag($event, item.id)" @mouseup="handleMouseUp($event, item.id)">
           <RippleButton class="notification-content">
+            <div class="notification-source" v-if="item.source"
+              v-html="item.source + `<span> · ` + getTimeInterval(item.timestamp) + `</span>`"></div>
             <div class="notification-title" v-html="item.title"></div>
             <div class="notification-message">
               <component :is="item.component" v-bind="item.props"></component>
             </div>
-            <Button class="notification-close">
-              <span class="material-symbols-outlined" @click="close(item.id)" @mouseup.stop id="close"
-                style="font-size: 12px;">close</span>
-            </Button>
+            <div class="notification-actions">
+              <button class="notification-close" @mousedown.stop>
+                <span class="material-symbols-outlined" @click.stop="deleteNotification(item.id)"
+                  style="font-size: 12px;">close</span>
+              </button>
+            </div>
+            <div class="notification-timestamp" v-if="item.timestamp">
+            </div>
           </RippleButton>
         </div>
       </transition-group>
+
     </div>
+    <Transition name="fade1">
+      <div v-if="allNotifications.length === 0"
+        style="position: absolute; top: calc(50% - 100px); left: 50%; transform: translate(-50%, -50%);">
+        <div
+          style="margin-top: 50px; border-radius: 5px; justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center; opacity: 0.5; gap: 10px;">
+          <img src="/assets/inbox.svg" width="120px" style="margin-bottom: 20px;filter: invert(var(--invert));">
+          <div style="font-size: 150%; font-weight: bold;">没有通知</div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { defineProps } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import RippleButton from './RippleButton.vue';
-const getIconPath = (icon) => {
-  if (!icon) return '';
-  if (icon.startsWith('http') || icon.startsWith('data:')) {
-    return icon;
-  }
-  if (icon.startsWith('/')) {
-    return icon;
-  }
-  try {
-    return new URL(`${icon}`, import.meta.url).href;
-  } catch (e) {
-    console.error('Failed to load icon:', icon);
-    return '/assets/vue.svg';
-  }
-};
-defineProps({
+import { getTimeInterval } from '../helper';
+const dragStartX = ref(0);
+const currentDragId = ref(null);
+const dragStartTime = ref(0);
+const isDragging = ref(false);
+const dragThreshold = 5;
+const timeUpdateInterval = ref(null);
+const updateTrigger = ref(0);
+let deltaX = 0;
+const allNotifications = computed(() => {
+  updateTrigger.value;
+
+  const visible = props.tabsRef?.notifications || [];
+  const hidden = props.tabsRef?.hiddenNotifications || [];
+  return [...visible, ...hidden].sort((a, b) => {
+    const timeA = a.timestamp || Date.now();
+    const timeB = b.timestamp || Date.now();
+    return timeB - timeA;
+  });
+});
+const props = defineProps({
   tabsRef: {
     type: Object,
     required: true
   }
-})
+});
+const startTimeUpdate = () => {
+  timeUpdateInterval.value = setInterval(() => {
+    updateTrigger.value++;
+  }, 60000);
+};
+onMounted(() => {
+  startTimeUpdate();
+});
+onUnmounted(() => {
+  if (timeUpdateInterval.value) {
+    clearInterval(timeUpdateInterval.value);
+    timeUpdateInterval.value = null;
+  }
+});
+
+const clearNotification = () => {
+  allNotifications.value.forEach(element => {
+    deleteNotification(element.id);
+  });
+  allNotifications.value = [];
+};
+const deleteNotification = (id) => {
+  if (props.tabsRef?.deleteNotification) {
+    props.tabsRef.deleteNotification(id);
+  }
+};
+
+const handleNotificationClick = (item) => {
+  console.log('Notification clicked:', item);
+};
+
+
+const endDrag = () => {
+  if (currentDragId.value === null) return;
+  const currentId = currentDragId.value;
+  const notificationElement = document.querySelector(`.notification-box-item[data-box-id="${currentId}"]`);
+
+  if (notificationElement) {
+    notificationElement.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    if (Math.abs(deltaX) > 100) {
+      const direction = deltaX > 0 ? '100%' : '-100%';
+      notificationElement.style.transform = `translateX(${direction})`;
+      notificationElement.style.opacity = '0';
+      setTimeout(() => {
+        if (props.tabsRef?.deleteNotification) {
+          props.tabsRef.deleteNotification(currentId);
+        }
+      }, 300);
+    } else {
+      notificationElement.style.transform = 'translateX(0)';
+      notificationElement.style.opacity = '1';
+    }
+  }
+  isDragging.value = false;
+  currentDragId.value = null;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', endDrag);
+  deltaX = 0;
+};
+const startDrag = (event, id) => {
+  if (event.target.closest('.notification-actions')) {
+    return;
+  }
+
+  dragStartTime.value = Date.now();
+  dragStartX.value = event.clientX;
+  currentDragId.value = id;
+  isDragging.value = false;
+  deltaX = 0;
+
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', endDrag);
+};
+
+const onDrag = (event) => {
+  if (!currentDragId.value) return;
+
+  const dragDistance = Math.abs(event.clientX - dragStartX.value);
+
+  if (dragDistance > dragThreshold) {
+    isDragging.value = true;
+    deltaX = event.clientX - dragStartX.value;
+    const notificationElement = document.querySelector(`.notification-box-item[data-box-id="${currentDragId.value}"]`);
+    if (notificationElement) {
+      notificationElement.style.transition = 'none';
+      notificationElement.style.transform = `translateX(${deltaX}px)`;
+      notificationElement.style.opacity = `${1 - Math.abs(deltaX / 100)}`;
+    }
+  }
+};
+const handleMouseUp = (event, id) => {
+  if (event.target.closest('.notification-actions')) {
+    return;
+  }
+  const dragDistance = Math.abs(deltaX);
+
+  if (!isDragging.value && dragDistance < dragThreshold) {
+    handleNotificationClick(id);
+  }
+
+  endDrag();
+};
+
 </script>
 
 <style scoped>
 .notification-box-container {
   width: 100%;
   height: 100%;
-}
-
-#close {
-  position: absolute;
-  right: 10px;
-}
-
-#close:hover {
-  opacity: 0.5;
-}
-
-.icon {
-  width: 16px;
-  height: 16px;
-  border-radius: 16px;
-}
-
-
-.tab-ripplebutton:hover {
-  background-color: rgba(var(--text-color), 0.1);
-}
-
-.tab-ripplebutton {
-  text-align: left;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 5px 10px;
-  font-size: 13px;
-  font-weight: normal;
-  height: 35px;
-  width: 100%;
-  transition: all 0.3s ease;
-}
-
-.tab-content {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
-  align-items: center;
-}
-
-.title {
-  white-space: nowrap;
+  flex-direction: column;
   overflow: hidden;
-  text-overflow: ellipsis;
-  position: absolute;
-  left: 36px;
-  width: calc(100% - 60px);
 }
 
-.ripple-button-title {
-  font-size: 13px;
+.notification-box-item {
+  position: relative;
+  margin-bottom: 8px;
+  transition: all 0.3s ease-out;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  background-color: rgba(var(--background-color), 0.5);
+  backdrop-filter: blur(var(--blur-value));
+  border-radius: 4px;
+  box-shadow: 0px 3px 10px -3px rgba(0, 0, 0, 0.6);
+}
+
+.notification-content {
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.notification-source {
+  font-size: 12px;
+  margin-bottom: 4px;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.notification-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: rgba(var(--text-color));
+}
+
+.notification-message {
+  font-size: 14px;
+  color: rgba(var(--text-color), 0.5);
   margin-top: 5px;
 }
 
-.tab-ripplebutton.selected {
-  background-color: rgba(var(--text-color), 0.1);
-  box-shadow: none;
-  font-weight: bold;
-  backdrop-filter: blur(10px);
-}
-
-.tab-ripplebutton.invert .icon {
-  filter: invert(var(--invert));
-}
-
-.tab-ripplebutton.show {
-  display: none;
-}
-
-#RippleButton {
-  background-color: transparent;
-  box-shadow: none;
-  padding: 10px 5px;
-}
-
-.material-symbols-outlined {
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 100,
-    'GRAD' 0,
-    'opsz' 24
-}
-
-.tabbutton {
-  width: 100%;
-  text-align: left;
-  padding: 0;
-}
-
-.tabs-list {
+.notification-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
   display: flex;
-  flex-direction: column;
 }
 
-.tag {
-  display: inline-block;
-  padding: 0px 7px;
-  border-radius: 5px;
-  color: rgba(var(--text-color));
-  font-size: 12px;
-  margin: 0px 3px;
+.notification-hide,
+.notification-close {
+  border: none;
+  background: none;
+  padding: 8px;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.notification-hide:hover,
+.notification-close:hover {
+  opacity: 1;
+}
+
+/* Animation classes */
+.fade-notify-move,
+.fade-notify-enter-active,
+.fade-notify-leave-active {
+  transition: all 0.3s ease-out;
+}
+
+.fade-notify-enter-from,
+.fade-notify-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.fade-notify-leave-active {
+  position: absolute;
+  width: 100%;
+}
+
+.hidden-notifications {
+  background: rgba(var(--background-color), 0.5);
+  backdrop-filter: blur(var(--blur-value));
+  border-top: 1px solid rgba(var(--text-color), 0.1);
+  padding: 12px;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
 }
 </style>

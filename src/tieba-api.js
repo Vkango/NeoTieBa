@@ -37,7 +37,7 @@ export class tieBaAPI {
     async searchBar(keyword) {
         // 构造请求数据
         const data = `word=${encodeURIComponent(keyword)}`;
-        console.log(this.calcSign(data))
+
         const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/forum', this.calcSign(data));
         const result = await JSON.parse(responseData); // 解析JSON数据
         return result;
@@ -47,7 +47,7 @@ export class tieBaAPI {
     async searchUser(keyword) {
         // 构造请求数据
         const data = `word=${encodeURIComponent(keyword)}`;
-        console.log(this.calcSign(data))
+
         const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/user', this.calcSign(data));
         const result = await JSON.parse(responseData); // 解析JSON数据
         return result;
@@ -56,7 +56,7 @@ export class tieBaAPI {
     async searchThread(keyword, pn, st, tt = 1, rn = 20, fname = "", ct = 1, is_use_zonghe = 1, cv = "99.9.101") {
         // 构造请求数据
         const data = `word=${encodeURIComponent(keyword)}&pn=${pn}&st=${st}&tt=${tt}&rn=${rn}&fname=${encodeURIComponent(fname)}&ct=${ct}&is_use_zonghe=${is_use_zonghe}&cv=${cv}`;
-        console.log(this.calcSign(data))
+
         const responseData = await fetchData_post('https://tiebac.baidu.com/mo/q/search/thread', this.calcSign(data));
         const result = await JSON.parse(responseData); // 解析JSON数据
         return result;
@@ -107,7 +107,7 @@ export class tieBaAPI {
     async Favourite(BDUSS, offset = 0) {
         // 构造请求数据
         const data = `${BDUSS}&offset=${offset}&rn=20`;
-        console.log(this.calcSign(data))
+
         const responseData = await fetchData_post('https://c.tieba.baidu.com/c/f/post/threadstore', this.calcSign(data));
         const result = await JSON.parse(responseData); // 解析JSON数据
         return result;
@@ -116,7 +116,7 @@ export class tieBaAPI {
     async followbar_list(bduss, stoken) {
         // 构造请求数据
         const data = `BDUSS=${bduss}&stoken=${stoken}`;
-        console.log(this.calcSign(data))
+
         const responseData = await fetchData_post('https://c.tieba.baidu.com/c/f/forum/getforumlist', this.calcSign(data));
         const result = await JSON.parse(responseData); // 解析JSON数据
         return result;

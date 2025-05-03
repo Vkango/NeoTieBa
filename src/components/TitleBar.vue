@@ -35,7 +35,6 @@ import { get_current_user } from '../user-manage';
 const isMaximized = ref(false);
 const isMouseDown = ref(false);
 const isMoved = ref(false);
-const msgCount = ref(0);
 const user = ref({ user_name: '', avatar: '' });
 onMounted(async () => {
   isMaximized.value = !getCurrentWindow().isMaximized();
@@ -52,6 +51,10 @@ const props = defineProps({
   title: {
     type: String,
     default: 'Tauri App'
+  },
+  msgCount: {
+    type: Number,
+    default: 0
   }
 });
 const handleDraggingMaxized = () => {
@@ -95,6 +98,7 @@ const closeWindow = async () => {
   const window = getCurrentWindow();
   await window.close();
 };
+
 
 const emit = defineEmits(['showTabs', 'showNotificationBox']);
 

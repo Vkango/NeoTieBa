@@ -6,7 +6,6 @@
 <script setup>
 defineProps({
     Tip: {
-        type: String,
         required: true
     }
 })

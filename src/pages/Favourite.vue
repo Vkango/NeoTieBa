@@ -21,7 +21,6 @@ onMounted(async () => {
 const loadData = async () => {
   isThreadsLoading.value = true;
   const ret = await api.Favourite(bduss, offset);
-  console.log(ret)
   threadList.value = [...threadList.value, ...ret.store_thread];
   isLoading.value = false;
   isThreadsLoading.value = false;

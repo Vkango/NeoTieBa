@@ -142,7 +142,8 @@ const props = defineProps({
           <Thread @UserNameClicked="onUserNameClicked(item.author.id)" @threadClicked="handleClick(item.id)"
             v-for="item in threadList" :thread_title="item.title" :media="item.media"
             :user_name="item.author.name_show || item.author.name" :avatar="item.author.portrait"
-            :thread_content="item.rich_abstract" :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
+            :thread_content="item.rich_abstract = [] ? [{ type: 0, text: item.title }] : item.rich_abstract"
+            :create_time="item.last_time_int" :reply_num="item.reply_num"></Thread>
         </div>
       </div>
     </transition>

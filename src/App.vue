@@ -1,6 +1,6 @@
 <script setup>
 import RippleButtonWithIcon from './components/RippleButtonWithIcon.vue';
-import { onMounted, ref, computed, getCurrentInstance, provide, nextTick } from 'vue';
+import { onMounted, ref, getCurrentInstance, provide, nextTick } from 'vue';
 import FollowBar from './pages/FollowBar.vue';
 import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
@@ -16,7 +16,6 @@ import Welcome from './pages/Welcome.vue';
 import TabList from './components/TabList.vue';
 import Setting from './pages/Setting.vue';
 import Notification from "./components/Notification.vue";
-import LoadingWithTip from './components/Notification/LoadingWithTip.vue';
 import { errorService } from './error-service';
 import ImageViewer from './components/ImageViewer.vue';
 import NotificationBox from './components/NotificationBox.vue';
@@ -294,14 +293,14 @@ const addBar = async (id) => {
   }
 }
 
-
-
 const onShowTabs = () => {
   showTabList.value = !showTabList.value;
+  showNotificationBox.value = false;
 }
 
 const onshowNotificationBox = () => {
   showNotificationBox.value = !showNotificationBox.value;
+  showTabList.value = false;
 }
 </script>
 
@@ -320,21 +319,25 @@ const onshowNotificationBox = () => {
       </keep-alive>
     </div>
     <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs"
-      @showNotificationBox="onshowNotificationBox" />
+      @showNotificationBox="onshowNotificationBox"
+      :msgCount="notificationComponent?.notifications?.length + notificationComponent?.hiddenNotifications?.length" />
     <Tabs ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"
       @onTabRefresh="onRefreshTab">
     </Tabs>
     <Transition name="notification-box">
       <TabList class="notification-box" v-if="showTabList" :tabsRef="TabsRef"></TabList>
     </Transition>
-
-    <Notification ref="notificationComponent" />
     <Transition name="notification-box">
-      <NotificationBox class="notification-box" v-if="showNotificationBox" :tabsRef="notificationComponent">
+      <Notification ref="notificationComponent" v-show="!showNotificationBox && !showTabList" />
+    </Transition>
+    <Transition name="notification-box">
+      <NotificationBox class="notification-box" v-if="showNotificationBox && !showTabList"
+        :tabsRef="notificationComponent">
       </NotificationBox>
     </Transition>
     <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
     </ImageViewer>
+
   </div>
 </template>
 
@@ -346,8 +349,6 @@ const onshowNotificationBox = () => {
 
 .notification-box-enter-from,
 .notification-box-leave-to {
-
-  width: 0%;
   transform: translateX(100%);
 }
 
@@ -410,11 +411,12 @@ const onshowNotificationBox = () => {
   top: 0px;
   width: 70px;
   position: fixed;
-  height: 100%;
+  /* height: 100%; */
   display: flex;
   flex-direction: column;
   padding: 5px 0;
   background-color: rgba(30, 31, 32, 0);
+  overflow-y: auto;
 }
 
 .list {
@@ -510,9 +512,136 @@ input {
   box-sizing: border-box;
 }
 
+.notification-container {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+  overflow-y: auto;
+  overflow-x: hidden;
+  right: 0px;
+  top: 50px;
+  padding-right: 10px;
+  height: calc(100% - 50px);
+  pointer-events: none;
+  width: 300px;
+}
+
+.notification {
+  pointer-events: all;
+  background-color: rgba(var(--background-color), 0.5);
+  backdrop-filter: blur(var(--blur-value));
+  border-radius: 4px;
+  box-shadow: 0px 3px 10px -3px rgba(0, 0, 0, 0.6);
+  width: calc(100% - 10px);
+  margin: 10px;
+  margin-top: 0px;
+
+}
+
+.notification-source {
+  font-size: 12px;
+  margin-bottom: 4px;
+  text-align: left;
+  width: 210px;
+  opacity: 0.5;
+  word-wrap: break-word;
+  align-items: center;
+  display: flex;
+  gap: 5px;
+}
+
+.notification-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  text-align: left;
+  width: 250px;
+  color: rgba(var(--text-color));
+  word-wrap: break-word;
+}
+
+.notification-message {
+  font-size: 14px;
+  color: rgba(var(--text-color), 0.5);
+  text-align: left;
+  width: 100%;
+  margin-top: 5px;
+  height: fit-content;
+}
+
+.notification-content {
+  width: 100%;
+  background-color: rgba(var(--background-color), 0.2);
+}
+
+.notification-close {
+  border: none;
+  background: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  box-shadow: none;
+  width: 32px;
+  padding: 0;
+  height: 32px;
+  opacity: 0.5;
+}
+
+.notification-hide {
+  border: none;
+  background: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  right: 30px;
+  top: 0px;
+  box-shadow: none;
+  width: 32px;
+  padding: 0;
+  height: 32px;
+  opacity: 0.5;
+}
+
+.notification-hide:hover {
+  opacity: 1;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+.fade-notify-enter-active,
+.fade-notify-leave-active,
+.fade-notify-move {
+  transition: all 0.3s ease;
+}
+
+.fade-notify-enter-from,
+.fade-notify-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 .thread-content {
   font-size: 120%;
   white-space: break-spaces;
+  line-height: 200%;
 }
 
 .user-info {

@@ -49,7 +49,6 @@ onMounted(async () => {
   returnData.value = (await api.user_info(props.uid, 1)).data;
   returnData1.value = await api.userCard(returnData.value.user.portrait);
   returnData2.value = (await api.user_post(props.uid)).data.postList;
-  // console.log(returnData2.value)
   if (Array.isArray(returnData2.value)) {
     has_more = returnData2.value.length != 0;
   }

@@ -25,7 +25,6 @@ const handleEnter = async () => {
     case 1:
       const threadResult = await api.searchThread(searchContent.value);
       searchResult.value = threadResult.data.post_list;
-      console.log(searchResult.value)
       break;
     case 2:
       const userResult = await api.searchUser(searchContent.value);

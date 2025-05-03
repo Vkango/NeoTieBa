@@ -1,19 +1,25 @@
 <template>
-  <div class="notification-container" :class="`notification-container-${position}`">
+  <div class="notification-container">
     <transition-group name="fade-notify" tag="div" class="notification-list">
-      <div v-for="item in notifications" :key="item.id" :data-id="item.id" v-show="item.visible" class="notification"
+      <div v-for="item in displayedNotifications" :key="item.id" :data-id="item.id" class="notification"
         @mouseenter="pauseTimer(item.id)" @mouseleave="startTimer(item.id, item.duration)"
-        @mousedown="startDrag($event, item.id)" @mouseup="endDrag(item.id)">
-        <RippleButton class="notification-content">
+        @mousedown="startDrag($event, item.id)" @mouseup="handleMouseUp($event, item.id)">
+        <RippleButton class="notification-content" @click="console.log('申必')">
           <div class="notification-source" v-html="item.source"></div>
           <div class="notification-title" v-html="item.title"></div>
           <div class="notification-message">
             <component :is="item.component" v-bind="item.props"></component>
           </div>
-          <Button class="notification-close">
-            <span class="material-symbols-outlined" @click="close(item.id)" @mouseup.stop id="close"
-              style="font-size: 12px;">close</span>
-          </Button>
+          <div class="notification-actions">
+            <button class="notification-hide" @mousedown.stop>
+              <span class="material-symbols-outlined" @click.stop="hideNotification(item.id)" id="close"
+                style="font-size: 12px;">visibility_off</span>
+            </button>
+            <button class="notification-close" @mousedown.stop>
+              <span class="material-symbols-outlined" @click.stop="close(item.id)" id="close"
+                style="font-size: 12px;">close</span>
+            </button>
+          </div>
         </RippleButton>
       </div>
     </transition-group>
@@ -21,47 +27,121 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, markRaw } from 'vue';
+import { ref, onUnmounted, markRaw, nextTick, computed } from 'vue';
 import RippleButton from './RippleButton.vue';
 const notifications = ref([]);
 const timers = ref({});
+const hiddenNotifications = ref([]);
 const dragging = ref(false);
 const dragStartX = ref(0);
 const currentDragId = ref(null);
-const isClosing = ref(false); // 全局关闭状态
+const isClosing = ref(false);
+const dragStartTime = ref(0);
+const isDragging = ref(false);
+const dragThreshold = 5;
 let deltaX = 0;
 let notificationCounter = 0;
-
+const displayedNotifications = computed(() =>
+  notifications.value.filter(item => item && item.visible && !item.hidden)
+);
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+const handleMouseUp = (event, id) => {
+  if (event.target.closest('.notification-actions')) {
+    return;
+  }
 
+  const dragDistance = Math.abs(deltaX);
+  if (!isDragging.value && dragDistance < dragThreshold) {
+    handleNotificationClick(id);
+  }
+
+  endDrag();
+};
 const addNotification = async (title, source, component, props = {}, duration = 5000) => {
   while (isClosing.value) {
     await delay(100);
   }
   const id = `${Date.now()}-${notificationCounter++}`;
-  notifications.value.unshift({
+  const notification = {
     id,
     source,
     title,
     component: markRaw(component),
     props,
     duration,
-    visible: false
-  });
-  const notification = notifications.value[0];
+    visible: false,
+    hidden: false,
+    timestamp: Date.now()
+  };
+
+  notifications.value.unshift(notification);
   notification.visible = true;
-  startTimer(id, duration);
+
+  if (duration > 0) {
+    startTimer(id, duration);
+  }
 };
 
+const hideNotification = async (id) => {
+  const index = notifications.value.findIndex(item => item.id === id);
+  if (index === -1) return;
+
+  isClosing.value = true;
+  // First set visible to false to trigger leave animation
+  notifications.value[index].visible = false;
+
+  // Wait for animation
+  await delay(300);
+
+  // Then create a copy and move to hidden
+  const notification = { ...notifications.value[index] };
+  notification.hidden = true;
+  hiddenNotifications.value.push(notification);
+
+  // Finally remove from visible list
+  notifications.value.splice(index, 1);
+  isClosing.value = false;
+};
+
+const deleteNotification = async (id) => {
+  const visibleIndex = notifications.value.findIndex(item => item.id === id);
+  if (visibleIndex !== -1) {
+    notifications.value.splice(visibleIndex, 1);
+  }
+  const hiddenIndex = hiddenNotifications.value.findIndex(item => item.id === id);
+  if (hiddenIndex !== -1) {
+    hiddenNotifications.value.splice(hiddenIndex, 1);
+  }
+};
+
+
+const restoreNotification = (id) => {
+  const index = hiddenNotifications.value.findIndex(item => item.id === id);
+  if (index === -1) return;
+
+  const notification = { ...hiddenNotifications.value[index] };
+  notification.hidden = false;
+  notification.visible = true;
+  hiddenNotifications.value.splice(index, 1);
+  notifications.value.unshift(notification);
+  nextTick(() => {
+    const notificationElement = document.querySelector(`.notification[data-id="${id}"]`);
+    if (notificationElement) {
+      dragging.value = false;
+      dragStartX.value = 0;
+      currentDragId.value = null;
+      deltaX = 0;
+    }
+  });
+};
 const close = async (id) => {
   const index = notifications.value.findIndex(item => item.id === id);
   if (index === -1) return;
 
   isClosing.value = true;
-  const notification = notifications.value[index];
-  notification.visible = false;
+  notifications.value[index].visible = false;
   await delay(300);
   notifications.value.splice(index, 1);
   isClosing.value = false;
@@ -73,7 +153,7 @@ const startTimer = (id, duration) => {
   }
   if (duration > 0) {
     timers.value[id] = setTimeout(() => {
-      close(id);
+      hideNotification(id);
       delete timers.value[id];
     }, duration);
   }
@@ -87,19 +167,33 @@ const pauseTimer = (id) => {
 };
 
 const startDrag = (event, id) => {
-  dragging.value = true;
+  // Don't start drag on action buttons
+  if (event.target.closest('.notification-actions')) {
+    return;
+  }
+
+  dragStartTime.value = Date.now();
   dragStartX.value = event.clientX;
   currentDragId.value = id;
+  isDragging.value = false;
+  deltaX = 0;
+
   document.addEventListener('mousemove', onDrag);
   document.addEventListener('mouseup', endDrag);
 };
 
 const onDrag = (event) => {
-  if (dragging.value && currentDragId.value !== null) {
+  if (!currentDragId.value) return;
+
+  const dragDistance = Math.abs(event.clientX - dragStartX.value);
+
+  // Set isDragging only after threshold is met
+  if (dragDistance > dragThreshold) {
+    isDragging.value = true;
     deltaX = event.clientX - dragStartX.value;
     const notificationElement = document.querySelector(`.notification[data-id="${currentDragId.value}"]`);
     if (notificationElement) {
-      notificationElement.style.transition = '';
+      notificationElement.style.transition = 'none';
       notificationElement.style.transform = `translateX(${deltaX}px)`;
       notificationElement.style.opacity = `${1 - Math.abs(deltaX / 100)}`;
     }
@@ -107,15 +201,18 @@ const onDrag = (event) => {
 };
 
 const endDrag = () => {
-  if (Math.abs(deltaX) > 100) {
-    close(currentDragId.value);
-  } else {
-    deltaX = 0;
-    const notificationElement = document.querySelector(`.notification[data-id="${currentDragId.value}"]`);
-    notificationElement.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-    notificationElement.style.transform = `translateX(0px)`;
-    notificationElement.style.opacity = 1;
+  if (currentDragId.value === null) return;
+  const notificationElement = document.querySelector(`.notification[data-id="${currentDragId.value}"]`);
+  if (notificationElement) {
+    if (Math.abs(deltaX) > 100) {
+      close(currentDragId.value);
+    } else {
+      notificationElement.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+      notificationElement.style.transform = `translateX(0px)`;
+      notificationElement.style.opacity = 1;
+    }
   }
+
   dragging.value = false;
   currentDragId.value = null;
   document.removeEventListener('mousemove', onDrag);
@@ -130,10 +227,11 @@ onUnmounted(() => {
 
 defineExpose({
   addNotification,
-  close,
-  startTimer,
-  pauseTimer,
+  hideNotification,
+  deleteNotification,
+  restoreNotification,
   notifications,
+  hiddenNotifications
 });
 </script>
 <style scoped>
@@ -141,98 +239,35 @@ defineExpose({
   display: none;
 }
 
-.notification-container {
-  position: fixed;
-  display: flex;
-  flex-direction: column;
-  z-index: 2;
-  overflow-y: auto;
-  overflow-x: hidden;
-  right: 0px;
-  top: 50px;
-  padding-right: 10px;
-  height: calc(100% - 50px);
-  pointer-events: none;
-  width: 300px;
+.notification-list {
+  position: relative;
 }
 
 .notification {
-  pointer-events: all;
-  background-color: rgba(var(--background-color), 0.5);
-  backdrop-filter: blur(var(--blur-value));
-  border-radius: 4px;
-  box-shadow: 0px 3px 10px -3px rgba(0, 0, 0, 0.6);
-  width: calc(100% - 10px);
-  margin: 10px;
-  margin-top: 0px;
-
+  position: relative;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
 }
 
-.notification-source {
-  font-size: 12px;
-  margin-bottom: 4px;
-  text-align: left;
-  width: 250px;
-  opacity: 0.5;
-  word-wrap: break-word;
-  align-items: center;
-  display: flex;
-  gap: 5px;
-}
-
-.notification-title {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 4px;
-  text-align: left;
-  width: 250px;
-  color: rgba(var(--text-color));
-  word-wrap: break-word;
-}
-
-.notification-message {
-  font-size: 14px;
-  color: rgba(var(--text-color), 0.5);
-  text-align: left;
-  width: 100%;
-  margin-top: 5px;
-  height: fit-content;
-}
-
-.notification-content {
-  width: 100%;
-  background-color: rgba(var(--background-color), 0.2);
-}
-
-.notification-close {
-  border: none;
-  background: none;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  right: 0px;
-  top: 0px;
-  box-shadow: none;
-  width: 32px;
-  padding: 0;
-  height: 32px;
-  opacity: 0.5;
-}
-
-.notification-close:hover {
-  opacity: 1;
-}
-
+/* Transition animations */
+.fade-notify-move,
 .fade-notify-enter-active,
-.fade-notify-leave-active,
-.fade-notify-move {
+.fade-notify-leave-active {
   transition: all 0.3s ease;
 }
 
 .fade-notify-enter-from,
 .fade-notify-leave-to {
   opacity: 0;
-  transform: translateX(20px);
+  transform: translateX(30px);
+}
+
+.fade-notify-leave-active {
+  position: absolute;
+  width: 100%;
+}
+
+::-webkit-scrollbar {
+  display: none;
 }
 </style>

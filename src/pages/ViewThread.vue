@@ -17,7 +17,6 @@ const emit = defineEmits(['setTabInfo', 'UserNameClicked', 'barNameClicked']);
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.viewThread(props.tid, currentPage.value);
-  // console.log(returnData.value);
   if (returnData.value?.thread?.title) {
     threadTitle.value = returnData.value.thread.title;
     emit('setTabInfo', { key: props.key_, title: returnData.value.thread.title, icon: returnData.value.forum.avatar });
@@ -83,7 +82,8 @@ const props = defineProps({
           </h3>
           <Reply v-for="item in threadList" :like="item.agree.agree_num - item.agree.disagree_num"
             :user_name="item.author.name || item.author.name_show" :uid="item.author.id"
-            @userNameClicked="onUserNameClicked" :avatar="item.author.portrait" :thread_content="item.content"
+            @userNameClicked="onUserNameClicked" :avatar="item.author.portrait"
+            :thread_content="item.content = [] ? [{ type: 0, text: threadTitle }] : item.content"
             :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor"
             :is_lz="item.author.id === threadList[0].author.id" :level="item.author.level_id"></Reply>
         </div>
