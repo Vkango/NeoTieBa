@@ -4,7 +4,7 @@
       <div v-for="item in displayedNotifications" :key="item.id" :data-id="item.id" class="notification"
         @mouseenter="pauseTimer(item.id)" @mouseleave="startTimer(item.id, item.duration)"
         @mousedown="startDrag($event, item.id)" @mouseup="handleMouseUp($event, item.id)">
-        <RippleButton class="notification-content" @click="console.log('申必')">
+        <RippleButton class="notification-content">
           <div class="notification-source" v-html="item.source"></div>
           <div class="notification-title" v-html="item.title"></div>
           <div class="notification-message">
@@ -51,18 +51,20 @@ const handleMouseUp = (event, id) => {
   if (event.target.closest('.notification-actions')) {
     return;
   }
-
   const dragDistance = Math.abs(deltaX);
   if (!isDragging.value && dragDistance < dragThreshold) {
-    handleNotificationClick(id);
+    const notification = notifications.value.find(item => item.id === id);
+    if (notification && notification.click) {
+      notification.click();
+    }
   }
-
   endDrag();
 };
-const addNotification = async (title, source, component, props = {}, duration = 5000) => {
+const addNotification = async (title, source, component, clickHandler, props = {}, duration = 5000) => {
   while (isClosing.value) {
     await delay(100);
   }
+  console.log(title, source, component, clickHandler, props, duration)
   const id = `${Date.now()}-${notificationCounter++}`;
   const notification = {
     id,
@@ -73,7 +75,8 @@ const addNotification = async (title, source, component, props = {}, duration = 
     duration,
     visible: false,
     hidden: false,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    click: clickHandler
   };
 
   notifications.value.unshift(notification);
@@ -89,18 +92,11 @@ const hideNotification = async (id) => {
   if (index === -1) return;
 
   isClosing.value = true;
-  // First set visible to false to trigger leave animation
   notifications.value[index].visible = false;
-
-  // Wait for animation
   await delay(300);
-
-  // Then create a copy and move to hidden
   const notification = { ...notifications.value[index] };
   notification.hidden = true;
   hiddenNotifications.value.push(notification);
-
-  // Finally remove from visible list
   notifications.value.splice(index, 1);
   isClosing.value = false;
 };
@@ -167,7 +163,6 @@ const pauseTimer = (id) => {
 };
 
 const startDrag = (event, id) => {
-  // Don't start drag on action buttons
   if (event.target.closest('.notification-actions')) {
     return;
   }
@@ -186,8 +181,6 @@ const onDrag = (event) => {
   if (!currentDragId.value) return;
 
   const dragDistance = Math.abs(event.clientX - dragStartX.value);
-
-  // Set isDragging only after threshold is met
   if (dragDistance > dragThreshold) {
     isDragging.value = true;
     deltaX = event.clientX - dragStartX.value;

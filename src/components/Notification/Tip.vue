@@ -1,5 +1,5 @@
 <template>
-    <div id="loading-with-tip">
+    <div id="tip">
         <div id="content">{{ Tip }}</div>
     </div>
 </template>
@@ -11,7 +11,7 @@ defineProps({
 })
 </script>
 <style scoped>
-#loading-with-tip {
+#tip {
     height: fit-content;
     width: 100%;
     display: flex;

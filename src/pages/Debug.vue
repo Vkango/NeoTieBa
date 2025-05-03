@@ -9,11 +9,15 @@ const props = defineProps({
   }
 })
 const sendNotification = inject('sendNotification');
+const onClick = () => {
+  console.log('点击了通知');
+}
 const notify = () => {
   sendNotification(
     '你有一条新回复',
     '<span class="material-symbols-outlined" style="font-size: 17px;">reply</span>消息',
     Tip,
+    onClick,
     { Tip: '米线山🐉：你说什么？【米线山吧】' },
     60000
   )
@@ -29,5 +33,3 @@ const notify = () => {
   </Container>
 
 </template>
-
-<style scoped></style>

@@ -101,9 +101,6 @@ const deleteNotification = (id) => {
   }
 };
 
-const handleNotificationClick = (item) => {
-  console.log('Notification clicked:', item);
-};
 
 
 const endDrag = () => {
@@ -137,22 +134,18 @@ const startDrag = (event, id) => {
   if (event.target.closest('.notification-actions')) {
     return;
   }
-
   dragStartTime.value = Date.now();
   dragStartX.value = event.clientX;
   currentDragId.value = id;
   isDragging.value = false;
   deltaX = 0;
-
   document.addEventListener('mousemove', onDrag);
   document.addEventListener('mouseup', endDrag);
 };
 
 const onDrag = (event) => {
   if (!currentDragId.value) return;
-
   const dragDistance = Math.abs(event.clientX - dragStartX.value);
-
   if (dragDistance > dragThreshold) {
     isDragging.value = true;
     deltaX = event.clientX - dragStartX.value;
@@ -169,11 +162,12 @@ const handleMouseUp = (event, id) => {
     return;
   }
   const dragDistance = Math.abs(deltaX);
-
   if (!isDragging.value && dragDistance < dragThreshold) {
-    handleNotificationClick(id);
+    const notification = allNotifications.value.find(item => item.id === id);
+    if (notification && notification.click) {
+      notification.click();
+    }
   }
-
   endDrag();
 };
 

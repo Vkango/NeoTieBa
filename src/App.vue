@@ -103,7 +103,10 @@ const QRLogin = () => {
   TabsRef.value.addTab(key, "/assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key }, true, true)
 }
 
-
+const onClick = () => {
+  const key = generateUniqueId('QRLogin');
+  TabsRef.value.addTab(key, "/assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key }, true, true)
+}
 onMounted(() => {
   nextTick(() => {
     errorService.addHandler((error, info) => {
@@ -112,6 +115,7 @@ onMounted(() => {
           info,
           '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
           Tip,
+          onClick,
           { Tip: error },
           60000
         )
@@ -127,8 +131,8 @@ onMounted(() => {
   cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   const keepAlive = instance.refs.keepAlive;
   handler.bind(keepAlive);
-  provide('sendNotification', (title, component, props = {}, duration = 5000) => {
-    notificationComponent.value.addNotification(title, component, props, duration);
+  provide('sendNotification', (title, source, component, clickHandler, props = {}, duration = 5000) => {
+    notificationComponent.value.addNotification(title, source, component, clickHandler, props, duration);
   })
 });
 function onSwitchTabs(id) {
