@@ -1,41 +1,44 @@
 <template>
-  <div class="thread" @click.stop>
-    <div class="user-info" @click="userNameClicked(props.uid)">
-      <div class="avatar"><img class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
-      <div>
-        <div class="user-name">{{ user_name }}<span class="level"
-            :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level >= 16 }">{{
-              level }} {{ is_lz ? '楼主' : '' }}</span>
+  <Container @yscroll="onScroll" style="background-color: transparent;">
+    <div class="thread" @click.stop>
+      <div class="user-info" @click="userNameClicked(props.uid)">
+        <div class="avatar"><img class="avatar"
+            :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
+        <div>
+          <div class="user-name">{{ user_name }}<span class="level"
+              :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level >= 16 }">{{
+                level }} {{ is_lz ? '楼主' : '' }}</span>
+          </div>
+          <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>
         </div>
-        <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>
+
+
       </div>
+      <div class="thread-preview">
+        <div class="thread-content" v-html="content" style="user-select: text;" @click="handleClick">
+        </div>
+        <div class="thread-info">
+          <!-- <button @click="dom2img">申必</button> -->
+          <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
+          <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">thumb_up</span> {{ like }}
+          赞
+          <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">floor</span> {{ floor }} 楼
+          <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;"
+            v-if="reply_num > 0">forum</span> <span v-if="reply_num > 0">{{ reply_num }} 回复</span>
 
+        </div>
+        <div class="subpost" v-if="reply_num > 0">
+          <SubPost v-for="item in subpost_list" :thread_content="item.content" @userNameClicked="userNameClicked"
+            :avatar="item.author.portrait" :uid="item.author.id" :user_name="item.author.name_show || item.author.name">
+          </SubPost>
+        </div>
 
+      </div>
+      <transition name="fade1">
+        <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
+      </transition>
     </div>
-    <div class="thread-preview">
-      <div class="thread-content" v-html="content" style="user-select: text;" @click="handleClick">
-      </div>
-      <div class="thread-info">
-        <!-- <button @click="dom2img">申必</button> -->
-        <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
-        <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">thumb_up</span> {{ like }} 赞
-        <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">floor</span> {{ floor }} 楼
-        <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;"
-          v-if="reply_num > 0">forum</span> <span v-if="reply_num > 0">{{ reply_num }} 回复</span>
-
-      </div>
-      <div class="subpost" v-if="reply_num > 0">
-        <SubPost v-for="item in subpost_list" :thread_content="item.content" @userNameClicked="userNameClicked"
-          :avatar="item.author.portrait" :uid="item.author.id" :user_name="item.author.name_show || item.author.name">
-        </SubPost>
-        <RippleButton v-if="reply_num > 5" @click="emit('viewAllReplies', props)"
-          style="box-sizing: border-box; margin: 5px 15px; background-color: transparent; box-shadow: none; width: fit-content;">
-          查看全部 {{ reply_num }} 条回复
-        </RippleButton>
-      </div>
-    </div>
-  </div>
+  </Container>
 </template>
 
 <script setup>
@@ -44,11 +47,41 @@ import { tieBaAPI } from '../tieba-api';
 import SubPost from './SubPost.vue';
 import { getTimeInterval } from '../helper';
 import RippleButton from './RippleButton.vue';
+import Loading from './Loading.vue';
+import Container from './Container.vue';
+const sendToast = inject('sendToast');
 const openImageViewer = inject('openImageViewer');
 const content = ref('')
+const currentPage = ref(1);
+const isThreadsLoading = ref(true);
 const create_time1 = ref('')
 const subpost_list = ref([])
-const emit = defineEmits(['userNameClicked', 'viewAllReplies'])
+let pageInfo;
+const emit = defineEmits(['userNameClicked'])
+const onScroll = (target) => {
+  if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
+    if (isThreadsLoading.value) {
+      return;
+    }
+    if (pageInfo.current_page >= pageInfo.total_page) {
+      sendToast('没有更多回复了', 2000);
+      return;
+    }
+    nextPage();
+  }
+}
+const nextPage = async () => {
+  currentPage.value++;
+  loadData();
+}
+const loadData = async () => {
+  isThreadsLoading.value = true;
+  const res = await new tieBaAPI().viewSubPost(props.tid, props.pid, currentPage.value)
+  subpost_list.value = [...subpost_list.value, ...res.subpost_list];
+  pageInfo = res.page;
+  console.log(pageInfo);
+  isThreadsLoading.value = false;
+}
 const userNameClicked = (uid) => {
   emit('userNameClicked', uid);
 }
@@ -107,10 +140,11 @@ onMounted(() => {
     const Api = new tieBaAPI;
     Api.viewSubPost(props.tid, props.pid).then((res) => {
       subpost_list.value = res.subpost_list;
-      if (subpost_list.value.length > 5) {
-        subpost_list.value = subpost_list.value.slice(0, 5);
-      }
+
+      pageInfo = res.page;
+      console.log(pageInfo.total_count, pageInfo.total_page, pageInfo.current_page);
     });
+    isThreadsLoading.value = false;
   }
 })
 const props = defineProps({
@@ -187,6 +221,16 @@ const props = defineProps({
   gap: 8px;
   border: 1px solid rgba(var(--text-color), 0.03);
   margin-bottom: 10px;
+}
+
+.thread {
+  width: 100%;
+  background-color: transparent;
+}
+
+.thread:hover {
+  background-color: transparent;
+
 }
 
 .thread-info {

@@ -3,6 +3,7 @@ import Container from '../components/Container.vue';
 import RippleButton from '../components/RippleButton.vue';
 import { defineEmits, onMounted, ref } from 'vue';
 import { getUserList } from '../user-manage';
+import Bar from '../components/Bar.vue';
 const emit = defineEmits(['QRLogin'])
 const user = ref({ user_name: '', avatar: '' });
 onMounted(async () => {
@@ -40,6 +41,7 @@ onMounted(async () => {
       <div>使用代理</div>
       <div>连接测试</div>
       <h3>插件</h3>
+      <Bar style="margin: 5px 0"></Bar>
       <div>共 0 个插件，已加载 0 个。</div>
       <div>自动签到工具</div>
       <div>屏蔽列表</div>

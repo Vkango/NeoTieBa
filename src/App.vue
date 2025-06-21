@@ -21,6 +21,8 @@ import ImageViewer from './components/ImageViewer.vue';
 import NotificationBox from './components/NotificationBox.vue';
 import Tip from './components/Notification/Tip.vue';
 import Debug from './pages/Debug.vue';
+import Toast from './components/Toast.vue';
+import Drawer from './components/Drawer.vue';
 const notificationComponent = ref(null);
 
 const imageViewerVisibility = ref(false);
@@ -45,7 +47,7 @@ else {
     { id: 4, icon: 'settings', title: '设置', selected: false },
   ];
 }
-
+const ToastComponent = ref(null);
 const activeTab = ref({});
 const TabsRef = ref(null);
 const cachedTabs = ref([]);
@@ -56,6 +58,9 @@ const onBarThreadClick = (id) => {
   const key = generateUniqueId('ViewThread' + id);
   TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked }, undefined, undefined, "TID " + id)
 }
+provide('sendToast', (title, duration = 3000) => {
+  ToastComponent.value.showToast(title, duration);
+})
 const setTabInfo = (info) => {
   TabsRef.value.setTitle(info.key, info.title);
   TabsRef.value.setIcon(info.key, info.icon);
@@ -310,8 +315,9 @@ const onshowNotificationBox = () => {
 
 <template>
   <div id="container" style="background-image: url(../public/assets/background.jpg);">
-    <!-- <div id="container"
-      style="backdrop-filter: blur(100px); background-color: rgba(var(--background-color), 0.65); transition: all 0.3s ease;"> -->
+    <div id="container"
+      style="backdrop-filter: blur(500px); background-color: rgba(var(--background-color), 0.65); transition: all 0.3s ease;">
+    </div>
     <div class="navi">
       <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem"
         :class="{ 'selected': item.selected }" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
@@ -341,7 +347,7 @@ const onshowNotificationBox = () => {
     </Transition>
     <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
     </ImageViewer>
-
+    <Toast ref="ToastComponent" />
   </div>
 </template>
 
@@ -362,7 +368,7 @@ const onshowNotificationBox = () => {
   right: 10px;
   top: 55px;
   width: 320px;
-  background-color: rgba(34, 34, 34, 1);
+  background-color: rgba(var(--background-color), 0.2);
   /* background-blend-mode: overlay; */
   padding: 0 10px;
   border-radius: 7px;
@@ -703,6 +709,7 @@ input {
 }
 
 :root {
+  font-family: 'Microsoft YaHei';
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 16px;
   line-height: 24px;
@@ -825,7 +832,7 @@ button {
     background-color: transparent;
     --text-color: 255, 255, 255;
     --invert: 0;
-    --background-color: 0, 0, 0;
+    --background-color: 34, 34, 34;
   }
 
   a:hover {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, defineEmits } from 'vue';
+import { ref, onMounted, watch, defineEmits, inject } from 'vue';
 import { read_file } from '../file-io';
 import { tieBaAPI } from '../tieba-api';
 import Loading from '../components/Loading.vue';
@@ -13,7 +13,18 @@ const searchResult = ref();
 const searchType = ref(0);
 const searchContent = ref("");
 const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked', 'BarNameClicked']);
-const handleEnter = async () => {
+const sendToast = inject('sendToast');
+async function handleEnter(pageSwitch = false) {
+  if (searchContent.value.length < 1) {
+    if (!pageSwitch) {
+      sendToast('请输入搜索内容', 3000);
+      return;
+    }
+    else {
+      searchResult.value = undefined;
+      return;
+    }
+  }
   isLoading.value = true;
   const api = new tieBaAPI;
 
@@ -31,6 +42,12 @@ const handleEnter = async () => {
       searchResult.value = userResult.data;
       break;
   }
+  if ((searchType.value === 0 || searchType.value === 2) &&
+    (!searchResult.value?.fuzzyMatch?.length && !searchResult.value?.exactMatch?.id && !searchResult.value?.exactMatch?.avatar)) {
+    sendToast('没有搜索到相关结果', 3000);
+  } else if (searchType.value === 1 && (!Array.isArray(searchResult.value) || !searchResult.value.length)) {
+    sendToast('没有搜索到相关结果', 3000);
+  }
   isLoading.value = false;
 }
 const handleClick = (id) => {
@@ -47,19 +64,20 @@ const onUserNameClicked = (uid) => {
       <div class="list-title">搜索</div>
       <div class="navi-buttons">
         <RippleButton class="button-nostyle" :class="{ 'selected': searchType == 0 }"
-          @click="searchResult = undefined; searchType = 0; handleEnter()">搜吧
+          @click="searchResult = undefined; searchType = 0; handleEnter(true)">搜吧
         </RippleButton>
         <RippleButton class="button-nostyle" :class="{ 'selected': searchType == 1 }"
-          @click="searchResult = undefined; searchType = 1; handleEnter()">搜贴
+          @click="searchResult = undefined; searchType = 1; handleEnter(true)">搜贴
         </RippleButton>
         <RippleButton class="button-nostyle" :class="{ 'selected': searchType == 2 }"
-          @click="searchResult = undefined; searchType = 2; handleEnter()">搜人
+          @click="searchResult = undefined; searchType = 2; handleEnter(true)">搜人
         </RippleButton>
       </div>
-      <input placeholder="键入关键词后按下回车键进行搜索……" @keyup.enter="handleEnter" v-model="searchContent"></input>
+      <input placeholder="键入关键词后按下回车键进行搜索……" @keyup.enter="handleEnter(false)" v-model="searchContent"></input>
       <TransitionGroup name="fade1">
         <div class="result" v-if="searchType == 0 && searchResult">
-          <div v-if="searchResult.exactMatch.avatar != undefined">
+
+          <div v-if="searchResult?.exactMatch?.avatar != undefined">
             <Tag>最佳匹配</Tag>
             <div
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
@@ -72,11 +90,12 @@ const onUserNameClicked = (uid) => {
               </button>
             </div>
           </div>
-          <div v-if="searchResult.fuzzyMatch[0].avatar != undefined">
+
+          <div v-if="searchResult?.fuzzyMatch[0]?.avatar != undefined">
             <Tag>相关匹配</Tag>
             <div
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
-              <button class="bar-button" v-for="item in searchResult.fuzzyMatch"
+              <button class="bar-button" v-for="item in searchResult?.fuzzyMatch"
                 @click="emit('BarNameClicked', item.forum_name)">
                 <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
                 <div style="margin-left: 5px;">
@@ -102,7 +121,7 @@ const onUserNameClicked = (uid) => {
 
 
         <div class="result" v-if="searchType == 2 && searchResult">
-          <div v-if="searchResult.exactMatch.id != undefined">
+          <div v-if="searchResult?.exactMatch?.id != undefined">
             <Tag>最佳匹配</Tag>
             <div
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
@@ -116,7 +135,7 @@ const onUserNameClicked = (uid) => {
               </button>
             </div>
           </div>
-          <div v-if="searchResult.fuzzyMatch[0].id != undefined">
+          <div v-if="searchResult?.fuzzyMatch[0]?.id != undefined">
             <Tag>相关匹配</Tag>
             <div
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">

@@ -7,6 +7,14 @@
         @click="clearNotification()">
         <span class="material-symbols-outlined" style="font-size: 18px; align-self: center;">clear_all</span>
       </RippleButton>
+      <RippleButton style="background-color: transparent; box-shadow: none; padding: 5px 10px;"
+        @click="clearNotification()">
+        <span class="material-symbols-outlined" style="font-size: 18px; align-self: center;">dark_mode</span>
+      </RippleButton>
+      <RippleButton style="background-color: transparent; box-shadow: none; padding: 5px 10px;"
+        @click="clearNotification()">
+        <span class="material-symbols-outlined" style="font-size: 18px; align-self: center;">footprint</span>
+      </RippleButton>
     </div>
     <div class="notification-list">
       <transition-group name="fade-notify" tag="div">

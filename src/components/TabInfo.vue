@@ -6,7 +6,7 @@
         <div style="display: flex; align-items: center; gap: 5px; opacity: 0.5;"><span class="material-symbols-outlined"
                 style="font-size: 16px;">link</span>neotieba://{{ props.componentkey.toLowerCase() }}</div>
         <RippleButton @click="emit('refresh', props.id)"
-            style="margin-top: 10px; padding: 0; background-color: transparent;">
+            style="margin-top: 10px; padding: 0; background-color: transparent; box-shadow: none;">
             <div style="display: flex; align-items: center; gap: 10px"><span class="material-symbols-outlined"
                     style="font-size: 18px;">refresh</span>刷新</div>
         </RippleButton>

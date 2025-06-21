@@ -1,10 +1,12 @@
 <script setup>
 import Reply from '../components/Reply.vue';
-import { ref, onMounted, onActivated } from 'vue';
+import { ref, onMounted, getCurrentInstance, inject } from 'vue';
 import { tieBaAPI } from '../tieba-api.js';
 import Loading from '../components/Loading.vue';
 import Container from '../components/Container.vue';
 import RippleButton from '../components/RippleButton.vue';
+import Drawer from '../components/Drawer.vue';
+import ReplyView from '../components/SubPostView.vue';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
@@ -12,8 +14,13 @@ const threadList = ref([]);
 const currentPage = ref(1);
 const threadTitle = ref("");
 const isDeleted = ref(false);
+const instance = getCurrentInstance();
+let isDrawerOpen = instance.appContext.config.globalProperties.$IsDrawerOpen;
 const n = new tieBaAPI;
 const emit = defineEmits(['setTabInfo', 'UserNameClicked', 'barNameClicked']);
+const deleteTab = inject('deleteTab');
+const sendToast = inject('sendToast');
+const currentSubPostInfo = ref({ like: undefined, user_name: undefined, uid: undefined, avatar: undefined, thread_content: undefined, create_time: undefined, reply_num: undefined, tid: undefined, pid: undefined, floor: undefined, is_lz: undefined, level: undefined });
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.viewThread(props.tid, currentPage.value);
@@ -25,6 +32,8 @@ const loadData = async () => {
   else {
     emit('setTabInfo', { key: props.key_, title: '贴子已被删除', icon: '/assets/apps.svg' });
     isDeleted.value = true;
+    sendToast('贴子已被删除', 3000);
+    deleteTab(props.key_);
   }
 
   isThreadsLoading.value = false;
@@ -52,6 +61,13 @@ const nextPage = async () => {
   currentPage.value++;
   loadData();
 }
+
+const ViewAllReplie = (data) => {
+  currentSubPostInfo.value = data;
+  isDrawerOpen.state = true;
+
+}
+
 const props = defineProps({
   tid: {
     required: true,
@@ -85,11 +101,15 @@ const props = defineProps({
             @userNameClicked="onUserNameClicked" :avatar="item.author.portrait"
             :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
             :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor"
-            :is_lz="item.author.id === threadList[0].author.id" :level="item.author.level_id"></Reply>
+            :is_lz="item.author.id === threadList[0].author.id" :level="item.author.level_id"
+            @viewAllReplies="ViewAllReplie"></Reply>
         </div>
 
       </div>
     </transition>
+    <Drawer ctitle="查看楼中楼" width="450px" :top_position="false">
+      <ReplyView v-if="isDrawerOpen.state" v-bind="currentSubPostInfo" @userNameClicked="onUserNameClicked"></ReplyView>
+    </Drawer>
     <transition name="fade1">
       <div v-if="isDeleted" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
           justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center;
