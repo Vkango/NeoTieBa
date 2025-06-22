@@ -132,6 +132,7 @@ const onScroll = (target) => {
                         item.level_id }}</span>
                   </div>
                 </div>
+                <div v-if="FollowBarList.length < 1">没有关注的吧</div>
               </div>
             </div>
           </div>

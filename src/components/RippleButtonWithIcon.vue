@@ -31,16 +31,18 @@ defineProps({
   font-size: 13px;
   margin-top: 5px;
 }
+
 #RippleButton {
   background-color: transparent;
   box-shadow: none;
   padding: 10px 5px;
 }
+
 .material-symbols-outlined {
   font-variation-settings:
-  'FILL' 0,
-  'wght' 100,
-  'GRAD' 0,
-  'opsz' 24
+    'FILL' 0,
+    'wght' 100,
+    'GRAD' 0,
+    'opsz' 24
 }
 </style>
