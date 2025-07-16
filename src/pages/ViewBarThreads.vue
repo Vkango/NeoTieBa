@@ -20,6 +20,8 @@ const onUserNameClicked = (uid) => {
 const loadData = async () => {
   isThreadsLoading.value = true;
   returnData.value = await n.browseBar(props.barName, currentPage.value);
+  // console.log(await window.pluginManager.dispatchEvent('threadListUpdated', returnData.value));
+  returnData.value = await window.pluginManager.dispatchEvent('threadListUpdated', returnData.value);
   if (currentPage.value == 1) {
     emit('setTabInfo', { key: props.key_, title: returnData.value.forum.name + '吧', icon: returnData.value.forum.avatar });
     pinnedThreadList.value = [...pinnedThreadList.value, ...returnData.value.thread_list.filter(item => item.is_top === 1)];

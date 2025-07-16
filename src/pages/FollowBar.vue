@@ -6,12 +6,17 @@ import { get_current_user_cookies, get_current_user } from '../user-manage';
 import { tieBaAPI } from '../tieba-api';
 import Container from '../components/Container.vue';
 import Loading from '../components/Loading.vue';
+
 const naviListItem = ref([]);
 const isLoading = ref(true);
 onMounted(async () => {
   const cookie = await get_current_user();
   const api = new tieBaAPI;
-  naviListItem.value = (await api.followbar_list(cookie.bduss, cookie.stoken)).forum_info.sort((a, b) => b.user_level - a.user_level);;
+  const result = (await api.followbar_list(cookie.bduss, cookie.stoken)).forum_info.sort((a, b) => b.user_level - a.user_level);
+  console.log(result);
+  naviListItem.value = await window.pluginManager.dispatchEvent('followBarUpdated', result);
+  console.log(naviListItem.value);
+  console.log(await window.pluginManager.dispatchEvent('followBarUpdated', result));
   isLoading.value = false;
 })
 const emit = defineEmits(['BarNameClicked']);

@@ -23,6 +23,8 @@ import Tip from './components/Notification/Tip.vue';
 import Debug from './pages/Debug.vue';
 import Toast from './components/Toast.vue';
 import Drawer from './components/Drawer.vue';
+import Home from './pages/Home.vue';
+
 const notificationComponent = ref(null);
 
 const imageViewerVisibility = ref(false);
@@ -73,6 +75,8 @@ provide('deleteTab', (key) => {
   TabsRef.value.handleDelete(TabsRef.value.findIdByKey(key));
 })
 
+
+
 const onOpenImageViewer = (url) => {
   imageViewerVisibility.value = true;
   imageViewerSrc.value = url;
@@ -92,6 +96,8 @@ function generateUniqueId(text) {
 
   return Math.abs(hash);
 }
+
+
 const onBarNameClicked = (barName) => {
   if (barName == undefined) throw new Error("吧名为空！")
   const key = generateUniqueId('ViewBarThreads' + barName);
@@ -158,6 +164,9 @@ function onSwitchTabs(id) {
     element.selected = false;
   });
   switch (activeTab.value.component.__name) {
+    case 'Home':
+      naviListItem.value[1].selected = true;
+      break;
     case 'User':
       naviListItem.value[2].selected = true;
       break;
@@ -276,6 +285,9 @@ const addBar = async (id) => {
       cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 1:
+      key = generateUniqueId('Home');
+      TabsRef.value.addTab(key, '/assets/home.svg', '首页', Home, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked }, true)
+      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 2:
       key = generateUniqueId('FollowBar');
