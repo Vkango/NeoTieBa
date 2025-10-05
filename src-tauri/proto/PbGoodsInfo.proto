@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message PbGoodsInfo {
+    string goods_title = 1;
+    string goods_image = 2;
+    string goods_price = 3;
+    string goods_url = 4;
+    uint32 sort = 5;
+    string goods_from = 6;
+    string goods_url_h5 = 7;
+    int64 goods_id = 8;
+}

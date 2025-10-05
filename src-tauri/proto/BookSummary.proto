@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "BookInfo.proto";
+
+message BookSummary {
+    string title = 1;
+    uint64 num = 2;
+    string url = 3;
+    repeated BookInfo book_list = 4;
+    string cover = 5;
+}

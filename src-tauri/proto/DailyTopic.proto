@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message DailyTopic {
+    string topic_title = 1;
+    string topic_abstract = 2;
+    string topic_pic = 3;
+    string topic_url = 4;
+    string topic_rank_url = 5;
+}

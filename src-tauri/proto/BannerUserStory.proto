@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "AlaLiveInfo.proto";
+import "UserStory.proto";
+
+message BannerUserStory {
+    repeated UserStory user_story = 1;
+    uint32 _switch = 2;
+    repeated AlaLiveInfo ala_live_list = 3;
+}

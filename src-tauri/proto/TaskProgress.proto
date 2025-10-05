@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message TaskProgress {
+    int32 total = 1;
+    int32 current = 2;
+}

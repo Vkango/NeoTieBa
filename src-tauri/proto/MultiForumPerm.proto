@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message MultiForumPerm {
+    int32 is_bawu = 1;
+    string bawu_type = 2;
+    int32 is_deleted = 3;
+    int32 is_block_bawu_delete = 4;
+}

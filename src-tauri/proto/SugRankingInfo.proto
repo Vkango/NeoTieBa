@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "RankingParam.proto";
+
+message SugRankingInfo {
+    string rank_title = 1;
+    RankingParam rank_param = 2;
+}

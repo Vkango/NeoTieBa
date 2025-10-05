@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "ThemeColorInfo.proto";
+
+message NovelRecomCard {
+    string icon_url = 1;
+    string title = 2;
+    repeated ThemeColorInfo title_labels = 3;
+    string author = 4;
+    string _abstract = 5;
+    string chapter_name = 6;
+    int64 chapter_time = 7;
+    ThemeColorInfo chapter_new_labels = 8;
+    string button_name = 9;
+    string button_scheme = 10;
+    string card_scheme = 11;
+    string bottom_title = 12;
+    ThemeColorInfo bottom_left_icon = 13;
+    string bottom_scheme = 14;
+    string bottom_guide = 15;
+    ThemeColorInfo bottom_right_icon = 16;
+    ThemeColorInfo chapter_bg_color = 17;
+    ThemeColorInfo chapter_name_color = 18;
+    ThemeColorInfo bottom_right_icon_2 = 19;
+}

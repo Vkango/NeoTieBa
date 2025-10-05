@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "ThreadInfo.proto";
+
+message VideoActive {
+    uint32 id = 1;
+    string active_name = 2;
+    string active_url = 3;
+    string native_url = 4;
+    string description = 5;
+    string banner_url = 6;
+    string remark = 7;
+    repeated ThreadInfo thread_list = 8;
+}

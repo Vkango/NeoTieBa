@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "ItemPlot.proto";
+import "ItemPoint.proto";
+
+message ItemTable {
+    int32 is_commented = 3;
+    int32 comment_star = 4;
+    int32 total_point_num = 5;
+    repeated ItemPoint item_point = 6;
+    repeated ItemPlot item_plot = 7;
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "FeedAuthorSocial.proto";
+import "FeedContentResource.proto";
+import "FeedKV.proto";
+import "FeedPicAbstract.proto";
+
+message FrsTopThreadComponent {
+    repeated FeedContentResource title = 1;
+    FeedPicAbstract pic_abstract = 2;
+    FeedAuthorSocial author_social = 3;
+    repeated FeedKV business_info = 4;
+    string scheme = 5;
+}

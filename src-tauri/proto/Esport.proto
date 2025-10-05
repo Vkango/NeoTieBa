@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "EsportRank.proto";
+import "EsportStatic.proto";
+
+message Esport {
+    EsportStatic _static = 1;
+    int32 floor_no = 2;
+    repeated EsportRank billboard = 3;
+}

@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message GodBanner {
+    string pic_url = 1;
+    string link_url = 2;
+    string intro = 3;
+}

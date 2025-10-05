@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message VideoChannelInfo {
+    uint64 channel_id = 1;
+    string channel_name = 2;
+    string channel_avatar = 3;
+}

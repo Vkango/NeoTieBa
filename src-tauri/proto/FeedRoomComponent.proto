@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "ThreadRecommendTag.proto";
+import "Voice.proto";
+
+message FeedRoomComponent {
+    string top_label = 1;
+    int32 status = 2;
+    Voice voice = 3;
+    repeated ThreadRecommendTag bottom_labels = 4;
+    string scheme = 5;
+    string cover_url = 6;
+    int64 room_id = 7;
+}

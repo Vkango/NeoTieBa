@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message CardLinkInfo {
+    string type = 1;
+    string image_url = 2;
+    string tag_text = 3;
+    string tag_color = 4;
+    string title = 5;
+    string content1 = 6;
+    string content2 = 7;
+    string btn_style = 8;
+    string btn_text = 9;
+    string text_btn_status = 10;
+    string url = 11;
+}

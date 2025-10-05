@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message OriForumInfo {
+    int64 ori_fid = 1;
+    string ori_fname = 2;
+    string ori_avatar = 3;
+    int64 ori_member_num = 4;
+}

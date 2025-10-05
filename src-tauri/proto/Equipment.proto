@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message Equipment {
+    string name = 1;
+    string portrait = 2;
+}

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+import "GameAttr.proto";
+import "Global.proto";
+import "MparrProps.proto";
+import "NoticeMask.proto";
+import "ParrProps.proto";
+import "ParrScores.proto";
+import "Props.proto";
+import "Rpgoldicon.proto";
+import "TbmallMonthIcon.proto";
+import "WapRn.proto";
+
+message NewUser {
+    int64 user_id = 1;
+    string user_name = 2;
+    int32 user_sex = 3;
+    int32 user_status = 4;
+    int32 meizhi_level = 5;
+    int32 superboy = 6;
+    string card = 7;
+    ParrProps parr_props = 8;
+    MparrProps m_parr_props = 9;
+    WapRn wap_rn = 10;
+    int32 is_tenyear = 11;
+    int32 is_group_owner = 12;
+    ParrScores parr_scores = 13;
+    int32 user_type = 14;
+    int32 use_sig = 15;
+    string paper = 16;
+    string bg_id = 17;
+    int32 is_shengyou = 18;
+    int32 is_hardworking = 19;
+    string billboard = 20;
+    string portrait_time = 21;
+    repeated Props appraise = 22;
+    string tbscore_repeate_finish_time = 23;
+    int32 is_member = 24;
+    int32 is_passer = 25;
+    int32 is_qun_spring = 26;
+    repeated NoticeMask notice_mask = 27;
+    repeated Rpgoldicon rpgoldicon = 28;
+    string is_doudizhu = 29;
+    string cdn_error = 30;
+    repeated TbmallMonthIcon tbmall_month_icon = 31;
+    string is_coreuser = 32;
+    GameAttr game_attr = 33;
+    string is_interestman = 34;
+    Global global = 35;
+    string free_flag = 36;
+}

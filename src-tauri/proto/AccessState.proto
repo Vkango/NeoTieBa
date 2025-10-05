@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "UserSessionInfo.proto";
+
+message AccessState {
+    string type = 1;
+    string token = 2;
+    UserSessionInfo userinfo = 3;
+}

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message FeedHeadIcon {
+    string url = 1;
+    uint32 width = 3;
+    uint32 height = 4;
+    int32 priority = 5;
+    uint32 can_degrade = 6;
+    string degrade_url = 7;
+    uint32 degrade_width = 8;
+    uint32 degrade_height = 9;
+    int32 degrade_priority = 10;
+}

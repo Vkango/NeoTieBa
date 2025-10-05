@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message McnAdInfo {
+    int64 ad_start_time = 1;
+    int64 ad_end_time = 2;
+    string pic_url = 3;
+    string jump_url = 4;
+    string card_title = 5;
+    string button_title = 6;
+    int64 effect_time = 7;
+    int64 expire_time = 8;
+}

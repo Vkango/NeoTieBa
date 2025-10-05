@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+message ElectionList {
+    uint32 apply_id = 1;
+    int32 rank = 2;
+    int64 uid = 3;
+    string portrait = 4;
+    string name_show = 5;
+    int32 forum_level = 6;
+    int32 vote_num = 7;
+    int32 agree_num = 8;
+    int32 thread_num = 9;
+    int32 post_num = 10;
+    string apply_declaration = 11;
+    int64 tid = 12;
+    int32 is_cheat = 13;
+    int32 is_pass_audit = 14;
+}

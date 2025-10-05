@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "SeniorLottery.proto";
+
+message ActInfo {
+    int32 activity_type = 1;
+    int32 status = 2;
+    int32 begin_time = 3;
+    int32 end_time = 4;
+    string url = 5;
+    int32 total_num = 6;
+    int32 activity_id = 7;
+    int32 award_act_id = 8;
+    int32 component_id = 9;
+    bool is_senior = 10;
+    string banner_img = 11;
+    string banner_img_size = 12;
+    SeniorLottery lottery_senior = 13;
+    int32 show_total_num = 14;
+}

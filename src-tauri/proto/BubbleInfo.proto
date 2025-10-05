@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message BubbleInfo {
+    int32 bubble_id = 1;
+    string bubble_text = 2;
+    string bubble_pic = 3;
+}

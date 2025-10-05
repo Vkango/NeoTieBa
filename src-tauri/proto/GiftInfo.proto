@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message GiftInfo {
+    string icon = 1;
+    int32 num = 2;
+    uint32 gift_id = 3;
+    string gift_name = 4;
+    string large_thumbnail_url = 5;
+    uint64 sender_id = 6;
+    string sender_name = 7;
+}

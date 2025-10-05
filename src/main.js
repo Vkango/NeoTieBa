@@ -11,5 +11,4 @@ app.config.errorHandler = (err, instance, info) => {
 const IsDrawerOpen = reactive({ state: false });
 app.config.globalProperties.$IsDrawerOpen = IsDrawerOpen;
 app.config.globalProperties.$pluginManager = pluginManager;
-
 app.mount("#app");

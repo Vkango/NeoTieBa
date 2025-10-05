@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message NewParrScores {
+    uint64 scores_total = 1;
+    uint32 update_time = 2;
+    uint64 i_total = 3;
+}

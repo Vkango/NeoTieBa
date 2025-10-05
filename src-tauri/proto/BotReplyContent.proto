@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "BotReplyUserInfo.proto";
+
+message BotReplyContent {
+    string text = 1;
+    BotReplyUserInfo user_info = 2;
+    string target_scheme = 3;
+}

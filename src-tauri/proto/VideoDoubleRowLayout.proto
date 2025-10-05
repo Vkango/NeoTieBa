@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "ComponentFactory.proto";
+import "FeedKV.proto";
+
+message VideoDoubleRowLayout {
+    repeated ComponentFactory components = 1;
+    string schema = 2;
+    repeated FeedKV business_info = 3;
+    repeated FeedKV log_info = 4;
+}

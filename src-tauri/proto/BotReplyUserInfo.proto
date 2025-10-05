@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message BotReplyUserInfo {
+    string portrait_url = 1;
+    string name = 2;
+    string icon_url = 3;
+}

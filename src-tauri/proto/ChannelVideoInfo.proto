@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+message ChannelVideoInfo {
+    uint64 thread_id = 1;
+    uint32 forum_id = 2;
+    string forum_name = 3;
+    string title = 4;
+    uint32 play_count = 5;
+    string video_url = 6;
+    uint32 video_duration = 7;
+    uint32 video_width = 8;
+    uint32 video_height = 9;
+    uint32 video_length = 10;
+    uint64 video_type = 11;
+    string thumbnail_url = 12;
+    uint32 thumbnail_width = 13;
+    uint32 thumbnail_height = 14;
+    uint32 is_top = 15;
+    uint32 create_time = 16;
+}

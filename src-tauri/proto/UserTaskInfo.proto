@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message UserTaskInfo {
+    int64 id = 1;
+    string name = 2;
+    string brief = 3;
+    string task_icon_url = 4;
+    int32 status = 5;
+    int32 target_num = 6;
+    int32 curr_num = 7;
+    int32 task_type = 8;
+    int32 weight = 9;
+    string act_type = 10;
+    string target_scheme = 11;
+}

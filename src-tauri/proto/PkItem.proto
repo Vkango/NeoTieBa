@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message PkItem {
+    int64 pk_num = 1;
+    string pk_desc = 2;
+    string last_username = 3;
+    string pk_icon = 4;
+    int64 has_clicked = 5;
+    int64 pk_index = 6;
+    string pk_icon_after = 7;
+}

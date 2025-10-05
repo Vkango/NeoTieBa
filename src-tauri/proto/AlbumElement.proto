@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message AlbumElement {
+    uint32 album_type = 1;
+    string album_url = 2;
+    string album_thumb_url = 3;
+    uint32 album_height = 4;
+    uint32 album_width = 5;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "Agree.proto";
+import "FeedContentResource.proto";
+import "FeedKV.proto";
+import "PostExposeHead.proto";
+
+message FeedPostExpose {
+    string schema = 1;
+    string stamp_url = 2;
+    repeated FeedContentResource floor = 3;
+    PostExposeHead head_img = 4;
+    repeated FeedKV business_info = 5;
+    string head_text = 6;
+    Agree head_agree = 7;
+}

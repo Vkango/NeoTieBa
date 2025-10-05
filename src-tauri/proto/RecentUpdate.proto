@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message RecentUpdate {
+    string version = 1;
+    string log = 2;
+    string update_time = 3;
+}

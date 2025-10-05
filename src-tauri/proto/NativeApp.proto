@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message NativeApp {
+    string jump_and = 1;
+    string jump_ios = 2;
+    string download_and = 3;
+    string download_ios = 4;
+}

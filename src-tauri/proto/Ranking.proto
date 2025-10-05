@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "RankingParam.proto";
+
+message Ranking {
+    string name = 1;
+    int32 rank_num = 2;
+    RankingParam ranking_param = 3;
+}

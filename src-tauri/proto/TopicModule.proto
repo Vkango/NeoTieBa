@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "PkModule.proto";
+
+message TopicModule {
+    int64 topic_id = 1;
+    string topic_name = 2;
+    string topic_desc = 3;
+    int64 discuss_num = 4;
+    string topic_image = 5;
+    PkModule pk_module = 6;
+    string topic_avatar = 7;
+}

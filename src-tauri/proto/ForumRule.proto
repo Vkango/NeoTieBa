@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "PbContent.proto";
+
+message ForumRule {
+    string title = 1;
+    repeated PbContent content = 2;
+    int32 status = 3;
+}

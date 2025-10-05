@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message GeneralResource {
+    string res_image = 1;
+    string res_link = 2;
+    uint32 res_floor = 3;
+}

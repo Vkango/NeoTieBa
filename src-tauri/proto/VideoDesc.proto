@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message VideoDesc {
+    int32 video_id = 1;
+    string video_md5 = 2;
+    string video_url = 3;
+    string video_width = 4;
+    string video_height = 5;
+}

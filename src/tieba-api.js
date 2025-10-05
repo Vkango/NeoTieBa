@@ -1,8 +1,8 @@
 // HTTP API 与 Protobuf API
 import CryptoJS from "crypto-js";
 import { fetchData, fetchData_post, fetchData_with_cookie } from './request.js'
-import { user_info_protobuf } from "./protobuf/user-info.js";
-import { user_post_protobuf } from "./protobuf/user-post.js";
+import { user_info_protobuf } from "./api/user-info.js";
+import { user_post_protobuf } from "./api/user-post.js";
 export class tieBaAPI {
     /**
      * 构造函数
@@ -27,9 +27,22 @@ export class tieBaAPI {
         // 将哈希值转为大写，并拼接到原始数据中
         return originalData + "&sign=" + hash.toUpperCase();
     }
+    /**
+     * 获取用户信息 - 基于Protobuf协议
+     * @param {number} userId - 用户ID
+     * @param {number} page - 页码，默认为1
+     * @returns {Promise<Object>} 用户信息响应
+     */
     async user_info(userId, page = 1) {
         return await user_info_protobuf(userId, page);
     }
+
+    /**
+     * 获取用户发帖信息 - 基于Protobuf协议
+     * @param {number} userId - 用户ID
+     * @param {number} page - 页码，默认为1
+     * @returns {Promise<Object>} 用户发帖响应
+     */
     async user_post(userId, page = 1) {
         return await user_post_protobuf(userId, page);
     }

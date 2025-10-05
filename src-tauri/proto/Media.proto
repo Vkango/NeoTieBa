@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+message Media {
+    int32 type = 1;
+    string small_pic = 2;
+    string big_pic = 3;
+    string water_pic = 4;
+    string vpic = 5;
+    string vsrc = 6;
+    string vhsrc = 7;
+    string src_pic = 8;
+    string text = 9;
+    uint32 width = 10;
+    uint32 height = 11;
+    string bsize = 12;
+    uint32 during_time = 13;
+    uint32 e_type = 14;
+    string origin_pic = 15;
+    uint32 origin_size = 16;
+    int64 post_id = 17;
+    string dynamic_pic = 18;
+    uint32 is_long_pic = 19;
+    uint32 show_original_btn = 20;
+    uint32 is_blocked_pic = 21;
+    double wth_mid_loc = 22;
+    double hth_mid_loc = 23;
+    string jump_url = 24;
+    string guide_text = 25;
+    int32 lottie_type = 26;
+}

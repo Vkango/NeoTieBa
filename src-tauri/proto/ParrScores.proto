@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message ParrScores {
+    int32 scores_total = 1;
+    int32 scores_fetch = 2;
+    int32 scores_money = 3;
+    int32 scores_other = 4;
+    int32 update_time = 5;
+    int32 level = 6;
+    int32 limit = 7;
+    uint64 i_total = 8;
+    uint64 i_money = 9;
+    uint64 i_other = 10;
+}

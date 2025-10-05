@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message AlaCoverLabel {
+    uint32 label_id = 1;
+    string label_name = 2;
+    string label_rgb = 3;
+}

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message AwardInfo {
+    int64 award_id = 1;
+    int64 award_act_id = 2;
+    string award_name = 3;
+    string award_imgsrc = 4;
+}

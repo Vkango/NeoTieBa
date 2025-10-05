@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "GameCodeList.proto";
+
+message ItemGameCode {
+    int32 unclaimed_num = 1;
+    repeated GameCodeList game_code_list = 2;
+}

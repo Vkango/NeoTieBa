@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "FeedContentText.proto";
+import "FeedKV.proto";
+
+message SidewayRecomComponent {
+    int32 type = 1;
+    FeedContentText title = 2;
+    FeedContentText desc = 3;
+    string img_url = 4;
+    string corner_url = 5;
+    repeated FeedKV business_info = 6;
+    string schema = 7;
+}

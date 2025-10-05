@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message ChatroomMEMsgInfo {
+    int64 from_uid = 1;
+    string from_name = 2;
+    string content = 3;
+    int64 msg_id = 4;
+    string special_msg = 5;
+    string special_msg_type = 6;
+    int64 msg_time = 7;
+}

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message ClickBackCardItem {
+    string text = 1;
+    string jump_url = 2;
+    int64 business_id = 3;
+    string business_type = 4;
+}

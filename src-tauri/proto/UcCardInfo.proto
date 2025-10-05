@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message UcCardInfo {
+    string title = 1;
+    string pic = 2;
+    string jmp = 3;
+    string tip = 4;
+    uint32 st = 5;
+}

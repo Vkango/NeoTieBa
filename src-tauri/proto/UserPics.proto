@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message UserPics {
+    string big = 1;
+    string small = 2;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "FeedLayout.proto";
+import "FrsTopThreadCardLayout.proto";
+import "HeadcardLayout.proto";
+import "SidewayLayout.proto";
+import "VideoDoubleRowLayout.proto";
+
+message LayoutFactory {
+    string layout = 1;
+    FeedLayout feed = 2;
+    SidewayLayout sideway = 3;
+    HeadcardLayout headcard = 4;
+    FrsTopThreadCardLayout frs_top_thread_card = 5;
+    VideoDoubleRowLayout double_row_video = 6;
+}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message CartoonThread {
+    int64 cartoon_id = 1;
+    int32 chapter_id = 2;
+}

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "PbContent.proto";
+
+message NewFloorInfo {
+    repeated PbContent content = 1;
+    int32 is_floor = 2;
+}

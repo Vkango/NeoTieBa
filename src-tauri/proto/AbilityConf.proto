@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message AbilityConf {
+    string bot_uk = 1;
+    int32 skill_id = 2;
+}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "PicDecoration.proto";
+
+message PicInfo {
+    string small_pic_url = 1;
+    string big_pic_url = 2;
+    string origin_pic_url = 3;
+    uint32 width = 4;
+    uint32 height = 5;
+    uint32 is_long_pic = 6;
+    double crop_point_width_ratio = 7;
+    double crop_point_height_ratio = 8;
+    repeated PicDecoration decoration = 9;
+    string scheme = 10;
+    string pic_type = 11;
+}

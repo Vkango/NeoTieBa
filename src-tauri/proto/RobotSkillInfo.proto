@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "CallRobotEntrance.proto";
+import "StyleContentInfo.proto";
+
+message RobotSkillInfo {
+    repeated CallRobotEntrance robot_skill_list = 1;
+    string robot_uk = 2;
+    string robot_portrait = 3;
+    string robot_name = 4;
+    StyleContentInfo style_day = 5;
+    StyleContentInfo style_dark = 6;
+    string new_skill_guide = 7;
+}

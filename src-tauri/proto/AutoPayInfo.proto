@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message AutoPayInfo {
+    uint64 create_time = 1;
+    uint32 pay_channel = 2;
+    int64 begin_time = 3;
+    string autopay_url = 4;
+}

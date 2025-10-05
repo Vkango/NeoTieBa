@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "StateInfo.proto";
+
+message VirtualImageInfo {
+    int32 isset_virtual_image = 1;
+    string virtual_image_url = 2;
+    int32 image_agree_count = 3;
+    int32 is_allow_agree = 4;
+    int32 virtual_background_type = 5;
+    string virtual_background = 6;
+    int32 recent_incr_agree = 7;
+    int32 snapshoot_id = 8;
+    StateInfo personal_state = 9;
+    repeated StateInfo state_list = 10;
+    int32 allow_customize = 11;
+    int32 is_display = 12;
+    int32 is_background_firstly = 13;
+    string dynamic_virtual_image_url = 14;
+}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+import "McnAdInfo.proto";
+import "VideoDesc.proto";
+
+message VideoInfo {
+    string video_md5 = 1;
+    string video_url = 2;
+    uint32 video_duration = 3;
+    uint32 video_width = 4;
+    uint32 video_height = 5;
+    string thumbnail_url = 6;
+    uint32 thumbnail_width = 7;
+    uint32 thumbnail_height = 8;
+    int32 video_length = 9;
+    int32 play_count = 10;
+    string media_subtitle = 11;
+    repeated VideoDesc video_desc = 12;
+    int32 video_select_flag = 13;
+    uint32 video_type = 14;
+    uint32 is_vertical = 15;
+    VideoDesc video_h265 = 16;
+    string mcn_lead_page = 17;
+    McnAdInfo mcn_ad_card = 18;
+    double wth_mid_loc = 19;
+    double hth_mid_loc = 20;
+    string small_thumbnail_url = 21;
+    string first_frame_thumbnail = 22;
+}

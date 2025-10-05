@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message EditInfo {
+    int32 edit_status = 1;
+    int32 edit_enable = 2;
+    string edit_error_msg = 3;
+    int32 last_edit_time = 4;
+    int32 edit_from = 5;
+    int32 edit_error_no = 6;
+}

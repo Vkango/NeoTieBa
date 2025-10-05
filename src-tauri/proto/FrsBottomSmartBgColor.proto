@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message FrsBottomSmartBgColor {
+    string theme_color = 1;
+    string ball_bg_color = 2;
+    string tab_line_color = 3;
+    string tag_color = 4;
+    string post_button_color = 5;
+    string post_button_shadow_color = 6;
+    string module1_bg_color = 7;
+    string module2_bg_color = 8;
+    string module3_bg_color = 9;
+    string module4_bg_color = 10;
+    string at_font_color = 11;
+}

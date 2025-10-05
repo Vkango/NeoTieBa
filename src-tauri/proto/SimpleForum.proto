@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+import "DeletedReasonInfo.proto";
+import "ForumShowInfo.proto";
+import "FrsTabInfo.proto";
+import "MultiForumPerm.proto";
+import "SpritePBGuide.proto";
+import "ThemeColorInfo.proto";
+
+message SimpleForum {
+    int64 id = 1;
+    string name = 2;
+    int32 is_exists = 3;
+    string avatar = 4;
+    uint32 is_liked = 5;
+    uint32 is_signed = 6;
+    string first_class = 7;
+    string second_class = 8;
+    string ext = 9;
+    uint32 level_id = 10;
+    MultiForumPerm multi_forum_perm = 11;
+    int32 member_num = 12;
+    int32 post_num = 13;
+    int32 is_brand_forum = 14;
+    repeated FrsTabInfo tab_info = 15;
+    string forum_toutu = 16;
+    DeletedReasonInfo deleted_reason_info = 17;
+    int32 is_frs_mask = 18;
+    ThemeColorInfo theme_color = 19;
+    string recommend_tip = 20;
+    repeated string pendants = 21;
+    ForumShowInfo show_info = 22;
+    SpritePBGuide sprite_pb_guide = 23;
+    string scheme = 24;
+}

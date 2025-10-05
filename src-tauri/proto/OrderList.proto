@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message OrderList {
+    string order_id = 1;
+    int32 status = 7;
+    int64 create_time = 10;
+    int64 finish_time = 11;
+    string title = 12;
+    string activity_desc = 15;
+    string activity_url = 16;
+    string button_name = 17;
+    uint32 scene_id = 18;
+    int64 money = 19;
+    int64 scores = 20;
+    string preg_field = 21;
+    int32 price_type = 22;
+    double order_yy_amount = 23;
+    double order_amount = 24;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "RobotSkill.proto";
+import "RobotSkillInfo.proto";
+
+message RobotEntrance {
+    repeated RobotSkillInfo robot_skill_info = 1;
+    repeated RobotSkill bottom_bar_robot_skill = 2;
+    repeated RobotSkill first_floor_bar_robot_skill = 3;
+    string bottom_bar_click_guide = 5;
+}

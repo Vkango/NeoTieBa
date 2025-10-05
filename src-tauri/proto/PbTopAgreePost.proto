@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "Post.proto";
+
+message PbTopAgreePost {
+    repeated Post post_list = 1;
+    repeated int64 post_id_list = 3;
+    string forum_top_list = 4;
+}

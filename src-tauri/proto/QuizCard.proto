@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "LinkConf.proto";
+import "PubCardFreq.proto";
+import "QuizCardTopConf.proto";
+import "QuizInfo.proto";
+import "ThemeColorInfo.proto";
+
+message QuizCard {
+    PubCardFreq freq = 1;
+    ThemeColorInfo card_background = 2;
+    QuizCardTopConf top = 3;
+    LinkConf bottom = 4;
+    QuizInfo quiz = 5;
+}

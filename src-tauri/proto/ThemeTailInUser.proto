@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ThemeTailInUser {
+    string url = 1;
+    string dynamic = 2;
+    string props_id = 3;
+}

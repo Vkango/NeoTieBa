@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "BawuRoleDes.proto";
+
+message BawuTeam {
+    int32 total_num = 1;
+    repeated BawuRoleDes bawu_team_list = 2;
+}

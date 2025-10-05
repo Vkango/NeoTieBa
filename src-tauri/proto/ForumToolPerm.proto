@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message ForumToolPerm {
+    int64 perm = 1;
+}

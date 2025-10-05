@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message VideoTags {
+    string first = 1;
+    string second = 2;
+    repeated string tags = 3;
+}

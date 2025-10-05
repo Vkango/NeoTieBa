@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+import "Abstract.proto";
+import "Agree.proto";
+import "Media.proto";
+import "MediaNum.proto";
+import "User.proto";
+import "Voice.proto";
+
+message PostList {
+    int64 id = 1;
+    User author = 2;
+    repeated Abstract _abstract = 3;
+    repeated Media media = 4;
+    repeated MediaNum media_num = 5;
+    repeated Voice voice_info = 6;
+    int64 author_id = 7;
+    Agree agree = 8;
+}

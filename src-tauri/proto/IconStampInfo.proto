@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message IconStampInfo {
+    string stamp_title = 1;
+    string stamp_text = 2;
+    int32 stamp_type = 3;
+}

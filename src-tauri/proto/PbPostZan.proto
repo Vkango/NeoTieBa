@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message PbPostZan {
+    int64 zan_num = 1;
+    int32 has_zan = 2;
+}

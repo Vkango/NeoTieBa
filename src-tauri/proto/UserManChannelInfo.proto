@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message UserManChannelInfo {
+    uint32 man_channel = 1;
+    uint32 follow_channel = 2;
+}

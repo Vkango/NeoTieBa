@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message ThemeCardPropMain {
+    uint64 props_id = 1;
+    string title = 2;
+    string description = 3;
+    string example_url = 4;
+    string permission = 5;
+    string props_state_img = 6;
+    uint32 in_use = 7;
+    uint32 free_user_level = 8;
+    string activity_url = 9;
+    uint32 is_finished = 10;
+    string dynamic_url = 11;
+}

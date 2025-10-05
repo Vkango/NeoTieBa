@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ForumRuleStatus {
+    string title = 2;
+    int32 audit_status = 3;
+    int32 has_forum_rule = 4;
+}

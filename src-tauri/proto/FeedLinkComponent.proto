@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "PbLinkInfo.proto";
+
+message FeedLinkComponent {
+    repeated PbLinkInfo links = 1;
+}

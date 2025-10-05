@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+import "AbstractComponent.proto";
+import "FeedAuthorSocial.proto";
+import "FeedEntrybarComponent.proto";
+import "FeedHeadComponent.proto";
+import "FeedHeadFigureComponent.proto";
+import "FeedItem.proto";
+import "FeedLinkComponent.proto";
+import "FeedLiveComponent.proto";
+import "FeedOriginComponent.proto";
+import "FeedPicComponent.proto";
+import "FeedPostExpose.proto";
+import "FeedRoomComponent.proto";
+import "FeedSocialComponent.proto";
+import "FeedToutiao.proto";
+import "FeedVideoAdComponent.proto";
+import "FeedVideoComponent.proto";
+import "FrsTopThreadComponent.proto";
+import "PollInfo.proto";
+import "SidewayRecomComponent.proto";
+import "ThreadRecommendInfo.proto";
+import "TitleComponent.proto";
+import "Voice.proto";
+
+message ComponentFactory {
+    string component = 1;
+    TitleComponent feed_title = 3;
+    AbstractComponent feed_abstract = 4;
+    FeedHeadComponent feed_head = 5;
+    FeedHeadFigureComponent feed_head_figure = 6;
+    FeedPicComponent feed_pic = 7;
+    FeedSocialComponent feed_social = 8;
+    FeedVideoComponent feed_video = 9;
+    FeedEntrybarComponent feed_entrybar = 10;
+    Voice feed_voice = 11;
+    FeedLiveComponent feed_live = 12;
+    string base_text = 13;
+    SidewayRecomComponent sideway_recom = 14;
+    FeedItem feed_item = 15;
+    FeedOriginComponent feed_origin = 16;
+    FeedLinkComponent feed_link = 17;
+    repeated ThreadRecommendInfo feed_recomtag = 18;
+    FeedVideoAdComponent feed_videoad = 19;
+    FeedPostExpose feed_postexpose = 20;
+    FeedRoomComponent feed_room = 21;
+    PollInfo feed_poll = 22;
+    FeedToutiao feed_toutiao = 23;
+    FrsTopThreadComponent frs_top_thread = 24;
+    FeedAuthorSocial feed_author_social = 25;
+}

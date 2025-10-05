@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message RobotSkill {
+    string robot_uk = 1;
+    repeated int32 skill_ids = 2;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message SchoolRecomUserInfo {
+    uint64 uid = 1;
+    string uname = 2;
+    string portrait = 3;
+    string institute = 4;
+    uint32 is_liked = 5;
+}

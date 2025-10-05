@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message TwAnchorProfitItem {
+    int32 id = 1;
+    uint32 available_anchor_level = 2;
+    string name = 3;
+    string icon_unlock_url = 4;
+    string icon_lock_url = 5;
+}

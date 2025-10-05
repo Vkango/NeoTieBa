@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "RecommendForumInfo.proto";
+
+message DiscoverTabCard {
+    string name = 1;
+    repeated RecommendForumInfo forum_list = 2;
+    string jump_name = 3;
+    bool is_show_order_number = 4;
+}

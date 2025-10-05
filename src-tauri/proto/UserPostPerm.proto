@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message UserPostPerm {
+    uint32 not_show_hide_thread = 1;
+}

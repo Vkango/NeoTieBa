@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message AlaStageDislikeInfo {
+    string dislike_reason = 1;
+    uint32 dislike_id = 2;
+}

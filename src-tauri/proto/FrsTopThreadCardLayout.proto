@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "ComponentFactory.proto";
+
+message FrsTopThreadCardLayout {
+    repeated ComponentFactory components = 1;
+}

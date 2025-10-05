@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message Global {
+    string tbmall_newprops = 1;
+}

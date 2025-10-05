@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "SignatureInfo.proto";
+
+message GameAttr {
+    string user_id = 1;
+    SignatureInfo signature_info = 2;
+    string is_open = 3;
+}

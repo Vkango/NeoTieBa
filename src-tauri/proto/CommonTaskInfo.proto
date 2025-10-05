@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+import "TaskProgress.proto";
+
+message CommonTaskInfo {
+    int32 id = 1;
+    string name = 2;
+    string task_icon_url = 3;
+    string brief = 4;
+    int32 plat_act_id = 5;
+    int32 plat_task_id = 6;
+    string plat_task_token = 7;
+    int32 plat_platform_type_id = 8;
+    string plat_act_token = 9;
+    string scene_task_key = 10;
+    int32 task_type = 11;
+    int32 status = 12;
+    int32 weight = 13;
+    string act_type = 14;
+    int32 is_need_active = 15;
+    int32 is_plat_task = 16;
+    int32 target_num = 17;
+    int32 is_continuous = 18;
+    int32 month = 19;
+    int32 week = 20;
+    int32 time_interval = 21;
+    int32 client_type = 22;
+    int32 scene_id = 23;
+    string scene_switch = 24;
+    string scene_callback = 25;
+    string comment = 26;
+    string ext = 27;
+    int32 create_time = 28;
+    int32 update_time = 29;
+    string activate_token = 30;
+    int32 dotask_status = 31;
+    int32 start_time = 32;
+    int32 complete_time = 33;
+    TaskProgress task_progress = 34;
+}

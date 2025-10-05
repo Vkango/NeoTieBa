@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message QuizOption {
+    int64 quiz_option_id = 1;
+    string quiz_option = 2;
+    string icon = 3;
+    int64 total_user_count = 4;
+    string button_img = 5;
+    string button_text_sup = 6;
+    string button_text_no = 7;
+}

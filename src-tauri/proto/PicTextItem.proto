@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message PicTextItem {
+    string item_pic = 1;
+    string item_url = 2;
+    string item_text = 3;
+}

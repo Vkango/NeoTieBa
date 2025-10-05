@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message UserVipInfo {
+    uint32 v_status = 1;
+    uint32 s_time = 2;
+    uint32 e_time = 3;
+    uint32 ext_score = 4;
+    uint32 v_level = 5;
+    int32 a_score = 6;
+    uint32 n_score = 7;
+    string icon_url = 8;
+}

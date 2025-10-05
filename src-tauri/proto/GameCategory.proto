@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message GameCategory {
+    int32 id = 1;
+    string name = 2;
+    string icon_url = 3;
+    repeated string game_list = 4;
+}

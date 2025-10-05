@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message FansRankUserInfo {
+    int32 user_id = 1;
+    string user_name = 2;
+    int32 present_num = 3;
+    string present_scores = 4;
+    string portrait = 5;
+}

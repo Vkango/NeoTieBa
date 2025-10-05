@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message DeletedReasonInfo {
+    int32 is_grays_cale_forum = 1;
+    int32 is_boomgrow = 2;
+}

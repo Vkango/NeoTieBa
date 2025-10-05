@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message TbmallMonthIcon {
+    string mon = 1;
+    string icon = 2;
+}

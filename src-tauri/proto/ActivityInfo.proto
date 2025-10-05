@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message ActivityInfo {
+    int64 activity_id = 1;
+    string main_title = 2;
+    string sub_title = 3;
+    string back_pic = 4;
+    int32 back_pic_width = 5;
+    int32 back_pic_height = 6;
+    string subpage_link = 7;
+}

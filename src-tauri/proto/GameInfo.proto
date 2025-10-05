@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+message GameInfo {
+    string game_id = 1;
+    string game_name = 2;
+    uint32 game_type = 3;
+    string icon_url = 4;
+    uint32 player_num = 5;
+    string package_link = 6;
+    string package_size = 7;
+    string game_link = 8;
+    uint32 mark = 9;
+    string apple_id = 10;
+    string bundle_id = 11;
+    string schema_url = 12;
+    repeated string game_pic = 13;
+    string introduce = 14;
+    string launch_component = 15;
+    string andr_pk_name = 16;
+    uint32 day_downloads = 17;
+    string secret_key = 18;
+    string superscript_color = 19;
+    uint32 star = 20;
+    uint32 category_id = 21;
+    string category_name = 22;
+    string version = 23;
+    uint64 deadline = 24;
+    string editor_rec = 25;
+    string _abstract = 26;
+    string game_details_url = 27;
+    uint32 app_id = 28;
+    string icon_pic1 = 29;
+    string icon_pic2 = 30;
+    string icon_pic3 = 31;
+    string game_desc = 32;
+    string subscript_color = 33;
+    string launchComponent = 34;
+    string category_name_sim = 35;
+    uint32 score = 36;
+}

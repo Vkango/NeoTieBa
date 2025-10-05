@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message EsportUser {
+    string steam_name = 1;
+    string steam_portrait = 2;
+}

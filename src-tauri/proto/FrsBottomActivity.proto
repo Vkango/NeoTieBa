@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "FrsBottomActivityTime.proto";
+
+message FrsBottomActivity {
+    string title = 1;
+    string _abstract = 2;
+    string image = 3;
+    string icon = 4;
+    string jump_url = 5;
+    FrsBottomActivityTime activity_time = 6;
+}

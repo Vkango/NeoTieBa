@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message UserRankPresentInfo {
+    uint32 user_id = 1;
+    string user_name = 2;
+    uint32 present_num = 3;
+    uint64 present_scores = 4;
+    string portrait = 5;
+}

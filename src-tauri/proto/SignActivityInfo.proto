@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message SignActivityInfo {
+    int64 activity_id = 1;
+    int32 activity_time = 2;
+    int32 countdown_time = 3;
+    int32 activity_duration = 4;
+    string countdown_msg = 5;
+    string activity_msg = 6;
+    string activity_suc_msg = 7;
+    string activity_fail_msg = 8;
+    int32 gift_type = 9;
+    string gift_url = 10;
+    string gift_name = 11;
+    string icon_name = 12;
+    int32 icon_lifecycle = 13;
+    string activity_name = 14;
+    string image_url = 15;
+}

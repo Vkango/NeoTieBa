@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message ItemService {
+    string icon = 1;
+    int32 client_type = 2;
+    int32 type = 3;
+    string name = 4;
+    string url = 5;
+    int32 app_id = 6;
+}

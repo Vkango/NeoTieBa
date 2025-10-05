@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message TbVipInfo {
+    string intro = 1;
+    string v_url = 2;
+    string v_detail = 3;
+}

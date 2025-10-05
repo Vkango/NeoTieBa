@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "PubHeadCardCover.proto";
+import "QuizCard.proto";
+import "ThemeColorInfo.proto";
+import "ThreadInfo.proto";
+
+message HeadcardLayout {
+    string card_title = 1;
+    repeated ThreadInfo thread_list = 2;
+    ThemeColorInfo card_background = 3;
+    PubHeadCardCover cover = 4;
+    QuizCard quiz_card = 5;
+}

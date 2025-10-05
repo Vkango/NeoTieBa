@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message FullLengthNovel {
+    string schema = 1;
+    string has_truncate = 2;
+    int32 button_heigh = 3;
+}

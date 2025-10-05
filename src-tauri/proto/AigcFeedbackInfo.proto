@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "Toast.proto";
+
+message AigcFeedbackInfo {
+    string aigc_chat_id = 1;
+    int32 feedback_fold = 2;
+    string feedback_fold_tip = 3;
+    string positive_text = 4;
+    string negative_text = 5;
+    string feedback_url = 6;
+    Toast feedback_toast = 7;
+}

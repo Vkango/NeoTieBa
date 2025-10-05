@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "PushType.proto";
+
+message PushStatus {
+    int32 status = 1;
+    repeated PushType types = 2;
+}

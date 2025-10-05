@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "LinkThreadContent.proto";
+
+message LinkThreadInfo {
+    string link_url = 1;
+    string link_url_code = 2;
+    repeated LinkThreadContent link_content = 3;
+}

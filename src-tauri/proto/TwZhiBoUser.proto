@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message TwZhiBoUser {
+    uint32 anchor_level = 1;
+    uint32 in_black_list = 2;
+    string field_ex = 3;
+}

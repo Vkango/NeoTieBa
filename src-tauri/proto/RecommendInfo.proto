@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "SchoolRecomUserInfo.proto";
+
+message RecommendInfo {
+    string title = 1;
+    repeated SchoolRecomUserInfo user_list = 2;
+}

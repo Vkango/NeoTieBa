@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "User.proto";
+
+message FrequentlyForumInfo {
+    uint64 forum_id = 1;
+    string new_thread_num = 6;
+    repeated User user_list = 7;
+    uint64 last_access_time = 9;
+    string forum_name = 11;
+    string avatar = 12;
+    uint32 level_id = 13;
+    uint32 forum_state = 14;
+    uint32 access_flag = 15;
+    uint32 is_sign = 16;
+}

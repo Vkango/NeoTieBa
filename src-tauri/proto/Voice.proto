@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message Voice {
+    int32 type = 1;
+    int32 during_time = 2;
+    string voice_md5 = 3;
+    string voice_url = 4;
+    int64 uid = 5;
+}

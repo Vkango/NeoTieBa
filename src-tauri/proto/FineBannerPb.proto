@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message FineBannerPb {
+    int64 ftid = 1;
+    string title = 2;
+    string pic_url = 3;
+    string link_url = 4;
+}

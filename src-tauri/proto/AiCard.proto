@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message AiCard {
+    string title = 1;
+    string content = 2;
+    int32 position = 3;
+    int64 pa = 4;
+    string uk = 5;
+    string portrait = 6;
+}

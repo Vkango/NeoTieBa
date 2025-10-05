@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "User.proto";
+
+message UserDynamic {
+    repeated User concerned_user_list = 1;
+}

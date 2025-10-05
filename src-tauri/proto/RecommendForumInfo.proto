@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+import "BlockPopInfo.proto";
+import "FrsTabInfo.proto";
+import "PbContent.proto";
+import "PostPrefix.proto";
+
+message RecommendForumInfo {
+    string avatar = 1;
+    uint64 forum_id = 2;
+    string forum_name = 3;
+    uint32 is_like = 4;
+    uint32 member_count = 5;
+    uint32 thread_count = 6;
+    string slogan = 7;
+    repeated PbContent content = 8;
+    uint32 forum_type = 9;
+    string authen = 10;
+    string recom_reason = 11;
+    uint32 is_brand_forum = 12;
+    string hot_text = 13;
+    string abtest_tag = 14;
+    string source = 15;
+    string extra = 16;
+    uint32 is_private_forum = 17;
+    string lv1_name = 18;
+    string lv2_name = 19;
+    string avatar_origin = 20;
+    uint64 hot_thread_id = 22;
+    int32 is_recommend_forum = 23;
+    PostPrefix post_prefix = 24;
+    int32 has_postpre = 25;
+    repeated FrsTabInfo tab_info = 26;
+    uint32 day_thread_num = 27;
+    BlockPopInfo block_pop_info = 28;
+    string first_category = 29;
+    int32 level_id = 30;
+    uint32 thread_num = 31;
+    int32 post_num = 32;
+}

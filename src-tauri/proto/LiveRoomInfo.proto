@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message LiveRoomInfo {
+    string btn_title = 1;
+    int32 own_room_count = 2;
+    string jump_url = 3;
+}

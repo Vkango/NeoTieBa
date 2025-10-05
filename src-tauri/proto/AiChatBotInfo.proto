@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message AiChatBotInfo {
+    string uk = 1;
+    uint64 pa = 2;
+    string name = 3;
+    string portrait = 4;
+    string background_url = 5;
+    string prologue = 6;
+}

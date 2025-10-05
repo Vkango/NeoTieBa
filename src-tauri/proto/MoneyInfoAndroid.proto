@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message MoneyInfoAndroid {
+    string icon = 1;
+    string product_id = 2;
+    int32 type = 3;
+    uint32 props_id = 4;
+    string title = 5;
+    string desc = 6;
+    string months = 7;
+    uint32 socres = 8;
+    uint32 money = 9;
+    int32 _default = 10;
+    string payment_pos_key = 11;
+    string packet_text = 12;
+    uint32 original_cost = 13;
+}

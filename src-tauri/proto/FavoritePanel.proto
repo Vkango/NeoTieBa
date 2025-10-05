@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message FavoritePanel {
+    string main_title = 1;
+    string sub_title = 2;
+    int64 number = 3;
+    string img_url = 4;
+    string on_off = 5;
+    int32 max_times = 6;
+}

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "AvatarFrame.proto";
+import "Level.proto";
+import "Portrait.proto";
+import "Props.proto";
+
+message MparrProps {
+    AvatarFrame avatarframe = 1;
+    Portrait portrait = 2;
+    Level level = 3;
+    repeated Props props = 4;
+}

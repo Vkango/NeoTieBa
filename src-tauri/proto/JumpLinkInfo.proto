@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message JumpLinkInfo {
+    string title_icon = 1;
+    string title_text = 2;
+    string title_color = 3;
+    string link_icon = 4;
+    string link_text = 5;
+    string link_color = 6;
+    string link_url = 7;
+    string background_color = 8;
+}

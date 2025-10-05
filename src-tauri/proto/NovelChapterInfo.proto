@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message NovelChapterInfo {
+    string chapter_index = 1;
+    string chapter_name = 2;
+    string chapter_content = 3;
+    int64 update_time = 4;
+    string is_latest = 5;
+}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message FrsBottomActivityTime {
+    int64 start_time = 1;
+    int64 end_time = 2;
+}

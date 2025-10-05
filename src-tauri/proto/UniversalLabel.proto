@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message UniversalLabel {
+    string label_id = 1;
+    string label_text = 2;
+    string text_color = 3;
+    string text_color_black = 4;
+    string background_color = 5;
+    string background_color_black = 6;
+    int32 round_radius = 7;
+}

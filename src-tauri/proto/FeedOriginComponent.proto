@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "FeedContentResource.proto";
+import "FeedItem.proto";
+import "FeedOriginPic.proto";
+import "VideoField.proto";
+
+message FeedOriginComponent {
+    repeated FeedContentResource _abstract = 1;
+    FeedOriginPic pic_info = 2;
+    VideoField video = 3;
+    string schema = 4;
+    FeedItem item = 5;
+}

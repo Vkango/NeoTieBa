@@ -13,14 +13,14 @@ export default defineConfig(async () => ({
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
-    port: 1420,
+    port: 1145,
     strictPort: true,
     host: host || false,
     hmr: host
       ? {
         protocol: "ws",
         host,
-        port: 1421,
+        port: 1146,
       }
       : undefined,
     watch: {
@@ -32,8 +32,15 @@ export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       external: [
-        /\/protos\/.+\.js$/
+        /\/protos\/.+\.js$/,
+        '@tauri-apps/api/path',
+        '@tauri-apps/plugin-fs',
+        'protobufjs'
       ]
     }
+  },
+
+  optimizeDeps: {
+    include: ['protobufjs', '@tauri-apps/api/path']
   }
 }));

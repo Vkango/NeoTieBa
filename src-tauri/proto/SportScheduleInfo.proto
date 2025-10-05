@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message SportScheduleInfo {
+    int32 sport_type = 1;
+    string home_team_name = 2;
+    string guest_team_name = 3;
+    string home_team_icon = 4;
+    string guest_team_icon = 5;
+    string match_top_info = 8;
+    string match_middle_info = 9;
+    string match_bottom_info = 10;
+    string msg_url = 12;
+    int64 update_time = 13;
+}

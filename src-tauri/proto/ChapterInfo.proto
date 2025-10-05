@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message ChapterInfo {
+    uint64 chapter_id = 1;
+    string title = 2;
+    uint32 level = 3;
+    uint32 words = 4;
+    uint32 page_id = 5;
+    uint32 paragraph_id = 6;
+    uint32 pages = 7;
+    repeated uint32 paragraphs = 8;
+    uint32 price = 9;
+    uint32 is_buy = 10;
+    uint32 orignal_price = 11;
+    uint32 chapter_no = 12;
+    uint64 thread_id = 13;
+}

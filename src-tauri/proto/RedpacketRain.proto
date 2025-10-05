@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message RedpacketRain {
+    uint64 start_time = 1;
+    uint64 end_time = 2;
+    string jump_url = 3;
+    string float_url = 4;
+    repeated string dynamic_img = 5;
+    string activity_id = 6;
+    int32 show_type = 7;
+}

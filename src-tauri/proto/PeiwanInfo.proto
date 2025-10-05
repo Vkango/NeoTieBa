@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "ThreadRecommendTag.proto";
+import "Voice.proto";
+
+message PeiwanInfo {
+    int32 room_status = 1;
+    string room_status_text = 2;
+    Voice voice = 3;
+    repeated ThreadRecommendTag tag_list = 4;
+    string scheme = 5;
+    string extension_info = 6;
+    string cover = 7;
+    int64 room_id = 8;
+}

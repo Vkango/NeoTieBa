@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "ActBtn.proto";
+
+message FrsVideo {
+    ActBtn video_act = 1;
+}

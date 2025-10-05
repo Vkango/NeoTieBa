@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message VipShowInfo {
+    string vip_icon = 1;
+    string content = 2;
+    string link = 3;
+    string title = 4;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "EsportUser.proto";
+
+message EsportRank {
+    string title = 1;
+    int32 rank = 2;
+    EsportUser user = 3;
+    string text = 4;
+    string url = 5;
+}

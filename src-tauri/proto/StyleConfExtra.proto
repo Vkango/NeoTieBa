@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "BotReplyContent.proto";
+
+message StyleConfExtra {
+    string first_post_guide = 1;
+    string guide = 2;
+    string bot_name = 3;
+    string bot_portrait = 4;
+    string bot_reply_content = 5;
+    string bot_loading_content = 6;
+    string guide_content = 7;
+    string guide_icon = 8;
+    string bot_loading_toast = 9;
+    string bot_timeout_content = 10;
+    repeated BotReplyContent bot_reply_content_list = 11;
+}

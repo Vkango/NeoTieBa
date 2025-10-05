@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "FeedKV.proto";
+
+message FeedToutiao {
+    repeated FeedKV business_info = 1;
+}

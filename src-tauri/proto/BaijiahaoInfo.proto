@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message BaijiahaoInfo {
+    string name = 1;
+    string avatar = 2;
+    string avatar_h = 3;
+    string brief = 4;
+    int32 auth_id = 5;
+    string auth_desc = 6;
+    int32 can_modify_avatar = 7;
+}

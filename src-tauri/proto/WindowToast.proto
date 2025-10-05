@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message WindowToast {
+    int32 toast_type = 1;
+    string toast_link = 2;
+    string toast_content = 3;
+}

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message FeedHeadFigure {
+    string img_url = 1;
+    string bg_type = 2;
+    string bg_value = 3;
+    string corner_url = 4;
+}

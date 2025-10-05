@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message GameCodeList {
+    int32 list_id = 1;
+    int32 type = 2;
+    string label = 3;
+    int32 begin_time = 5;
+    int32 end_time = 6;
+    int32 item_id = 7;
+    int32 claimed_status = 8;
+    string claimed_value = 9;
+}

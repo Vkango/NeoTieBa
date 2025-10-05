@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "ActiveCenterMission.proto";
+import "ActiveCenterStatus.proto";
+
+message ActiveCenter {
+    string win_title = 1;
+    string win_desc = 2;
+    ActiveCenterMission mission = 3;
+    repeated ActiveCenterStatus mission_status_list = 4;
+    int32 win_jump_time = 5;
+    int32 is_new_window = 6;
+    int32 is_first_up = 7;
+}

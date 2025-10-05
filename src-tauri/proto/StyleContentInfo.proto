@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message StyleContentInfo {
+    string content_color = 1;
+    string icon = 2;
+    string content_icon = 3;
+    string dynamic_icon = 4;
+}
