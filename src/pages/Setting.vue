@@ -5,10 +5,16 @@ import { defineEmits, onMounted, ref } from 'vue';
 import { getUserList } from '../user-manage';
 import Bar from '../components/Bar.vue';
 import Item from '../components/Item.vue';
-const emit = defineEmits(['QRLogin'])
+const emit = defineEmits(['QRLogin', 'setTabInfo']);
 const user = ref({ user_name: '', avatar: '' });
+const props = defineProps({
+  key_: {
+    required: true
+  },
+});
 onMounted(async () => {
   user.value = await getUserList();
+  emit('setTabInfo', { key: props.key_, title: "设置", icon: "/assets/settings.svg" });
 })
 const currentPage = ref(0);
 const generalSettingItems = ref([{

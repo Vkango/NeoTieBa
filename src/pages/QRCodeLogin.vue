@@ -6,15 +6,16 @@ import RippleButton from '../components/RippleButton.vue';
 import { add_user } from '../user-manage.js';
 import Tip from '../components/Notification/Tip.vue';
 const qr_api = new ApiLogin();
+const emit = defineEmits(['setTabInfo']);
+const props = defineProps({
+    key_: {
+        required: true
+    },
+});
 onMounted(async () => {
     await qr_api.get_auth_cookie();
     login();
-})
-const props = defineProps({
-    key_: {
-        type: Number,
-        required: true
-    }
+    emit('setTabInfo', { key: props.key_, title: "扫码登录", icon: "/assets/qr.svg" });
 })
 const desc = ref("正在等待扫描");
 const tip = ref("使用百度贴吧扫一扫以登录")

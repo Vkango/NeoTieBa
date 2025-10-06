@@ -20,7 +20,12 @@ const atReplyPage = ref(true);
 let uid = undefined;
 let has_more = true;
 const api = new tieBaAPI;
-const emit = defineEmits(['FavouriteClicked', 'userNameClicked', 'ThreadClicked']);
+const props = defineProps({
+  key_: {
+    required: true
+  },
+});
+const emit = defineEmits(['FavouriteClicked', 'userNameClicked', 'ThreadClicked', 'setTabInfo']);
 onMounted(async () => {
   isLoading.value = true;
   const cookie = await get_current_user_cookies();
@@ -31,7 +36,7 @@ onMounted(async () => {
   has_more = returnData2.length != 0;
   isLoading.value = false;
   isThreadsLoading.value = false;
-
+  emit('setTabInfo', { key: props.key_, title: '我的', icon: '/assets/user.svg' });
 });
 
 const switchPage = async () => {
@@ -88,13 +93,6 @@ const nextPage = async () => {
 function onThreadClicked(id) {
   emit('ThreadClicked', id);
 }
-
-const props = defineProps({
-  key_: {
-    type: Number,
-    required: true
-  }
-})
 
 const history = () => {
   deleteTab(props.key_); // 自爆测试

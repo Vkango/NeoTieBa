@@ -17,3 +17,16 @@
 
   </div>
 </template>
+<script setup>
+import { onMounted, defineEmits, defineProps } from 'vue';
+const emit = defineEmits(['setTabInfo']);
+const props = defineProps({
+  key_: {
+    required: true
+  },
+});
+
+onMounted(() => {
+  emit('setTabInfo', { key: props.key_, title: "欢迎", icon: "/assets/apps.svg" });
+});
+</script>

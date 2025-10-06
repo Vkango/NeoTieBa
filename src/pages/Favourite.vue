@@ -11,12 +11,19 @@ const naviListItem = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
 let offset = 0;
+const emit = defineEmits(['setTabInfo', 'threadClick']);
 const api = new tieBaAPI;
 let bduss = "";
 const threadList = ref([]);
+const props = defineProps({
+  key_: {
+    required: true
+  },
+});
 onMounted(async () => {
   bduss = "BDUSS=" + await get_current_user_bduss();
   loadData()
+  emit('setTabInfo', { key: props.key_, title: "我的收藏", icon: "/assets/favourite.svg" });
 })
 const loadData = async () => {
   isThreadsLoading.value = true;
@@ -34,7 +41,6 @@ const onScroll = (target) => {
     loadData();
   }
 }
-const emit = defineEmits(['threadClick']);
 const handleClick = (id) => {
   emit('threadClick', id);
 }

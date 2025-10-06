@@ -68,7 +68,7 @@ fn main() {
             let _ = apply_mica(&window, Some(true));
             // apply_acrylic(&window, Some((255, 255, 255, 0)))
             //     .expect("Unsupported platform! 'apply_mica' is only supported on Windows");
-
+            window.open_devtools();
             Ok(())
         })
         .run(tauri::generate_context!())

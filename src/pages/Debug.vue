@@ -1,18 +1,23 @@
 <script setup>
 import Container from '../components/Container.vue';
-import { inject, getCurrentInstance, ref } from 'vue';
+import { inject, getCurrentInstance, ref, onMounted } from 'vue';
 import Tip from '../components/Notification/Tip.vue';
 import Drawer from '../components/Drawer.vue';
 import RippleButton from '../components/RippleButton.vue';
-const props = defineProps({
-  key_: {
-    type: Number,
-    required: true
-  }
-})
 const sendNotification = inject('sendNotification');
 const sendToast = inject('sendToast');
 const instance = getCurrentInstance();
+const emit = defineEmits(['setTabInfo']);
+const props = defineProps({
+  key_: {
+    required: true
+  },
+});
+
+onMounted(() => {
+  emit('setTabInfo', { key: props.key_, title: "调试", icon: "/assets/bug.svg" });
+});
+
 let isDrawerOpen = instance.appContext.config.globalProperties.$IsDrawerOpen;
 const onClick = () => {
   console.log('点击了通知');

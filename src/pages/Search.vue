@@ -12,8 +12,18 @@ const isLoading = ref(false);
 const searchResult = ref();
 const searchType = ref(0);
 const searchContent = ref("");
-const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked', 'BarNameClicked']);
+const props = defineProps({
+  key_: {
+    required: true
+  },
+});
+const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked', 'BarNameClicked', 'setTabInfo']);
 const sendToast = inject('sendToast');
+
+onMounted(() => {
+  emit('setTabInfo', { key: props.key_, title: "搜索", icon: "/assets/search.svg" });
+});
+
 async function handleEnter(pageSwitch = false) {
   if (searchContent.value.length < 1) {
     if (!pageSwitch) {

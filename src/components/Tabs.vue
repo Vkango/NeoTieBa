@@ -312,7 +312,8 @@ const addTab = (key, icon, title, component, props, icon_invert = false, show = 
     element.selected = false;
   });
   if (found) { return; }
-  tabs.value.push({ id: tabs.value.length, key: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert, show: show, position: tabs.value.length, desc: desc, content: content, if: true, origin: { icon: icon, title: title } });
+  // renderKey 用于实际渲染，key 用于标签去重
+  tabs.value.push({ id: tabs.value.length, key: String(key), renderKey: String(key), selected: true, icon: icon, title: title, component: markRaw(component), props: props, icon_invert: icon_invert, show: show, position: tabs.value.length, desc: desc, content: content, if: true, origin: { icon: icon, title: title } });
   emit('onSwitchTabs', tabs.value.length - 1);
 };
 
@@ -323,7 +324,13 @@ const getTab = (id) => {
 const setTab = (id, tab) => {
   const index = tabs.value.findIndex(t => t.id === id);
   if (index !== -1) {
-    tabs.value[index] = tab;
+    // 保留原有的 id 和 position，只更新其他属性
+    tabs.value[index] = {
+      ...tabs.value[index],
+      ...tab,
+      id: tabs.value[index].id,
+      position: tabs.value[index].position
+    };
   }
 };
 

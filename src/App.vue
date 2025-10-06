@@ -6,7 +6,6 @@ import Tabs from './components/Tabs.vue';
 import ViewBarThreads from './pages/ViewBarThreads.vue';
 import TitleBar from './components/TitleBar.vue';
 import ViewThread from './pages/ViewThread.vue';
-import { KeepAliveHandler } from './handler';
 import My from './pages/My.vue';
 import QRCodeLogin from './pages/QRCodeLogin.vue';
 import Favourite from './pages/Favourite.vue';
@@ -52,7 +51,6 @@ else {
 const ToastComponent = ref(null);
 const activeTab = ref({});
 const TabsRef = ref(null);
-const cachedTabs = ref([]);
 const showTabList = ref(false);
 const showNotificationBox = ref(false);
 const onBarThreadClick = (id) => {
@@ -75,15 +73,11 @@ provide('deleteTab', (key) => {
   TabsRef.value.handleDelete(TabsRef.value.findIdByKey(key));
 })
 
-
-
 const onOpenImageViewer = (url) => {
   imageViewerVisibility.value = true;
   imageViewerSrc.value = url;
 }
 
-const instance = getCurrentInstance();
-const handler = new KeepAliveHandler();
 function generateUniqueId(text) {
   let hash = 0;
   if (text.length === 0) return hash;
@@ -93,8 +87,7 @@ function generateUniqueId(text) {
     hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
-
-  return Math.abs(hash);
+  return Math.abs(hash)
 }
 
 
@@ -111,12 +104,12 @@ const userNameClicked = (uid) => {
 
 const QRLogin = () => {
   const key = generateUniqueId('QRLogin');
-  TabsRef.value.addTab(key, "/assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key }, true, true)
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo }, true, true)
 }
 
 const onClick = () => {
   const key = generateUniqueId('QRLogin');
-  TabsRef.value.addTab(key, "/assets/qr.svg", "扫码登录", QRCodeLogin, { key_: key }, true, true)
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo }, true, true)
 }
 onMounted(() => {
   nextTick(() => {
@@ -138,10 +131,7 @@ onMounted(() => {
     });
   })
   let key = generateUniqueId('Welcome');
-  TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key }, true, false)
-  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
-  const keepAlive = instance.refs.keepAlive;
-  handler.bind(keepAlive);
+  TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key, onSetTabInfo: setTabInfo }, true, false)
   provide('sendNotification', (title, source, component, clickHandler, props = {}, duration = 5000) => {
     notificationComponent.value.addNotification(title, source, component, clickHandler, props, duration);
   })
@@ -153,13 +143,13 @@ function onSwitchTabs(id) {
     component: tabItem.component,
     props: tabItem.props,
     key: tabItem.key,
+    renderKey: tabItem.renderKey || tabItem.key,
     if: true,
     origin: {
       icon: tabItem.origin.icon,
       title: tabItem.origin.title
     }
   };
-  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   naviListItem.value.forEach(element => {
     element.selected = false;
   });
@@ -206,71 +196,36 @@ function onRefreshTab(id) {
   const tabItem = TabsRef.value.getTab(id);
   const key = tabItem.key;
   const isActiveTab = activeTab.value.key === key;
-  const originalState = {
-    activeTab: isActiveTab ? { ...activeTab.value } : null,
-    tabItem: { ...tabItem }
-  };
-  handler.remove(key, true);
-  cachedTabs.value = cachedTabs.value.filter(k => k !== key);
+  const newRenderKey = `${key}-${Date.now()}`;
+  TabsRef.value.setTab(id, {
+    ...tabItem,
+    renderKey: newRenderKey,
+    icon: '/assets/loading.svg',
+    title: '正在加载'
+  });
+
   if (isActiveTab) {
     activeTab.value = {
       ...activeTab.value,
-      if: false,
-      icon: originalState.activeTab.origin.icon,
-      title: originalState.activeTab.origin.title
+      renderKey: newRenderKey,
+      icon: '/assets/loading.svg',
+      title: '正在加载'
     };
   }
-  TabsRef.value.setTab(id, {
-    ...originalState.tabItem,
-    if: false,
-    icon: originalState.tabItem.origin.icon,
-    title: originalState.tabItem.origin.title
-  });
-  const refreshPromise = new Promise((resolve) => {
-    setTimeout(() => {
-      if (isActiveTab && activeTab.value.key === key) {
-        activeTab.value = {
-          ...originalState.activeTab, if: true, icon: originalState.tabItem.origin.icon,
-          title: originalState.tabItem.origin.title
-        };
-      }
-      TabsRef.value.setTab(id, {
-        ...originalState.tabItem, if: true, icon: originalState.tabItem.origin.icon,
-        title: originalState.tabItem.origin.title
-      });
-      cachedTabs.value = [...cachedTabs.value, key];
-      resolve();
-    }, 0);
-  });
-
-  refreshPromise.then(() => {
-    nextTick(() => {
-      instance.refs.keepAlive.$forceUpdate();
-    });
-  });
 }
 
 const onDeactivated = (key) => {
-  const component = instance.refs.keepAlive?.cache?.get(key)?.component;
-  if (component) {
-    component.deactivated?.();
-  }
+  console.log('Tab deactivated:', key);
 };
 
 const onTabDelete = (key) => {
-  handler.remove(key);
-  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
   if (activeTab.value.key === key) {
     activeTab.value = {};
   }
-  nextTick(() => {
-    instance.refs.keepAlive.$forceUpdate();
-  });
 }
 const onFavouriteClicked = () => {
   const key = generateUniqueId('Favourite');
-  TabsRef.value.addTab(Favourite, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick }, true)
-  cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+  TabsRef.value.addTab(key, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick }, true)
 }
 const addBar = async (id) => {
   naviListItem.value.forEach(element => {
@@ -281,33 +236,27 @@ const addBar = async (id) => {
   switch (id) {
     case 0:
       key = generateUniqueId('Search');
-      TabsRef.value.addTab(key, "/assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked }, true)
-      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      TabsRef.value.addTab(key, "/assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSetTabInfo: setTabInfo }, true)
       break;
     case 1:
       key = generateUniqueId('Home');
-      TabsRef.value.addTab(key, '/assets/home.svg', '首页', Home, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked }, true)
-      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      TabsRef.value.addTab(key, '/assets/home.svg', '首页', Home, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSetTabInfo: setTabInfo }, true)
       break;
     case 2:
       key = generateUniqueId('FollowBar');
-      TabsRef.value.addTab(key, "/assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked }, true)
-      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      TabsRef.value.addTab(key, "/assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked, onSetTabInfo: setTabInfo }, true)
       break;
     case 3:
       key = generateUniqueId('My');
       TabsRef.value.addTab(key, "/assets/user.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo, onFavouriteClicked: onFavouriteClicked, onUserNameClicked: userNameClicked, onThreadClicked: onBarThreadClick }, true)
-      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 4:
       key = generateUniqueId('Setting');
       TabsRef.value.addTab(key, "/assets/settings.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo, onQRLogin: QRLogin }, true)
-      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
       break;
     case 5:
       key = generateUniqueId('Debug');
-      TabsRef.value.addTab(key, "/assets/bug.svg", "调试", Debug, { key_: key }, true, true)
-      cachedTabs.value = TabsRef.value.tabs.map(tab => tab.key);
+      TabsRef.value.addTab(key, "/assets/bug.svg", "调试", Debug, { key_: key, onSetTabInfo: setTabInfo }, true, true)
       break;
     default:
       break;
@@ -335,10 +284,12 @@ const onshowNotificationBox = () => {
         :class="{ 'selected': item.selected }" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
     </div>
     <div class="container">
-      <keep-alive ref="keepAlive">
-        <component @deactivated="onDeactivated(activeTab.key)" :is="activeTab.component" :key="activeTab.key"
-          v-if="activeTab.if" v-bind="activeTab.props" />
-      </keep-alive>
+      <div v-for="tab in TabsRef?.tabs" v-show="tab.key === activeTab.key" :key="tab.key" class="tab-pane">
+        <keep-alive>
+          <component @deactivated="onDeactivated(tab.key)" :is="tab.component" :key="tab.renderKey || tab.key"
+            v-if="tab.if" v-bind="tab.props" />
+        </keep-alive>
+      </div>
     </div>
     <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs"
       @showNotificationBox="onshowNotificationBox"
@@ -459,6 +410,10 @@ const onshowNotificationBox = () => {
 }
 </style>
 <style>
+.tab-pane {
+  width: 100%;
+}
+
 .icon_ {
   filter: invert(var(--invert));
 }

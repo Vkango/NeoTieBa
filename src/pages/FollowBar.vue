@@ -6,9 +6,14 @@ import { get_current_user_cookies, get_current_user } from '../user-manage';
 import { tieBaAPI } from '../tieba-api';
 import Container from '../components/Container.vue';
 import Loading from '../components/Loading.vue';
-
+const emit = defineEmits(['BarNameClicked', 'setTabInfo']);
 const naviListItem = ref([]);
 const isLoading = ref(true);
+const props = defineProps({
+  key_: {
+    required: true
+  },
+});
 onMounted(async () => {
   const cookie = await get_current_user();
   const api = new tieBaAPI;
@@ -18,8 +23,9 @@ onMounted(async () => {
   console.log(naviListItem.value);
   console.log(await window.pluginManager.dispatchEvent('followBarUpdated', result));
   isLoading.value = false;
+  emit('setTabInfo', { key: props.key_, title: "进吧", icon: "/assets/apps.svg" });
 })
-const emit = defineEmits(['BarNameClicked']);
+
 </script>
 
 <template>
