@@ -1,23 +1,27 @@
 {
-    "$schema": "../../src-tauri/gen/schemas/desktop-schema.json",
-    "identifier": "window-capability",
-    "platforms": [
-      "macOS",
-      "windows",
-      "linux"
-    ],
-    "windows": ["main"],
-    "permissions": [
-      "core:window:allow-is-maximized",
-      "core:window:allow-maximize",
-      "core:window:allow-unmaximize", 
-      "core:window:allow-minimize", 
-      "core:window:allow-close",
-      "core:window:allow-start-dragging",
-      "core:event:allow-listen",
-      "core:webview:allow-create-webview",
-      "core:webview:allow-create-webview-window",
-      "core:event:allow-unlisten",
-      "core:event:default"
-    ]
-  }
+  "$schema": "../../src-tauri/gen/schemas/desktop-schema.json",
+  "identifier": "window-capability",
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:window:allow-is-maximized",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-minimize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:event:allow-listen",
+    "core:webview:allow-create-webview",
+    "core:webview:allow-create-webview-window",
+    "core:event:allow-unlisten",
+    "core:event:default",
+    "dialog:allow-open",
+    "dialog:default"
+  ]
+}

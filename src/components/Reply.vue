@@ -106,6 +106,7 @@ onMounted(() => {
   if (props.reply_num > 0) {
     const Api = new tieBaAPI;
     Api.viewSubPost(props.tid, props.pid).then((res) => {
+      console.log(res);
       subpost_list.value = res.subpost_list;
       if (subpost_list.value.length > 5) {
         subpost_list.value = subpost_list.value.slice(0, 5);

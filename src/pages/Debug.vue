@@ -4,10 +4,11 @@ import { inject, getCurrentInstance, ref, onMounted } from 'vue';
 import Tip from '../components/Notification/Tip.vue';
 import Drawer from '../components/Drawer.vue';
 import RippleButton from '../components/RippleButton.vue';
+import { open } from '@tauri-apps/plugin-dialog';
 const sendNotification = inject('sendNotification');
 const sendToast = inject('sendToast');
 const instance = getCurrentInstance();
-const emit = defineEmits(['setTabInfo']);
+const emit = defineEmits(['setTabInfo', 'openLocalThread']);
 const props = defineProps({
   key_: {
     required: true
@@ -32,6 +33,22 @@ const notify = () => {
     60000
   )
 };
+
+const openFile = async () => {
+
+  const file = await open({
+    multiple: false,
+    directory: true,
+    // filters: [
+    //   {
+    //     name: 'tiezi-transfer',
+    //     extensions: ['json'],
+    //   },
+    // ],
+  });
+  emit('openLocalThread', file);
+}
+
 const permissionInfo = ref([{
   name: '获取当前用户Cookies',
   status: 0,
@@ -65,6 +82,7 @@ const permissionInfo = ref([{
     <button @click="throw Error('跌我错了');">throw</button>
     <button @click="sendToast('更新收藏成功', 3000)">toast</button>
     <button @click="isDrawerOpen.state = true">打开抽屉</button>
+    <button @click="openFile()">打开文件</button>
   </Container>
 
   <Drawer ctitle="插件属性" width="450px" :top_position="false">

@@ -7,6 +7,7 @@ import Container from '../components/Container.vue';
 import RippleButton from '../components/RippleButton.vue';
 import Drawer from '../components/Drawer.vue';
 import ReplyView from '../components/SubPostView.vue';
+import { read_file } from '../file-io.js';
 const returnData = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
@@ -23,7 +24,12 @@ const sendToast = inject('sendToast');
 const currentSubPostInfo = ref({ like: undefined, user_name: undefined, uid: undefined, avatar: undefined, thread_content: undefined, create_time: undefined, reply_num: undefined, tid: undefined, pid: undefined, floor: undefined, is_lz: undefined, level: undefined });
 const loadData = async () => {
   isThreadsLoading.value = true;
-  returnData.value = await n.viewThread(props.tid, currentPage.value);
+  if (!props.local) {
+    returnData.value = await n.viewThread(props.tid, currentPage.value);
+  } else {
+    returnData.value = JSON.parse(await read_file(props.local_dir + '/page' + currentPage.value + '.json'));
+  }
+
   if (returnData.value?.thread?.title) {
     threadTitle.value = returnData.value.thread.title;
     emit('setTabInfo', { key: props.key_, title: returnData.value.thread.title, icon: returnData.value.forum.avatar });
@@ -75,6 +81,13 @@ const props = defineProps({
   key_: {
     required: true
   },
+  local: {
+    required: false,
+    default: false
+  },
+  local_dir: {
+    required: false
+  }
 });
 </script>
 

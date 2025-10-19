@@ -34,7 +34,8 @@ onMounted(async () => {
       <div class="list-title">关注的吧</div>
       <transition name="fade1">
         <div class="list-view" v-if="!isLoading">
-          <button class="bar-button" v-for="item in naviListItem" @click="emit('BarNameClicked', item.forum_name)">
+          <button class="bar-button" v-if="naviListItem.length > 0" v-for="item in naviListItem"
+            @click="emit('BarNameClicked', item.forum_name)">
             <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
             <div style="margin-left: 5px;">
               <div class="bar-name">{{ item.forum_name }} </div>
@@ -44,6 +45,7 @@ onMounted(async () => {
               </div>
             </div>
           </button>
+          <div v-if="naviListItem.length === 0">没有关注的吧</div>
         </div>
       </transition>
     </div>

@@ -23,6 +23,7 @@ import Debug from './pages/Debug.vue';
 import Toast from './components/Toast.vue';
 import Drawer from './components/Drawer.vue';
 import Home from './pages/Home.vue';
+import { read_file } from './file-io';
 
 const notificationComponent = ref(null);
 
@@ -227,6 +228,21 @@ const onFavouriteClicked = () => {
   const key = generateUniqueId('Favourite');
   TabsRef.value.addTab(key, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick }, true)
 }
+
+const openLocalThread = async (file) => {
+  let tid = 0;
+  try {
+    const ret = JSON.parse(await read_file(file + '/page1.json'));
+    tid = ret.thread.id;
+    console.log(tid);
+  } catch {
+    throw new Error("目录无效");
+  }
+
+  const key = generateUniqueId('ViewThread' + tid);
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: tid, local: true, local_dir: file, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked }, undefined, undefined, file)
+}
+
 const addBar = async (id) => {
   naviListItem.value.forEach(element => {
     element.selected = false;
@@ -256,7 +272,7 @@ const addBar = async (id) => {
       break;
     case 5:
       key = generateUniqueId('Debug');
-      TabsRef.value.addTab(key, "/assets/bug.svg", "调试", Debug, { key_: key, onSetTabInfo: setTabInfo }, true, true)
+      TabsRef.value.addTab(key, "/assets/bug.svg", "调试", Debug, { key_: key, onSetTabInfo: setTabInfo, onOpenLocalThread: openLocalThread }, true, true)
       break;
     default:
       break;
@@ -277,7 +293,7 @@ const onshowNotificationBox = () => {
 <template>
   <div id="container" style="background-image: url(../public/assets/background.jpg);">
     <div id="container"
-      style="backdrop-filter: blur(500px); background-color: rgba(var(--background-color), 0.65); transition: all 0.3s ease;">
+      style="backdrop-filter: blur(0px); background-color: rgba(var(--background-color), 0.65); transition: all 0.3s ease;">
     </div>
     <div class="navi">
       <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem"
