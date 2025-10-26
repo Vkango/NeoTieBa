@@ -26,4 +26,4 @@ bduss.txt
 cookie.txt
 users.json
 public/assets/background.jpg
-src/plugins/blocklist.json
+# src/plugins/blocklist.json
