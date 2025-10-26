@@ -1,35 +1,54 @@
 <p align="center">
-<img height="300" width="300" src="./app-icon.png" alt="pic"/>
+<img height="200" width="200" src="./app-icon.png" alt="pic"/>
 </p>
 <div align="center">
 
+
 # NeoTieBa
 
-基于 `Tauri` + `Vue3` 构建的 **非官方** 贴吧客户端，适用于桌面端应用，缓速更新中……
+基于 `Tauri` + `Vue3` 构建的 **非官方** 贴吧客户端, 适用于桌面端应用, 缓速更新中……
 
 </div>
 
 > [!warning]
 >
-> 本程序**不会**收集你的任何个人信息。
+> 本程序**不会**收集你的任何个人信息. 
 >
-> **此软件仅供学习交流使用，严禁用于商业用途。出现的任何后果作者概不负责！**
+> **此软件仅供学习交流使用, 严禁用于商业用途. 出现的任何后果作者概不负责！**
 >
-> 迫于学业压力，更新可能会很缓慢 :(
+> 迫于学业压力, 更新~~可能~~会很缓慢 :(
 
 
 
 ## 🐛 提前尝鲜
 
-可以自行调试进行体验。
+可以从 GitHub Actions 中下载尝鲜版. 请前往 Actions → 最新一条成功的Test Build → Artifacts 下载对应平台应用. 
 
-确保你已安装好 Tauri 所需工具链，执行 `npm install` 安装所需 npm 包，以及 Cargo 包。
+**注意: 每次构建后30天自动删除. **
 
-运行Dev版：`npm run tauri dev`
+**目前 Build 版问题较多, 因学业原因无法及时修复, 请谅解. 在开始时自动弹出错误提示无用户登录, 单击报错通知即可打开扫码登录. 建议使用百度网盘扫码. **
 
-添加你的账号：设置-账号列表-扫码登录。
+如果仍登录失败 (例如无法加载二维码), 刷新仍无法解决, 可以尝试前往软件目录, 手动新建 `users.json` 文件使用Cookies登录. 
 
-扫码登录可使用支持扫码的任意百度旗下产品：贴吧、网盘、百度客户端等。
+内容像这样: 
+
+```json
+[
+  {
+    "user_name": "xxxxx",
+    "avatar": "https:\\/\\/himg.bdimg.com\\/sys\\/portrait\\/item\\/xxxxxxx.jpg",
+    "bduss": "xxxxxxxx",
+    "stoken": "xxxxxxxxx",
+    "current": true
+  }
+]
+```
+
+或者, 如果具备 Tauri 应用调试环境, 可运行 Dev 版: `npm run tauri dev` 或手动编译:  `npm run tauri build`
+
+添加你的账号: 设置-账号列表-扫码登录. 
+
+扫码登录可使用支持扫码的任意百度旗下产品: 贴吧、网盘、百度客户端等. 
 
 
 
@@ -70,15 +89,16 @@
 
 #### 其他
 
-- [ ] ~~吧务管理~~ (不在计划内，可能以后会通过插件实现)
+- [ ] ~~吧务管理~~ (不在计划内, 可能以后会通过插件实现)
+- [ ] 保存贴子
 
 ### ⚙ 小功能
 
 - [ ] 跳页
 - [ ] 签到 (自动签到不在计划内)
 - [ ] 赞踩
-- [ ] ~~回帖~~ (不在计划内，如需回帖请使用官方网页/客户端，以免封号)
-- [ ] ~~发帖~~ (不在计划内，如需发帖请使用官方网页/客户端，以免封号)
+- [ ] ~~回帖~~ (不在计划内, 如需回帖请使用官方网页/客户端, 以免封号)
+- [ ] ~~发帖~~ (不在计划内, 如需发帖请使用官方网页/客户端, 以免封号)
 
 ### 🎗️ 组件
 
@@ -99,7 +119,7 @@
 
 ## 💧 感谢
 
-本项目参考了以下项目(或页面)提供的源码：
+本项目参考了以下项目(或页面)提供的源码: 
 
 [HuanCheng65/TiebaLite: 贴吧 Lite](https://github.com/HuanCheng65/TiebaLite)
 
@@ -107,7 +127,7 @@
 
 [lumina37/aiotieba: 贴吧接口合集✨可用于工具箱/吧务管理/数据采集](https://github.com/lumina37/aiotieba)
 
-[解读keep-alive：Vue3中手动清理keep-alive组件缓存的一个解决方案 - 没有星星的夏季 - 博客园](https://www.cnblogs.com/shanfeng1000/p/16692266.html)
+[解读keep-alive: Vue3中手动清理keep-alive组件缓存的一个解决方案 - 没有星星的夏季 - 博客园](https://www.cnblogs.com/shanfeng1000/p/16692266.html)
 
 [Material Symbols & Icons - Google Fonts](https://fonts.google.com/icons)
 
