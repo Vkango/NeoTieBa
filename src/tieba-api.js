@@ -1,6 +1,6 @@
 // HTTP API 与 Protobuf API
 import CryptoJS from "crypto-js";
-import { fetchData, fetchData_post, fetchData_with_cookie } from './request.js'
+import { fetch_data_with_headers_command, fetchData, fetchData_post, fetchData_with_cookie } from './request.js'
 import { user_info_protobuf } from "./api/user-info.js";
 import { user_post_protobuf } from "./api/user-post.js";
 export class tieBaAPI {
@@ -85,6 +85,75 @@ export class tieBaAPI {
         const data = `_client_type=2&_client_version=8.6.8.0&kw=${encodeURIComponent(barName)}&pn=${page}&q_type=2&rn=50&with_group=1`;
         const responseData = await fetchData('http://c.tieba.baidu.com/c/f/frs/page?' + this.calcSign(data));
         const result = await JSON.parse(responseData); // 解析JSON数据
+        return result;
+    }
+
+    /**
+     * 获取吧详细信息（包含扩展信息）
+     * @param {string} forumId - 吧ID
+     * @param {string} bduss - 用户BDUSS（可选）
+     * @param {string} stoken - 用户STOKEN（可选）
+     * @returns {Promise<Object>} 吧详细信息
+     */
+    async getForumDetail(forumId, bduss = '', stoken = '') {
+        const data = `BDUSS=${bduss}&_client_type=2&_client_version=12.68.1.0&forum_id=${forumId}&is_newfrs=1&stoken=${stoken}`;
+        const responseData = await fetchData_post('http://c.tieba.baidu.com/c/f/forum/getforumdetail', this.calcSign(data));
+        const result = await JSON.parse(responseData);
+        return result;
+    }
+
+    /**
+     * 获取吧规详情
+     * @param {string} forumId - 吧ID
+     * @param {string} bduss - 用户BDUSS（可选）
+     * @param {string} stoken - 用户STOKEN（可选）
+     * @returns {Promise<Object>} 吧规详情
+     */
+    async getForumRule(forumId, bduss = '', stoken = '') {
+        const data = `BDUSS=${bduss}&_client_type=2&_client_version=12.68.1.0&forum_id=${forumId}&stoken=${stoken}`;
+        const responseData = await fetchData_post('http://c.tieba.baidu.com/c/f/forum/forumRuleDetail', this.calcSign(data));
+        const result = await JSON.parse(responseData);
+        return result;
+    }
+
+    /**
+     * 获取签到信息
+     * @param {string} forumId - 吧ID
+     * @param {string} bduss - 用户BDUSS
+     * @param {string} stoken - 用户STOKEN
+     * @returns {Promise<Object>} 签到信息
+     */
+    async getUserSign(forumId, bduss, stoken) {
+        const data = `BDUSS=${bduss}&_client_type=2&_client_version=12.68.1.0&forum_ids=${forumId}&from=frs&stoken=${stoken}`;
+        const responseData = await fetchData_post('http://c.tieba.baidu.com/c/f/forum/getUserSign', this.calcSign(data));
+        const result = await JSON.parse(responseData);
+        return result;
+    }
+
+    /**
+     * 获取用户在本吧的详细信息
+     * @param {string} forumId - 吧ID
+     * @param {string} bduss - 用户BDUSS
+     * @param {string} stoken - 用户STOKEN
+     * @returns {Promise<Object>} 用户在本吧的信息
+     */
+    async getUserForumLevelInfo(forumId, bduss, stoken) {
+        const params = `_client_type=2&_client_version=12.68.1.0&BDUSS=${bduss}&stoken=${stoken}&forum_id=${forumId}&subapp_type=hybrid`;
+        const responseData = await fetch_data_with_headers_command('https://c.tieba.baidu.com/c/f/forum/getUserForumLevelInfo?' + this.calcSign(params), { 'Subapp-Type': 'hybrid' });
+
+        const result = await JSON.parse(responseData.text);
+        return result;
+    }
+
+    /**
+     * 获取吧务信息
+     * @param {string} forumId - 吧ID
+     * @returns {Promise<Object>} 吧务信息
+     */
+    async getBawuInfo(forumId) {
+        const data = `_client_version=12.68.1.0&forum_id=${forumId}`;
+        const responseData = await fetchData('http://c.tieba.baidu.com/c/f/forum/getBawuInfo?' + this.calcSign(data));
+        const result = await JSON.parse(responseData);
         return result;
     }
     async FollowBar(cookie, page = 1) {

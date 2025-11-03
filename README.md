@@ -22,15 +22,17 @@
 
 ## 🐛 提前尝鲜
 
-可以从 GitHub Actions 中下载尝鲜版. 请前往 Actions → 最新一条成功的Test Build → Artifacts 下载对应平台应用. 
+可以从 GitHub Actions 中下载尝鲜版. 请前往 `Actions` → `最新一条成功的 Test Build` → `Artifacts` 下载对应平台应用. 
 
-**注意: 每次构建后30天自动删除. **
+根据反馈发现在 macOS 上应用所有按钮均无法点击. 很抱歉, 由于本人没有 macOS 测试环境, 该问题暂时无解. 欢迎提交相关 PR 或有关信息.
 
-**目前 Build 版问题较多, 因学业原因无法及时修复, 请谅解. 在开始时自动弹出错误提示无用户登录, 单击报错通知即可打开扫码登录. 建议使用百度网盘扫码. **
+**注意: 每次构建后30天自动删除.**
 
-如果仍登录失败 (例如无法加载二维码), 刷新仍无法解决, 可以尝试前往软件目录, 手动新建 `users.json` 文件使用Cookies登录. 
+**目前 Build 版问题较多, 因学业原因无法及时修复, 请谅解. 在开始时自动弹出错误提示无用户登录, 单击报错通知即可打开扫码登录. 建议使用百度网盘扫码. 登录成功后可手动刷新以获得更佳体验.**
 
-内容像这样: 
+如果仍登录失败 (例如无法加载二维码), 且刷新无法解决, 可以尝试前往软件目录, 手动新建 `users.json` 文件使用Cookies登录. 
+
+内容像这样, 内容需要手动抓包提取: 
 
 ```json
 [
@@ -45,10 +47,6 @@
 ```
 
 或者, 如果具备 Tauri 应用调试环境, 可运行 Dev 版: `npm run tauri dev` 或手动编译:  `npm run tauri build`
-
-添加你的账号: 设置-账号列表-扫码登录. 
-
-扫码登录可使用支持扫码的任意百度旗下产品: 贴吧、网盘、百度客户端等. 
 
 
 
@@ -130,6 +128,14 @@
 [解读keep-alive: Vue3中手动清理keep-alive组件缓存的一个解决方案 - 没有星星的夏季 - 博客园](https://www.cnblogs.com/shanfeng1000/p/16692266.html)
 
 [Material Symbols & Icons - Google Fonts](https://fonts.google.com/icons)
+
+
+
+## 🔗 友情链接
+
+贴吧Lite, 优秀的第三方贴吧 Android 客户端: [HuanCheng65/TiebaLite: 贴吧 Lite](https://github.com/HuanCheng65/TiebaLite)
+
+TiebaDesktop, 优秀的第三方贴吧桌面客户端: [clb-128258/TiebaDesktop: 非官方的百度贴吧电脑客户端，目前支持 Windows 系统](https://github.com/clb-128258/TiebaDesktop)
 
 
 
