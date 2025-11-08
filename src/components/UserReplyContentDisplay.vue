@@ -100,11 +100,6 @@ onMounted(() => {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.thread-img {
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: 5px;
-}
 
 .thread-preview {
   display: flex;

@@ -725,8 +725,18 @@ input {
   opacity: 1;
 }
 
+.thread-img {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 5px;
+}
+
 .list-title {
   margin-top: 30px;
+  padding: 10px 5px;
+  font-size: 16px;
+  font-weight: bold;
+  position: relative;
 }
 
 .reply-list {

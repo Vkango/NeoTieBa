@@ -13,9 +13,21 @@
       <div class="thread-content" v-html="content">
       </div>
       <div class="thread-media">
-        <img class="thread-img" v-for="i in media" :src="i.big_pic" referrerpolicy="no-referrer">
+        <img class="thread-img" v-for="i in media?.filter(item => item.type == 3)" :src="i.big_pic"
+          referrerpolicy="no-referrer">
+        <span v-for="i in media?.filter(item => item.type == 5)">
+          <img class="thread-img" :src="i.vpic" referrerpolicy="no-referrer">
+          <span class="material-symbols-outlined"
+            style="position: relative; font-size: 28px; top: 0%; left: 0%; opacity: 0.7; transform: translate(-110%, -10%);">play_circle</span>
+        </span>
+
+        </img>
       </div>
       <div class="thread-info">
+        <span v-if="fromBar != ''" style="display: flex; align-items: center;"><img :src="fromBarAvatar"
+            style="width: 16px; height: 16px; border-radius: 16px; margin-right: 5px;"
+            referrerpolicy="no-referrer"><span style="margin-right: 5px;">{{ fromBar }}吧</span></span>
+
         <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">forum</span> {{ reply_num }}
       </div>
@@ -52,13 +64,38 @@ onMounted(() => {
         }
         content.value += ele.text;
         break;
+      case 1: // link
+        content.value += `<a href="${ele.text}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
+        break;
       case 2: // emotion
-        content.value += `<img class="emotion" src="/assets/emotion/${ele.text}.png" alt="${ele.c}" />`;
+        content.value += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
+        break;
+      case 3: // image
+        content.value += (index != 0 ? `<br>` : ``) + `<img class="thread-reply-img" style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
+        break;
+      case 4: // at
+        content.value += `<button class="at-button" uid="${ele.uid}">${ele.text}</button>`;
+        break;
+      case 5: // video
+        content.value += (index != 0 ? `<br>` : ``) + `<video class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.link}" referrerpolicy="no-referrer" controls></video>`;
+        break;
+      default:
+        content.value += `<div style='color: red'>Failed to parse: ` + JSON.stringify(ele) + `</div>`;
         break;
     }
   });
 })
 const props = defineProps({
+  fromBarAvatar: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  fromBar: {
+    type: String,
+    required: false,
+    default: ''
+  },
   avatar: {
     type: String,
     required: true,
@@ -85,7 +122,6 @@ const props = defineProps({
     default: ''
   },
   media: {
-    type: Array,
     required: true,
     default: []
   },

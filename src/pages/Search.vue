@@ -211,13 +211,6 @@ const onUserNameClicked = (uid) => {
   border-radius: 8px;
 }
 
-.list-title {
-  padding: 10px 5px;
-  font-size: 16px;
-  font-weight: bold;
-  position: relative;
-}
-
 .result {
   margin: 10px 0;
   display: flex;

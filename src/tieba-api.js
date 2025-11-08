@@ -88,6 +88,12 @@ export class tieBaAPI {
         return result;
     }
 
+    async getHomeRecommend(bduss = '', stoken = '') {
+        const responseData = await fetch_data_with_headers_command('http://tieba.baidu.com/mg/o/getRecommPage?load_type=1&eqid=&refer=tieba.baidu.com&page_thread_count=10', { 'Cookie': 'BDUSS=' + bduss + '; STOKEN=' + stoken, 'Host': 'tieba.baidu.com', 'Accept-Encoding': 'gzip, deflate, br, zstd' });
+        const result = await JSON.parse(responseData.text);
+        return result;
+    }
+
     /**
      * 获取吧详细信息（包含扩展信息）
      * @param {string} forumId - 吧ID
