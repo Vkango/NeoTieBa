@@ -30,7 +30,7 @@ onMounted(async () => {
   isLoading.value = true;
   const cookie = await get_current_user_cookies();
   uid = await api.get_self_id(cookie);
-  returnData.value = (await api.user_info(uid, 1)).data;
+  returnData.value = (await api.user_info(Number(uid), 1)).data;
   const bduss = await get_current_user_bduss();
   returnData2.value = (await api.get_reply_me(bduss, 1)).reply_list;
   has_more = returnData2.length != 0;

@@ -133,10 +133,10 @@ export async function load(messageName) {
 
         return {
             encode: (data) => {
-                const errMsg = MessageType.verify(data);
-                if (errMsg) {
-                    throw new Error(`Proto verification failed: ${errMsg}`);
-                }
+                // const errMsg = MessageType.verify(data);
+                // if (errMsg) {
+                //     throw new Error(`Proto verification failed: ${errMsg}`);
+                // }
                 const message = MessageType.create(data);
                 return MessageType.encode(message).finish();
             },

@@ -49,7 +49,7 @@ export function processContentElements(elements, dismissMedia = false) {
                 content += ele.text;
                 break;
             case 1: // link
-                content += `<a href="${ele.text}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
+                content += `<a href="${ele.link}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
                 break;
             case 2: // emotion
                 content += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;

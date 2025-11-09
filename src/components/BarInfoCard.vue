@@ -149,7 +149,7 @@
                                             <p v-if="item.type === '0'">{{ item.text }}</p>
                                             <a v-else-if="item.type === '1'" :href="item.link" target="_blank">{{
                                                 item.text
-                                                }}</a>
+                                            }}</a>
                                         </div>
                                     </div>
                                 </div>
@@ -339,7 +339,7 @@ const loadData = async () => {
             if (bduss) {
                 // 获取签到信息
                 const signInfo = await n.getUserSign(forumId, bduss, stoken)
-                console.log("dd", signInfo);
+                // console.log("dd", signInfo);
                 if (signInfo.error_code == 0 && signInfo.data?.forum?.[0]) {
                     const userSignInfo = signInfo.data.forum[0].sign_in_info.user_info
 

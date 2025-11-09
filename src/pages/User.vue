@@ -46,7 +46,7 @@ function onThreadClicked(id) {
 onMounted(async () => {
   isLoading.value = true;
   isThreadsLoading.value = true;
-  returnData.value = (await api.user_info(props.uid, 1)).data;
+  returnData.value = (await api.user_info(Number(props.uid), 1)).data;
   console.log(returnData.value)
   returnData1.value = await api.userCard(returnData.value.user.portrait);
   returnData2.value = (await api.user_post(props.uid)).data.postList;
