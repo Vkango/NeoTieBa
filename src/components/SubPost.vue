@@ -14,6 +14,7 @@
 
 <script setup>
 import { defineProps, onMounted, ref, defineEmits } from 'vue';
+import { processContentElements } from '../helper';
 const content = ref('')
 const emit = defineEmits(['userNameClicked'])
 const handleClick = (event) => {
@@ -22,25 +23,7 @@ const handleClick = (event) => {
   }
 }
 onMounted(() => {
-  props.thread_content.forEach((ele, index) => {
-    switch (ele.type) {
-      case 0: // text
-        if (index != 0 && props.thread_content[index - 1].type == 3) {
-          content.value += `<br>`
-        }
-        content.value += ele.text;
-        break;
-      case 2: // emotion
-        content.value += `<img class="emotion" src="/assets/emotion/${ele.text}.png" alt="${ele.c}" />`;
-        break;
-      case 3: // image
-        content.value += (index != 0 ? `<br>` : ``) + `<img style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
-        break;
-      case 4:
-        content.value += `<button class="at-button" uid="${ele.uid}">${ele.text}</button>`;
-        break;
-    }
-  });
+  content.value = processContentElements(props.thread_content);
 })
 const props = defineProps({
   avatar: {

@@ -31,3 +31,52 @@ export function getTimeInterval(previousTimestamp) {
         return `${years}年前`;
     }
 }
+
+export function processContentElements(elements, dismissMedia = false) {
+    let content = ``;
+    elements.forEach((ele, index) => {
+        // content += `<span>${index}${JSON.stringify(ele)}</span>`;
+        switch (ele.type) {
+            case 0: // text
+                if (index == 0 && ele.text == `\n`) {
+                    break;
+                }
+                if (index != 0) {
+                    if (elements[index - 1].type == 3) {
+                        content += `<br>`
+                    }
+                }
+                content += ele.text;
+                break;
+            case 1: // link
+                content += `<a href="${ele.text}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
+                break;
+            case 2: // emotion
+                content += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
+                break;
+            case 3: // image
+                if (!dismissMedia) {
+                    content += (index != 0 ? `<br>` : ``) + `<img class="thread-reply-img" style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.bigCdnSrc || ele.originSrc || ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
+                }
+                break;
+            case 4: // at
+                content += `<button class="at-button" uid="${ele.uid}">${ele.text}</button>`;
+                break;
+            case 5: // video
+                if (!dismissMedia) {
+                    content += ((index != 0 && elements[index - 1].type != 0 && elements[index - 1]?.text !== '\n') ? `<br>` : ``) + `<video class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.link}" referrerpolicy="no-referrer" controls></video>`;
+                }
+                break;
+            case 18: // tag
+                content += `${ele.text}`;
+                break;
+            case 40: // search_words
+                content += `${ele.text}`;
+                break;
+            default:
+                content += `<div style='color: red'>Failed to parse: ` + JSON.stringify(ele) + `</div>`;
+                break;
+        }
+    });
+    return content;
+}

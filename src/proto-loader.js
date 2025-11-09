@@ -92,7 +92,7 @@ function getProtoRoot(rootKey) {
     if (!protoRoots.has(rootKey)) {
         const root = new protobuf.Root();
         protoRoots.set(rootKey, root);
-        console.log(`[Info] Proto root initialized for: ${rootKey}`);
+        // console.log(`[Info] Proto root initialized for: ${rootKey}`);
     }
     return protoRoots.get(rootKey);
 }
@@ -102,7 +102,9 @@ async function loadProtoForMessage(messageName) {
         'ProfileReqIdl': { path: 'Profile/ProfileReqIdl.proto', namespace: 'Profile' },
         'ProfileResIdl': { path: 'Profile/ProfileResIdl.proto', namespace: 'Profile' },
         'UserPostReqIdl': { path: 'UserPost/UserPostReqIdl.proto', namespace: 'UserPost' },
-        'UserPostResIdl': { path: 'UserPost/UserPostResIdl.proto', namespace: 'UserPost' }
+        'UserPostResIdl': { path: 'UserPost/UserPostResIdl.proto', namespace: 'UserPost' },
+        'PbPageReqIdl': { path: 'PbPage/PbPageReqIdl.proto', namespace: 'PbPage' },
+        'PbPageResIdl': { path: 'PbPage/PbPageResIdl.proto', namespace: 'PbPage' },
     };
 
     const config = messageToProtoMap[messageName];
@@ -114,7 +116,7 @@ async function loadProtoForMessage(messageName) {
     const rootKey = config.namespace;
     const root = getProtoRoot(rootKey);
 
-    console.log(`Loading proto for message type: ${messageName} (namespace: ${rootKey})`);
+    // console.log(`Loading proto for message type: ${messageName} (namespace: ${rootKey})`);
     await loadProtoWithDependencies(root, rootKey, config.path);
 
     return root;

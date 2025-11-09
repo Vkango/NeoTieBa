@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "SimpleForum.proto";
+import "ThreadInfo.proto";
+
+message SimilarContent {
+    repeated string similar_label_list = 1;
+    string similar_url = 2;
+    int32 user_type = 3;
+    ThreadInfo similar_thread = 4;
+    SimpleForum similar_forum = 5;
+}

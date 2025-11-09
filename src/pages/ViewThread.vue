@@ -9,12 +9,14 @@ import Drawer from '../components/Drawer.vue';
 import ReplyView from '../components/SubPostView.vue';
 import { read_file } from '../file-io.js';
 const returnData = ref([]);
+const userList = ref([]);
 const isLoading = ref(true);
 const isThreadsLoading = ref(true);
 const threadList = ref([]);
 const currentPage = ref(1);
 const threadTitle = ref("");
 const isDeleted = ref(false);
+let has_more = true;
 const instance = getCurrentInstance();
 let isDrawerOpen = instance.appContext.config.globalProperties.$IsDrawerOpen;
 const n = new tieBaAPI;
@@ -25,15 +27,20 @@ const currentSubPostInfo = ref({ like: undefined, user_name: undefined, uid: und
 const loadData = async () => {
   isThreadsLoading.value = true;
   if (!props.local) {
-    returnData.value = await n.viewThread(props.tid, currentPage.value);
+    returnData.value = await n.get_post(Number(props.tid), currentPage.value);
   } else {
     returnData.value = JSON.parse(await read_file(props.local_dir + '/page' + currentPage.value + '.json'));
   }
+  if (returnData.value?.data?.postList) {
+    threadTitle.value = returnData.value.data.thread.title;
+    emit('setTabInfo', { key: props.key_, title: returnData.value.data.thread.title, icon: returnData.value.data.forum.avatar });
+    userList.value.push(...returnData.value.data.userList.filter(user => !userList.value.map(u => u.id).includes(user.id)));
+    returnData.value.data.postList.forEach(element => {
+      element.author = userList.value.filter(user => user.id === element.authorId)[0];
+      console.log('Author Info:', element.author);
+    });
+    threadList.value = [...threadList.value, ...returnData.value.data.postList];
 
-  if (returnData.value?.thread?.title) {
-    threadTitle.value = returnData.value.thread.title;
-    emit('setTabInfo', { key: props.key_, title: returnData.value.thread.title, icon: returnData.value.forum.avatar });
-    threadList.value = [...threadList.value, ...returnData.value.post_list];
   }
   else {
     emit('setTabInfo', { key: props.key_, title: '贴子已被删除', icon: '/assets/apps.svg' });
@@ -51,7 +58,8 @@ onMounted(async () => {
 });
 const onScroll = (target) => {
   if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
-    if (isThreadsLoading.value || returnData.value.page.has_more != 1) {
+    if (isThreadsLoading.value || !returnData.value.data.page.hasMore) {
+      sendToast('没有更多内容了', 2000);
       return;
     }
     nextPage();
@@ -99,23 +107,24 @@ const props = defineProps({
           <h3 class="thread-title">
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
               <RippleButton style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;"
-                @click="barNameClicked(returnData.forum.name)">
+                @click="barNameClicked(returnData.data.forum.name)">
                 <div
                   style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
-                  <img :src="returnData.forum.avatar" class="avatar" referrerpolicy="no-referrer">
-                  <span style="font-size: 14px; margin-right: 5px;">{{ returnData.forum.name }}吧</span>
+                  <img :src="returnData.data.forum.avatar" class="avatar" referrerpolicy="no-referrer">
+                  <span style="font-size: 14px; margin-right: 5px;">{{ returnData.data.forum.name }}吧</span>
                 </div>
               </RippleButton>
               {{ threadTitle }}
             </div>
           </h3>
-          <Reply v-for="item in threadList" :like="item.agree.agree_num - item.agree.disagree_num"
-            :user_name="item.author.name || item.author.name_show" :uid="item.author.id"
+          <Reply v-for="item in threadList" :like="item.agree.agreeNum - item.agree.disagreeNum"
+            :user_name="item.author.nameShow || item.author.name" :uid="item.authorId"
             @userNameClicked="onUserNameClicked" :avatar="item.author.portrait"
             :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
-            :create_time="item.time" :reply_num="item.sub_post_number" :tid="tid" :pid="item.id" :floor="item.floor"
-            :is_lz="item.author.id === threadList[0].author.id" :level="item.author.level_id"
-            @viewAllReplies="ViewAllReplie"></Reply>
+            :create_time="item.time" :reply_num="item.subPostNumber" :tid="tid" :pid="item.id" :floor="item.floor"
+            :is_lz="item.authorId === threadList[0].authorId" :level="item.author.levelId"
+            :ipAddress="item.author.ipAddress" @viewAllReplies="ViewAllReplie">
+          </Reply>
         </div>
 
       </div>

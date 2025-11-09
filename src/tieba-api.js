@@ -3,12 +3,18 @@ import CryptoJS from "crypto-js";
 import { fetch_data_with_headers_command, fetchData, fetchData_post, fetchData_with_cookie } from './request.js'
 import { user_info_protobuf } from "./api/user-info.js";
 import { user_post_protobuf } from "./api/user-post.js";
+import { get_post_proto } from "./api/get-post.js";
 export class tieBaAPI {
     /**
      * 构造函数
      */
     constructor() {
         this.apiUrl = "http://c.tieba.baidu.com/c/f/frs/page"; // 贴吧API地址
+    }
+
+    async get_post(tid, pn = 1, rn = 30, sort = 0, onlyThreadAuthor = false,
+        withComments = false, bduss = '', commentRn = 10) {
+        return await get_post_proto(tid, pn, rn, sort, onlyThreadAuthor, withComments, bduss, commentRn);
     }
 
     /**

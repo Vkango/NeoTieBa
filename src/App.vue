@@ -293,7 +293,7 @@ const onshowNotificationBox = () => {
 <template>
   <div id="container" style="background-image: url(../public/assets/background.jpg);">
     <div id="container"
-      style="backdrop-filter: blur(0px); background-color: rgba(var(--background-color), 0.65); transition: all 0.3s ease;">
+      style="backdrop-filter: blur(0px); background-color: rgba(var(--background-color), 0.85); transition: all 0.3s ease;">
     </div>
     <div class="navi">
       <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem"

@@ -45,7 +45,7 @@
 import { defineProps, onMounted, ref, defineEmits, inject } from 'vue';
 import { tieBaAPI } from '../tieba-api';
 import SubPost from './SubPost.vue';
-import { getTimeInterval } from '../helper';
+import { getTimeInterval, processContentElements } from '../helper';
 import RippleButton from './RippleButton.vue';
 import Loading from './Loading.vue';
 import Container from './Container.vue';
@@ -107,35 +107,7 @@ function formatDate(timestamp) {
 }
 onMounted(() => {
   create_time1.value = ref(formatDate(props.create_time));
-  props.thread_content.forEach((ele, index) => {
-    switch (ele.type) {
-
-      case 0: // text
-        if (index != 0 && props.thread_content[index - 1].type == 3) {
-          content.value += `<br>`
-        }
-        content.value += ele.text;
-        break;
-      case 1: // link
-        content.value += `<a href="${ele.text}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
-        break;
-      case 2: // emotion
-        content.value += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
-        break;
-      case 3: // image
-        content.value += (index != 0 ? `<br>` : ``) + `<img class="thread-reply-img" style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
-        break;
-      case 4: // at
-        content.value += `<button class="at-button" uid="${ele.uid}">${ele.text}</button>`;
-        break;
-      case 5: // video
-        content.value += (index != 0 ? `<br>` : ``) + `<video class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.link}" referrerpolicy="no-referrer" controls></video>`;
-        break;
-      default:
-        content.value += `<div style='color: red'>Failed to parse: ` + JSON.stringify(ele) + `</div>`;
-        break;
-    }
-  });
+  content.value = processContentElements(props.thread_content);
   if (props.reply_num > 0) {
     const Api = new tieBaAPI;
     Api.viewSubPost(props.tid, props.pid).then((res) => {

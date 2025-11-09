@@ -2,7 +2,8 @@
   <div class="thread" @click.stop>
     <div class="user-info" @click="userNameClicked(props.uid)">
       <div class="avatar"><img class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
+          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"
+          referrerpolicy="no-referrer"></div>
       <div>
         <div class="user-name">{{ user_name }}<span class="level"
             :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level >= 16 }">{{
@@ -18,8 +19,10 @@
       </div>
       <div class="thread-info">
         <!-- <button @click="dom2img">申必</button> -->
-        <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
+        <span class="material-symbols-outlined" style="font-size: 16px;">location_on</span>{{ ipAddress }}
+        <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">share</span>分享
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">thumb_up</span> {{ like }} 赞
+
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">floor</span> {{ floor }} 楼
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;"
           v-if="reply_num > 0">forum</span> <span v-if="reply_num > 0">{{ reply_num }} 回复</span>
@@ -42,7 +45,7 @@
 import { defineProps, onMounted, ref, defineEmits, inject } from 'vue';
 import { tieBaAPI } from '../tieba-api';
 import SubPost from './SubPost.vue';
-import { getTimeInterval } from '../helper';
+import { getTimeInterval, processContentElements } from '../helper';
 import RippleButton from './RippleButton.vue';
 const openImageViewer = inject('openImageViewer');
 const content = ref('')
@@ -74,39 +77,10 @@ function formatDate(timestamp) {
 }
 onMounted(() => {
   create_time1.value = ref(formatDate(props.create_time));
-  props.thread_content.forEach((ele, index) => {
-    switch (ele.type) {
-
-      case 0: // text
-        if (index != 0 && props.thread_content[index - 1].type == 3) {
-          content.value += `<br>`
-        }
-        content.value += ele.text;
-        break;
-      case 1: // link
-        content.value += `<a href="${ele.text}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
-        break;
-      case 2: // emotion
-        content.value += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
-        break;
-      case 3: // image
-        content.value += (index != 0 ? `<br>` : ``) + `<img class="thread-reply-img" style="  max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.big_cdn_src || ele.origin_src}" referrerpolicy="no-referrer">`;
-        break;
-      case 4: // at
-        content.value += `<button class="at-button" uid="${ele.uid}">${ele.text}</button>`;
-        break;
-      case 5: // video
-        content.value += (index != 0 ? `<br>` : ``) + `<video class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.link}" referrerpolicy="no-referrer" controls></video>`;
-        break;
-      default:
-        content.value += `<div style='color: red'>Failed to parse: ` + JSON.stringify(ele) + `</div>`;
-        break;
-    }
-  });
+  content.value = processContentElements(props.thread_content);
   if (props.reply_num > 0) {
     const Api = new tieBaAPI;
     Api.viewSubPost(props.tid, props.pid).then((res) => {
-      console.log(res);
       subpost_list.value = res.subpost_list;
       if (subpost_list.value.length > 5) {
         subpost_list.value = subpost_list.value.slice(0, 5);
@@ -115,13 +89,17 @@ onMounted(() => {
   }
 })
 const props = defineProps({
+  ipAddress: {
+    type: String,
+    required: true,
+    default: '未知'
+  },
   avatar: {
     type: String,
     required: true,
     default: ''
   },
   uid: {
-    type: Number,
     required: true,
   },
   user_name: {
@@ -163,16 +141,13 @@ const props = defineProps({
     default: ''
   },
   pid: {
-    type: Number,
     required: true,
     default: ''
   },
   floor: {
-    type: Number,
     required: true
   },
   level: {
-    type: Number,
     required: false,
     default: 0
   }

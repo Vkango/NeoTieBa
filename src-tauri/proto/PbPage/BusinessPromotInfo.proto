@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "SendCardInfo.proto";
+
+message BusinessPromotInfo {
+    int64 is_promot = 1;
+    int32 is_headlinepost = 2;
+    int32 is_s_card = 3;
+    SendCardInfo send_card_info = 4;
+}

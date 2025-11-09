@@ -12,6 +12,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { replaceEmoticonsWithImages } from '../emotion2code';
+import { processContentElements } from '../helper';
 const create_time1 = ref('');
 const content = ref('');
 function formatDate(timestamp) {
@@ -39,23 +40,7 @@ const props = defineProps({
 })
 onMounted(() => {
   create_time1.value = ref(formatDate(props.createTime));
-  props.content.forEach((ele, index) => {
-    switch (ele.type) {
-
-      case 0: // text
-        content.value += replaceEmoticonsWithImages(ele.text)
-        if (index != 0 && props.content[index - 1].type == 3) {
-          content.value += `<br>`
-        }
-        break;
-      case 2: // emotion
-        content.value += `<img class="emotion" src="/assets/emotion/${ele.text}.png" alt="${ele.c}" />`;
-        break;
-      case 4: // emotion
-        content.value += `<span style="font-weight: bold">${ele.text}</span>`;
-        break;
-    }
-  });
+  content.value = processContentElements(props.content);
 })
 </script>
 
