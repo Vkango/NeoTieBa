@@ -24,6 +24,7 @@ import Toast from './components/Toast.vue';
 import Drawer from './components/Drawer.vue';
 import Home from './pages/Home.vue';
 import { read_file } from './file-io';
+import SearchInBar from './pages/SearchInBar.vue';
 
 const notificationComponent = ref(null);
 
@@ -95,12 +96,17 @@ function generateUniqueId(text) {
 const onBarNameClicked = (barName) => {
   if (barName == undefined) throw new Error("吧名为空！")
   const key = generateUniqueId('ViewBarThreads' + barName);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked })
+  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onSearchInBar: onSearchInBar })
 }
 const userNameClicked = (uid) => {
   if (uid == undefined) throw new Error('用户ID为空！')
   const key = generateUniqueId('User' + uid);
   TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick }, undefined, undefined, "UID " + uid)
+}
+
+const onSearchInBar = (data) => {
+  const key = generateUniqueId('Search' + data.barName);
+  TabsRef.value.addTab(key, "/assets/search.svg", "吧内搜索", SearchInBar, { key_: key, barName: data.barName, barIcon: data.barIcon, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSetTabInfo: setTabInfo }, true)
 }
 
 const QRLogin = () => {
@@ -180,6 +186,9 @@ function onSwitchTabs(id) {
       naviListItem.value[4].selected = true;
       break;
     case 'Search':
+      naviListItem.value[0].selected = true;
+      break;
+    case 'SearchInBar':
       naviListItem.value[0].selected = true;
       break;
     case 'Setting':
@@ -673,6 +682,11 @@ input {
   border-radius: 5px;
   width: fit-content;
   margin-bottom: 5px;
+}
+
+.emoticon {
+  width: 32px;
+  height: 32px;
 }
 
 .loading-box {

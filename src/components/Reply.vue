@@ -172,11 +172,6 @@ const props = defineProps({
   align-items: center;
 }
 
-.emotion {
-  width: 24px;
-  height: 24px;
-}
-
 .thread-media {
   display: flex;
   gap: 10px;

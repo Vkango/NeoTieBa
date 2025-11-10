@@ -53,6 +53,18 @@ export class tieBaAPI {
         return await user_post_protobuf(userId, page);
     }
 
+    async searchThreadInBar(barName, keyword, pn) {
+        const responseData = await fetchData(`http://tieba.baidu.com/mo/q/search/thread?st=5&tt=1&ct=2&cv=12.91.1.0&fname=${encodeURIComponent(barName)}&word=${encodeURIComponent(keyword)}&pn=${pn}&rn=20`);
+        const result = JSON.parse(responseData);
+        return result;
+    }
+
+    async searchPostInBar(barName, keyword, pn) {
+        const responseData = await fetchData(`http://tieba.baidu.com/mo/q/search/thread?st=5&tt=3&ct=2&cv=12.91.1.0&fname=${encodeURIComponent(barName)}&word=${encodeURIComponent(keyword)}&pn=${pn}&rn=20`)
+        const result = JSON.parse(responseData);
+        return result;
+    }
+
     async searchBar(keyword) {
         // 构造请求数据
         const data = `word=${encodeURIComponent(keyword)}`;

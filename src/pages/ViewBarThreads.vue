@@ -18,6 +18,10 @@ const currentPage = ref(1);
 const n = new tieBaAPI;
 const openImageViewer = inject('openImageViewer');
 
+const SearchInBar = () => {
+  emit('SearchInBar', { barName: props.barName, barIcon: returnData.value.forum.avatar });
+}
+
 const showbarDetail = () => {
   barDetailVisible.value = true
 }
@@ -91,7 +95,7 @@ const handleClick = (id) => {
   emit('threadClick', id);
 }
 
-const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked']);
+const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked', 'SearchInBar']);
 
 const nextPage = async () => {
   currentPage.value++;
@@ -152,7 +156,8 @@ const props = defineProps({
             </RippleButton>
 
             <RippleButton class="filter-button"
-              style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;">
+              style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;"
+              @click="SearchInBar()">
               <div style="display: flex; gap: 10px; align-items: center;">
                 <img src="/assets/search.svg" width="18px" class="icon_">
                 <span>吧内搜索</span>

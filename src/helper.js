@@ -49,10 +49,14 @@ export function processContentElements(elements, dismissMedia = false) {
                 content += ele.text;
                 break;
             case 1: // link
-                content += `<a href="${ele.link}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
+                content += `<a href="${decodeURIComponent(
+                    ele.link
+                        .replace('https://tieba.baidu.com/mo/q/checkurl?url=', '')
+                        .replace('http://tieba.baidu.com/mo/q/checkurl?url=', '')
+                ).split('&urlrefer=')[0]}" target="_blank" rel="noopener noreferrer">${ele.text}</a>`;
                 break;
-            case 2: // emotion
-                content += `<img class="emotion" src="${('/assets/emotion/' + ele.text + '.png')}" alt="${ele.c}" />`;
+            case 2: // emoticon
+                content += `<img class="emoticon" src="${('/assets/emoticons/' + ele.text + '.png')}" alt="${ele.c}" />`;
                 break;
             case 3: // image
                 if (!dismissMedia) {

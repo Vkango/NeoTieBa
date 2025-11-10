@@ -7,7 +7,7 @@ import Container from '../components/Container.vue';
 import Tag from '../components/Tag.vue';
 import RippleButton from '../components/RippleButton.vue';
 import UserReply from '../components/UserReply.vue';
-import { replaceEmoticonsWithImages } from '../emotion2code.js';
+import { replaceEmoticonsWithImages } from '../emoticon2code.js';
 const returnData = ref({});
 const isLoading = ref(true);
 const returnData2 = ref();

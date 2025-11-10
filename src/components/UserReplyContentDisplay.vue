@@ -11,7 +11,7 @@
 </template>
 <script setup>
 import { ref, onMounted } from 'vue';
-import { replaceEmoticonsWithImages } from '../emotion2code';
+import { replaceEmoticonsWithImages } from '../emoticon2code';
 import { processContentElements } from '../helper';
 const create_time1 = ref('');
 const content = ref('');
@@ -50,11 +50,6 @@ onMounted(() => {
   gap: 5px;
   opacity: 0.5;
   align-items: center;
-}
-
-.emotion {
-  width: 24px;
-  height: 24px;
 }
 
 .thread-media {

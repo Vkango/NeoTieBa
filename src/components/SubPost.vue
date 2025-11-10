@@ -53,11 +53,6 @@ const props = defineProps({
   flex-direction: column;
 }
 
-.emotion {
-  width: 24px;
-  height: 24px;
-}
-
 .subpost-1 .avatar {
   width: 30px;
   height: 30px;
