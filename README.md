@@ -4,11 +4,9 @@
 <div align="center">
 
 
-<span style="font-size: 30px; font-weight: bold">NeoTieBa</span>
+# NeoTieBa
 
 吾等在此，静候君归
-
----
 
 <span></span>
 
@@ -32,13 +30,13 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 
 
 
-## 🐛 提前尝鲜
+## 🐛 尝鲜与调试
 
 可以从 GitHub Actions 中下载尝鲜版. 请前往 `Actions` → 最新一条成功的 `Test Build` → `Artifacts` 下载对应平台应用. 
 
-> [!caution]
+> [!note]
 >
-> 根据反馈发现在 macOS 上应用所有按钮均无法点击. 很抱歉, 由于本人没有 macOS 测试环境, 该问题暂时无解. 欢迎提交相关 PR 或有关信息.
+> 目前暂时没有除 Windows 端以外其他端的移植计划.
 
 > [!warning]
 >
@@ -48,9 +46,7 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 
 ### 登录方法
 
-前往 `设置` → `账号管理` → `扫码登录` 添加账户. 建议使用百度网盘扫码.
-
-如果扫码登录失败且刷新无法解决, 可以尝试使用 Cookies 登录. 在弹出的窗口中输入抓包来的 `BDUSS` `STOKEN`.
+前往 `设置` → `账号管理` 添加账户. 建议使用百度网盘扫码.
 
 ### 调试
 
@@ -63,8 +59,8 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 ### ➡️ 登录
 
 - [x] 扫码登录
-- [ ] 直接使用 Cookie 登录
-- [ ] 内置浏览器登录
+- [x] 直接使用 Cookie 登录
+- [x] 内置浏览器登录
 
 ### 📄 页面
 
@@ -99,7 +95,7 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 - [ ] ~~吧务管理~~ (不在计划内, 可能以后会通过插件实现)
 - [ ] 保存贴子
 
-### ⚙ 小功能
+### ⚙ 体验
 
 - [ ] 跳页
 - [ ] 签到 (自动签到不在计划内)
@@ -142,7 +138,7 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 
 ## 🔗 友情链接
 
-贴吧Lite, 优秀的第三方贴吧 Android 客户端: [HuanCheng65/TiebaLite: 贴吧 Lite](https://github.com/HuanCheng65/TiebaLite)
+贴吧 Lite, 优秀的第三方贴吧 Android 客户端: [HuanCheng65/TiebaLite: 贴吧 Lite](https://github.com/HuanCheng65/TiebaLite)
 
 TiebaDesktop, 优秀的第三方贴吧桌面客户端: [clb-128258/TiebaDesktop: 非官方的百度贴吧电脑客户端，目前支持 Windows 系统](https://github.com/clb-128258/TiebaDesktop)
 
