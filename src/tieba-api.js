@@ -53,6 +53,27 @@ export class tieBaAPI {
         return await user_post_protobuf(userId, page);
     }
 
+    /**
+     * 使用 Cookie 获取当前登录用户信息
+     * @param {string} bduss - BDUSS Cookie
+     * @param {string} stoken - STOKEN Cookie
+     * @returns {Promise<Object>} 用户信息
+     */
+    async getUserInfo(bduss, stoken) {
+        try {
+            const cookie = `BDUSS=${bduss}; STOKEN=${stoken};`;
+            const responseData = await fetchData_with_cookie(
+                'https://tieba.baidu.com/f/user/json_userinfo',
+                cookie
+            );
+            const result = JSON.parse(responseData);
+            return result;
+        } catch (error) {
+            console.error('Error getting user info with cookie:', error);
+            throw error;
+        }
+    }
+
     async searchThreadInBar(barName, keyword, pn) {
         const responseData = await fetchData(`http://tieba.baidu.com/mo/q/search/thread?st=5&tt=1&ct=2&cv=12.91.1.0&fname=${encodeURIComponent(barName)}&word=${encodeURIComponent(keyword)}&pn=${pn}&rn=20`);
         const result = JSON.parse(responseData);

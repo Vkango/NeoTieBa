@@ -92,3 +92,17 @@ export async function set_current_user(username) {
 
     await saveUserList(userList);
 }
+
+export async function switch_user(user) {
+    const userList = await getUserList();
+
+    userList.forEach(item => {
+        if (item.username === user.username) {
+            item.current = true;
+        } else {
+            item.current = false;
+        }
+    });
+
+    await saveUserList(userList);
+}

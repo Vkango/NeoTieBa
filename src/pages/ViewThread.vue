@@ -37,7 +37,7 @@ const loadData = async () => {
     userList.value.push(...returnData.value.data.userList.filter(user => !userList.value.map(u => u.id).includes(user.id)));
     returnData.value.data.postList.forEach(element => {
       element.author = userList.value.filter(user => user.id === element.authorId)[0];
-      console.log('Author Info:', element.author);
+      // console.log('Author Info:', element.author);
     });
     threadList.value = [...threadList.value, ...returnData.value.data.postList];
 

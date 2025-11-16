@@ -5,11 +5,19 @@
         <slot></slot>
         <div style="display: flex; align-items: center; gap: 5px; opacity: 0.5;"><span class="material-symbols-outlined"
                 style="font-size: 16px;">link</span>neotieba://{{ props.componentkey.toLowerCase() }}</div>
-        <RippleButton @click="emit('refresh', props.id)"
-            style="margin-top: 10px; padding: 0; background-color: transparent; box-shadow: none;">
-            <div style="display: flex; align-items: center; gap: 10px"><span class="material-symbols-outlined"
-                    style="font-size: 18px;">refresh</span>刷新</div>
-        </RippleButton>
+        <div style="display: flex; gap: 10px">
+            <RippleButton @click="emit('refresh', props.id)"
+                style="margin-top: 10px; padding: 0; background-color: transparent; box-shadow: none;">
+                <div style="display: flex; align-items: center; gap: 10px"><span class="material-symbols-outlined"
+                        style="font-size: 18px;">refresh</span>刷新</div>
+            </RippleButton>
+            <RippleButton @click="emit('copy_info', props.id)"
+                style="margin-top: 10px; padding: 0; background-color: transparent; box-shadow: none;">
+                <div style="display: flex; align-items: center; gap: 10px"><span class="material-symbols-outlined"
+                        style="font-size: 18px;">content_copy</span>复制链接</div>
+            </RippleButton>
+        </div>
+
     </div>
 </template>
 

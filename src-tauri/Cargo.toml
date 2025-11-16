@@ -28,3 +28,13 @@ window-vibrancy = "0.5.2"
 prost = "0.13.5"
 tokio = { version = "1", features = ["full"] }
 tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2.0.0"
+url = "2.5"
+http = "1.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+webview2-com = "0.36"
+
+[target.'cfg(target_os = "windows")'.dependencies.windows]
+version = "0.60"
+features = ["Foundation"]

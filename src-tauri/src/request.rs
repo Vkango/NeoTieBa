@@ -1,5 +1,5 @@
 use reqwest::header::{HeaderValue, CONTENT_TYPE};
-use reqwest::{header::HeaderMap, header::COOKIE, Client, Error, Proxy};
+use reqwest::{header::HeaderMap, header::COOKIE, Client, Error};
 use serde::Serialize;
 use std::collections::HashMap;
 use tauri::command;

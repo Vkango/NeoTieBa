@@ -24,6 +24,6 @@ dist-ssr
 *.sw?
 bduss.txt
 cookie.txt
-users.json
+user*.json
 public/assets/background.jpg
 # src/plugins/blocklist.json

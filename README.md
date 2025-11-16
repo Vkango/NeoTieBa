@@ -4,15 +4,27 @@
 <div align="center">
 
 
-# NeoTieBa
+<span style="font-size: 30px; font-weight: bold">NeoTieBa</span>
 
-基于 `Tauri` + `Vue3` 构建的 **非官方** 贴吧客户端, 适用于桌面端应用, 缓速更新中……
+吾等在此，静候君归
+
+---
+
+<span></span>
+
+![Version](https://img.shields.io/badge/🐢-龟速更新-red.svg) ![STARS](https://img.shields.io/github/stars/Vkango/NeoTieBa?style=round-square&logo=github&color=yellow) ![FORKS](https://img.shields.io/github/forks/Vkango/NeoTieBa?style=round-square)
+
+基于 `Tauri2.0` + `Vue3` 构建的 **非官方** 贴吧客户端, 适用于桌面端应用, 缓速更新中……
+
+NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支持.
+
+
 
 </div>
 
 > [!warning]
 >
-> 本程序**不会**收集你的任何个人信息. 
+> **本程序不会收集你的任何个人信息.**
 >
 > **此软件仅供学习交流使用, 严禁用于商业用途. 出现的任何后果作者概不负责！**
 >
@@ -22,31 +34,27 @@
 
 ## 🐛 提前尝鲜
 
-可以从 GitHub Actions 中下载尝鲜版. 请前往 `Actions` → `最新一条成功的 Test Build` → `Artifacts` 下载对应平台应用. 
+可以从 GitHub Actions 中下载尝鲜版. 请前往 `Actions` → 最新一条成功的 `Test Build` → `Artifacts` 下载对应平台应用. 
 
-根据反馈发现在 macOS 上应用所有按钮均无法点击. 很抱歉, 由于本人没有 macOS 测试环境, 该问题暂时无解. 欢迎提交相关 PR 或有关信息.
+> [!caution]
+>
+> 根据反馈发现在 macOS 上应用所有按钮均无法点击. 很抱歉, 由于本人没有 macOS 测试环境, 该问题暂时无解. 欢迎提交相关 PR 或有关信息.
 
-**注意: 每次构建后30天自动删除.**
+> [!warning]
+>
+> 每次构建后30天自动删除.
+>
+> 目前尝鲜版问题较多, 因学业原因无法及时修复, 请谅解.
 
-**目前 Build 版问题较多, 因学业原因无法及时修复, 请谅解. 在开始时自动弹出错误提示无用户登录, 单击报错通知即可打开扫码登录. 建议使用百度网盘扫码. 登录成功后可手动刷新以获得更佳体验.**
+### 登录方法
 
-如果仍登录失败 (例如无法加载二维码), 且刷新无法解决, 可以尝试前往软件目录, 手动新建 `users.json` 文件使用Cookies登录. 
+前往 `设置` → `账号管理` → `扫码登录` 添加账户. 建议使用百度网盘扫码.
 
-内容像这样, 内容需要手动抓包提取: 
+如果扫码登录失败且刷新无法解决, 可以尝试使用 Cookies 登录. 在弹出的窗口中输入抓包来的 `BDUSS` `STOKEN`.
 
-```json
-[
-  {
-    "user_name": "xxxxx",
-    "avatar": "https:\\/\\/himg.bdimg.com\\/sys\\/portrait\\/item\\/xxxxxxx.jpg",
-    "bduss": "xxxxxxxx",
-    "stoken": "xxxxxxxxx",
-    "current": true
-  }
-]
-```
+### 调试
 
-或者, 如果具备 Tauri 应用调试环境, 可运行 Dev 版: `npm run tauri dev` 或手动编译:  `npm run tauri build`
+确保具备最新的 Tauri 应用调试环境. 使用 `npm run tauri dev` 来运行 Dev 版, 使用 `npm run tauri build` 进行应用构建.
 
 
 
@@ -68,7 +76,7 @@
 
 #### 首页相关
 
-- [ ] 首页推荐
+- [x] 首页推荐
 
 #### 用户相关
 
@@ -79,6 +87,7 @@
 #### 搜索相关
 
 - [x] 搜索页
+- [x] 吧内搜索
 
 #### 程序相关
 

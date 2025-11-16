@@ -7,7 +7,6 @@ import ViewBarThreads from './pages/ViewBarThreads.vue';
 import TitleBar from './components/TitleBar.vue';
 import ViewThread from './pages/ViewThread.vue';
 import My from './pages/My.vue';
-import QRCodeLogin from './pages/QRCodeLogin.vue';
 import Favourite from './pages/Favourite.vue';
 import User from './pages/User.vue';
 import Search from './pages/Search.vue';
@@ -25,8 +24,27 @@ import Drawer from './components/Drawer.vue';
 import Home from './pages/Home.vue';
 import { read_file } from './file-io';
 import SearchInBar from './pages/SearchInBar.vue';
+import { clipboardService } from './clipboard-service';
+import { URLParser } from './url-parser';
+import { tieBaAPI } from './tieba-api';
 
 const notificationComponent = ref(null);
+const isNotificationReady = ref(false);
+
+const safeAddNotification = async (title, source, component, clickHandler, props = {}, duration = 5000) => {
+  let attempts = 0;
+  while (!notificationComponent.value && attempts < 50) {
+    await nextTick();
+    attempts++;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+
+  if (notificationComponent.value && notificationComponent.value.addNotification) {
+    notificationComponent.value.addNotification(title, source, component, clickHandler, props, duration);
+  }
+};
+
+provide('sendNotification', safeAddNotification);
 
 const imageViewerVisibility = ref(false);
 const imageViewerSrc = ref('');
@@ -55,6 +73,7 @@ const activeTab = ref({});
 const TabsRef = ref(null);
 const showTabList = ref(false);
 const showNotificationBox = ref(false);
+const titleBarRef = ref(null);
 const onBarThreadClick = (id) => {
   if (id == undefined) throw new Error("贴子ID为空！");
   const key = generateUniqueId('ViewThread' + id);
@@ -109,39 +128,69 @@ const onSearchInBar = (data) => {
   TabsRef.value.addTab(key, "/assets/search.svg", "吧内搜索", SearchInBar, { key_: key, barName: data.barName, barIcon: data.barIcon, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSetTabInfo: setTabInfo }, true)
 }
 
-const QRLogin = () => {
-  const key = generateUniqueId('QRLogin');
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo }, true, true)
-}
 
-const onClick = () => {
-  const key = generateUniqueId('QRLogin');
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", QRCodeLogin, { key_: key, onSetTabInfo: setTabInfo }, true, true)
-}
-onMounted(() => {
-  nextTick(() => {
-    errorService.addHandler((error, info) => {
-      try {
-        notificationComponent.value.addNotification(
-          info,
-          '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
-          Tip,
-          onClick,
-          { Tip: error },
-          60000
-        )
-      }
-      catch {
-        alert('Error in application, failed to pop notification: please restart: \n' + error + '\n' + info);
+
+let processedUrls = [];
+const Api = new tieBaAPI();
+onMounted(async () => {
+  await nextTick();
+  isNotificationReady.value = true;
+
+  errorService.addHandler(async (error, info) => {
+    try {
+      await safeAddNotification(
+        info,
+        '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
+        Tip,
+        null,
+        { Tip: error },
+        60000
+      );
+    } catch (e) {
+      console.error('Failed to show error notification:', e);
+      alert('Error in application, failed to pop notification: please restart: \n' + error + '\n' + info);
+    }
+  });
+
+  clipboardService.addHandler(async (url) => {
+    try {
+      if (processedUrls.find(u => u === url)) return;
+      const parser = new URLParser(url);
+      if (parser.getProtocol().toLowerCase() == 'neotieba') {
+        let jump_result = {};
+        const params = parser.toObject().params;
+        switch (parser.getPathname().toLowerCase()) {
+          case 'viewthread': {
+            const thread = await Api.get_post(Number(params?.tid), 1);
+            jump_result = {
+              onClick: () => onBarThreadClick(params?.tid),
+              title: thread.data.thread.title,
+              description: '来自 ' + thread.data.forum.name + '吧'
+            }
+            break;
+          }
+        }
+        if (jump_result !== {}) {
+          await safeAddNotification(
+            jump_result.title,
+            '<span class="material-symbols-outlined" style="font-size: 17px;">content_paste</span>Clipboard 跳转',
+            Tip,
+            jump_result.onClick,
+            { Tip: jump_result.description },
+            60000
+          );
+        }
       }
 
-    });
-  })
+    } catch (e) {
+
+    } finally {
+      processedUrls.push(url);
+    }
+  });
+
   let key = generateUniqueId('Welcome');
-  TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key, onSetTabInfo: setTabInfo }, true, false)
-  provide('sendNotification', (title, source, component, clickHandler, props = {}, duration = 5000) => {
-    notificationComponent.value.addNotification(title, source, component, clickHandler, props, duration);
-  })
+  TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key, onSetTabInfo: setTabInfo }, true, false);
 });
 function onSwitchTabs(id) {
 
@@ -181,9 +230,6 @@ function onSwitchTabs(id) {
       break;
     case 'My':
       naviListItem.value[3].selected = true;
-      break;
-    case 'QRCodeLogin':
-      naviListItem.value[4].selected = true;
       break;
     case 'Search':
       naviListItem.value[0].selected = true;
@@ -277,7 +323,7 @@ const addBar = async (id) => {
       break;
     case 4:
       key = generateUniqueId('Setting');
-      TabsRef.value.addTab(key, "/assets/settings.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo, onQRLogin: QRLogin }, true)
+      TabsRef.value.addTab(key, "/assets/settings.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo, onUserChanged: handleUserChanged }, true)
       break;
     case 5:
       key = generateUniqueId('Debug');
@@ -297,6 +343,12 @@ const onshowNotificationBox = () => {
   showNotificationBox.value = !showNotificationBox.value;
   showTabList.value = false;
 }
+
+const handleUserChanged = async () => {
+  if (titleBarRef.value) {
+    await titleBarRef.value.updateAvatar();
+  }
+};
 </script>
 
 <template>
@@ -316,8 +368,8 @@ const onshowNotificationBox = () => {
         </keep-alive>
       </div>
     </div>
-    <TitleBar title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);" @showTabs="onShowTabs"
-      @showNotificationBox="onshowNotificationBox"
+    <TitleBar ref="titleBarRef" title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"
+      @showTabs="onShowTabs" @showNotificationBox="onshowNotificationBox"
       :msgCount="notificationComponent?.notifications?.length + notificationComponent?.hiddenNotifications?.length" />
     <Tabs ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"
       @onTabRefresh="onRefreshTab">
@@ -518,7 +570,7 @@ input {
   position: fixed;
   display: flex;
   flex-direction: column;
-  z-index: 2;
+  z-index: 2000;
   overflow-y: auto;
   overflow-x: hidden;
   right: 0px;

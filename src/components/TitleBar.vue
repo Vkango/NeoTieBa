@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineEmits } from 'vue';
+import { ref, onMounted, defineEmits, defineExpose } from 'vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import RippleButton from './RippleButton.vue';
 import { get_current_user } from '../user-manage';
@@ -36,13 +36,22 @@ const isMaximized = ref(false);
 const isMouseDown = ref(false);
 const isMoved = ref(false);
 const user = ref({ user_name: '', avatar: '' });
+
+const updateAvatar = async () => {
+  const usr = await get_current_user();
+  user.value.name = usr.name;
+  user.value.avatar = usr.avatar;
+};
+
 onMounted(async () => {
   isMaximized.value = !getCurrentWindow().isMaximized();
   await getCurrentWindow().onResized(handleResize);
-  const usr = await get_current_user()
-  user.value.name = usr.name;
-  user.value.avatar = usr.avatar;
-})
+  await updateAvatar();
+});
+
+defineExpose({
+  updateAvatar
+});
 const handleResize = async () => {
   const window = getCurrentWindow();
   isMaximized.value = await window.isMaximized();

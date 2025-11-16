@@ -62,7 +62,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   position: absolute;
-  z-index: 2;
+  z-index: 2000;
   bottom: 15px;
   left: 0px;
   width: 100%;
