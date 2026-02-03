@@ -1,0 +1,44 @@
+export interface ContentElement {
+    type: number;
+    text?: string;
+    link?: string;
+    c?: string;
+    bigCdnSrc?: string;
+    originSrc?: string;
+    big_cdn_src?: string;
+    origin_src?: string;
+    uid?: string;
+}
+
+export interface UserInfo {
+    id: string;
+    name: string;
+    portrait?: string;
+    level_id?: number;
+    sex?: number;
+}
+
+export interface ThreadInfo {
+    id: string;
+    title: string;
+    author_id?: string;
+    forum_id?: string;
+    create_time?: number;
+    reply_num?: number;
+}
+
+export interface PostInfo {
+    id: string;
+    content: ContentElement[];
+    author?: UserInfo;
+    time?: number;
+    floor?: number;
+}
+
+export interface ForumInfo {
+    id: string;
+    name: string;
+    avatar?: string;
+    member_count?: number;
+    thread_count?: number;
+}

@@ -1,14 +1,27 @@
-<script setup>
-import Container from '../components/Container.vue';
-import { inject, getCurrentInstance, ref, onMounted } from 'vue';
-import Tip from '../components/Notification/Tip.vue';
-import Drawer from '../components/Drawer.vue';
-import RippleButton from '../components/RippleButton.vue';
+<script setup lang="ts">
+import { inject, getCurrentInstance, ref, onMounted, type Component } from 'vue';
+import Tip from '@/components/notification/Tip.vue';
 import { open } from '@tauri-apps/plugin-dialog';
-const sendNotification = inject('sendNotification');
-const sendToast = inject('sendToast');
+
+type NotificationHandler = (
+  title: string,
+  subtitle: string,
+  component: Component,
+  onClick: () => void,
+  props: Record<string, unknown>,
+  duration: number
+) => void;
+
+type ToastHandler = (message: string, duration: number) => void;
+
+const sendNotification = inject<NotificationHandler>('sendNotification');
+const sendToast = inject<ToastHandler>('sendToast');
+const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string }) => void>('updateTabMeta');
 const instance = getCurrentInstance();
-const emit = defineEmits(['setTabInfo', 'openLocalThread']);
+
+const emit = defineEmits<{
+  (e: 'openLocalThread', path: string | null): void;
+}>();
 const props = defineProps({
   key_: {
     required: true
@@ -16,15 +29,15 @@ const props = defineProps({
 });
 
 onMounted(() => {
-  emit('setTabInfo', { key: props.key_, title: "调试", icon: "/assets/bug.svg" });
+  updateTabMeta?.({ key: props.key_, title: "调试", icon: "/assets/bug.svg" });
 });
 
-let isDrawerOpen = instance.appContext.config.globalProperties.$IsDrawerOpen;
+const isDrawerOpen = instance?.appContext.config.globalProperties.$IsDrawerOpen as { state: boolean } | undefined;
 const onClick = () => {
   console.log('点击了通知');
 }
 const notify = () => {
-  sendNotification(
+  sendNotification?.(
     '你有一条新回复',
     '<span class="material-symbols-outlined" style="font-size: 17px;">reply</span>消息',
     Tip,
@@ -80,8 +93,8 @@ const permissionInfo = ref([{
     <div>调试工具</div>
     <button @click="notify">notify</button>
     <button @click="throw Error('跌我错了');">throw</button>
-    <button @click="sendToast('更新收藏成功', 3000)">toast</button>
-    <button @click="isDrawerOpen.state = true">打开抽屉</button>
+    <button @click="sendToast?.('更新收藏成功', 3000)">toast</button>
+    <button @click="() => { if (isDrawerOpen) isDrawerOpen.state = true }">打开抽屉</button>
     <button @click="openFile()">打开文件</button>
   </Container>
 

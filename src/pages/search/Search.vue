@@ -1,0 +1,259 @@
+<script setup lang="ts">
+import { ref, onMounted, inject } from 'vue';
+import { useApiStore } from '@/stores';
+import Thread from '@/components/thread/Thread.vue';
+import { sanitize } from '@/utils/sanitizer';
+
+interface Props {
+  key_: unknown;
+}
+
+const isLoading = ref(false);
+const searchResult = ref();
+const searchType = ref(0);
+const searchContent = ref("");
+const props = defineProps<Props>();
+const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked', 'BarNameClicked', 'setTabInfo']);
+const sendToast = inject<(title: string, duration: number) => void>('sendToast');
+const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string }) => void>('updateTabMeta');
+
+onMounted(() => {
+  updateTabMeta?.({ key: props.key_, title: "搜索", icon: "/assets/search.svg" });
+});
+
+async function handleEnter(pageSwitch = false) {
+  if (searchContent.value.length < 1) {
+    if (!pageSwitch) {
+      sendToast?.('请输入搜索内容', 3000);
+      return;
+    }
+    else {
+      searchResult.value = undefined;
+      return;
+    }
+  }
+  isLoading.value = true;
+  const apiStore = useApiStore();
+  const api = apiStore.getApi();
+
+  switch (searchType.value) {
+    case 0:
+      const barResult = await api.searchBar(searchContent.value);
+      searchResult.value = barResult.data;
+      break;
+    case 1:
+      const threadResult = await api.searchThread(searchContent.value, '1', '0', '0', '0', '1', '0', '0', '0');
+      searchResult.value = threadResult.data.post_list;
+      break;
+    case 2:
+      const userResult = await api.searchUser(searchContent.value);
+      searchResult.value = userResult.data;
+      break;
+  }
+  if ((searchType.value === 0 || searchType.value === 2) &&
+    (!searchResult.value?.fuzzyMatch?.length && !searchResult.value?.exactMatch?.id && !searchResult.value?.exactMatch?.avatar)) {
+    sendToast?.('没有搜索到相关结果', 3000);
+  } else if (searchType.value === 1 && (!Array.isArray(searchResult.value) || !searchResult.value.length)) {
+    sendToast?.('没有搜索到相关结果', 3000);
+  }
+  isLoading.value = false;
+}
+const handleClick = (id: string | number) => {
+  emit('threadClick', id);
+}
+const onUserNameClicked = (uid: string | number) => {
+  emit('UserNameClicked', uid);
+}
+const onScroll = () => {
+  // Handle scroll if needed
+}
+</script>
+
+<template>
+  <Container @yscroll="onScroll">
+    <div class="container1">
+      <div class="list-title">搜索</div>
+      <div class="navi-buttons">
+        <RippleButton class="button-nostyle" :class="{ 'selected': searchType == 0 }"
+          @click="searchResult = undefined; searchType = 0; handleEnter(true)">搜吧
+        </RippleButton>
+        <RippleButton class="button-nostyle" :class="{ 'selected': searchType == 1 }"
+          @click="searchResult = undefined; searchType = 1; handleEnter(true)">搜贴
+        </RippleButton>
+        <RippleButton class="button-nostyle" :class="{ 'selected': searchType == 2 }"
+          @click="searchResult = undefined; searchType = 2; handleEnter(true)">搜人
+        </RippleButton>
+      </div>
+      <input placeholder="键入关键词后按下回车键进行搜索……" @keyup.enter="handleEnter(false)" v-model="searchContent"></input>
+      <TransitionGroup name="fade1">
+        <div class="result" v-if="searchType == 0 && searchResult">
+
+          <div v-if="searchResult?.exactMatch?.avatar != undefined">
+            <Tag>最佳匹配</Tag>
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+              <button class="bar-button" @click="emit('BarNameClicked', searchResult.exactMatch.forum_name)">
+                <img class="avatar" :src="searchResult.exactMatch.avatar" referrerpolicy="no-referrer">
+                <div style="margin-left: 5px;">
+                  <div class="bar-name">{{ searchResult.exactMatch.forum_name }} </div>
+                  <div class="desc"><span>贴子数 {{ searchResult.exactMatch.post_num }}</span></div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="searchResult?.fuzzyMatch[0]?.avatar != undefined">
+            <Tag>相关匹配</Tag>
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+              <button class="bar-button" v-for="item in searchResult?.fuzzyMatch"
+                @click="emit('BarNameClicked', item.forum_name)">
+                <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
+                <div style="margin-left: 5px;">
+                  <div class="bar-name">{{ item.forum_name }} </div>
+                  <div class="desc"><span>贴子数 {{ item.post_num }}</span></div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="result" v-if="searchType == 1 && searchResult">
+          <Thread @UserNameClicked="onUserNameClicked(item.user.uid)" @threadClicked="handleClick(item.tid)"
+            v-for="item in searchResult" :thread_title="item.title"
+            :user_name="item.user.user_name || item.user.show_nickname || '(未知)'"
+            :avatar="item.user.portrait.match(/tb\.1\.[^/]+/) ? item.user.portrait.match(/tb\.1\.[^/]+/)[0] : '0'"
+            :thread_content="Array({ type: 0, text: item.content })" :create_time="item.time" :reply_num="item.post_num"
+            :media="[]">
+          </Thread>
+        </div>
+
+
+        <div class="result" v-if="searchType == 2 && searchResult">
+          <div v-if="searchResult?.exactMatch?.id != undefined">
+            <Tag>最佳匹配</Tag>
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+              <button class="bar-button" @click="emit('UserNameClicked', searchResult.exactMatch.id)">
+                <img class="avatar" :src="searchResult.exactMatch.portrait" referrerpolicy="no-referrer">
+                <div style="margin-left: 5px;">
+                  <div class="bar-name">{{ searchResult.exactMatch.name }} ({{ searchResult.exactMatch.show_nickname }})
+                  </div>
+                  <div class="desc"><span v-html="sanitize(searchResult.exactMatch.intro)"></span></div>
+                </div>
+              </button>
+            </div>
+          </div>
+          <div v-if="searchResult?.fuzzyMatch[0]?.id != undefined">
+            <Tag>相关匹配</Tag>
+            <div
+              style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
+              <button class="bar-button" v-for="item in searchResult.fuzzyMatch"
+                @click="emit('UserNameClicked', item.id)">
+                <img class="avatar" :src="item.portrait" referrerpolicy="no-referrer">
+                <div style="margin-left: 5px;">
+                  <div class="bar-name">{{ item.name }} ({{ item.show_nickname }})</div>
+                  <div class="desc"><span>{{ item.intro }}</span></div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </TransitionGroup>
+    </div>
+    <transition name="fade1">
+      <Loading class="loading-box" v-if="isLoading"></Loading>
+    </transition>
+  </Container>
+</template>
+
+<style scoped>
+.thread {
+  width: 100%;
+}
+
+.desc {
+  font-size: 13px;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bar-name {
+  font-size: 16px;
+  font-weight: bold;
+  width: 200px;
+  height: 30px;
+  line-height: 30px;
+  overflow: hidden;
+}
+
+.bar-button {
+  display: flex;
+  gap: 10px;
+  background-color: rgba(var(--text-color), 0.05);
+  box-shadow: none;
+  text-align: left;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 10px 15px;
+  height: 100%;
+  border-radius: 5px;
+  align-items: center;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+}
+
+.result {
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.button-nostyle.selected {
+  color: rgba(var(--text-color), 1);
+  border-bottom: 2px solid rgba(var(--text-color), 1);
+  font-weight: bold;
+}
+
+.button-nostyle {
+  background-color: transparent;
+  box-shadow: none;
+  width: fit-content;
+  justify-self: center;
+  font-size: 13px;
+  color: rgba(var(--text-color), 0.5);
+  border-radius: 0;
+}
+
+.navi-buttons {
+  margin-bottom: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.list-title {
+  padding: 10px 5px;
+  font-size: 16px;
+  font-weight: bold;
+  position: relative;
+}
+
+.container1 {
+  width: 80%;
+  justify-self: center;
+}
+
+input {
+  width: 100%;
+}
+</style>

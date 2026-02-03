@@ -17,16 +17,17 @@
 
   </div>
 </template>
-<script setup>
-import { onMounted, defineEmits, defineProps } from 'vue';
-const emit = defineEmits(['setTabInfo']);
-const props = defineProps({
-  key_: {
-    required: true
-  },
-});
+<script setup lang="ts">
+import { onMounted, inject } from 'vue';
+
+interface Props {
+  key_: string | number;
+}
+
+const props = defineProps<Props>();
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
 
 onMounted(() => {
-  emit('setTabInfo', { key: props.key_, title: "欢迎", icon: "/assets/apps.svg" });
+  updateTabMeta?.({ key: props.key_, title: "欢迎", icon: "/assets/apps.svg" });
 });
 </script>

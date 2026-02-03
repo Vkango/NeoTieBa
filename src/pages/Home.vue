@@ -5,8 +5,9 @@
         <div class="list-title">为你推荐</div>
         <div class="thread-list">
           <Thread @UserNameClicked="onUserNameClicked(item.author.id)" @threadClicked="handleClick(item.id)"
-            v-for="item in threadList" :key="item.id" :thread_title="item.title" :media="item.media"
-            :user_name="item.author.display_name || item.author.user_name" :avatar="item.author.portrait"
+            v-for="item in threadList" :key="item.id" :thread_title="item.title"
+            :media="(item.media || []) as MediaItem[]" :user_name="item.author.display_name || item.author.user_name"
+            :avatar="item.author.portrait"
             :thread_content="item.rich_abstract?.length === 0 || !Array.isArray(item.rich_abstract) ? [{ type: 0, text: item.title }] : item.rich_abstract"
             :create_time="item.last_time_int" :reply_num="item.reply_num" :fromBar="item.forum.forum_name"
             :fromBarAvatar="item.forum.forum_avatar"></Thread>
@@ -20,61 +21,128 @@
 
   </Container>
 </template>
-<script setup>
-import Container from '../components/Container.vue';
-import Thread from '../components/Thread.vue';
-import Loading from '../components/Loading.vue';
-import { tieBaAPI } from '../tieba-api';
-import { onMounted, defineEmits, defineProps, ref, inject } from 'vue';
-import { get_current_user } from '../user-manage';
-const n = new tieBaAPI();
-const returnData = ref([]);
-const isLoading = ref(true);
-const isThreadsLoading = ref(true);
-const pinnedThreadList = ref([]);
-const threadList = ref([]);
-const currentPage = ref(1);
-const openImageViewer = inject('openImageViewer');
-const props = defineProps({
-  key_: {
-    required: true
-  },
-});
-const loadData = async () => {
-  isThreadsLoading.value = true;
-  const user = await get_current_user();
-  const c = await n.getHomeRecommend(user.bduss, user.stoken);
-  returnData.value = c.data;
-  console.log(returnData.value);
-  returnData.value = await window.pluginManager.dispatchEvent('threadListUpdated', returnData.value);
-  threadList.value = [...threadList.value, ...returnData.value.thread_list];
-  isThreadsLoading.value = false;
+<script setup lang="ts">
+import { onMounted, ref, inject, type Ref } from 'vue';
+import { getCurrentUser, type User } from '@/services/user-manage';
+import { useApiStore } from '@/stores';
+import type { MediaItem } from '@/types/common';
+
+// 类型定义
+interface Props {
+  key_: string | number;
 }
 
-onMounted(async () => {
-  emit('setTabInfo', { key: props.key_, title: "首页", icon: "/assets/home.svg" });
+interface Emits {
+  (e: 'threadClick', id: string | number): void;
+  (e: 'setTabInfo', info: { key: string | number; title: string; icon: string }): void;
+  (e: 'UserNameClicked', uid: string | number): void;
+}
+
+interface ThreadAuthor {
+  id: string | number;
+  display_name?: string;
+  user_name: string;
+  portrait: string;
+}
+
+interface ThreadItem {
+  id: string | number;
+  title: string;
+  media?: any[];
+  author: ThreadAuthor;
+  rich_abstract?: Array<{ type: number; text: string }>;
+  last_time_int: number;
+  reply_num: number;
+  forum: {
+    forum_name: string;
+    forum_avatar: string;
+  };
+}
+
+interface RecommendData {
+  thread_list: ThreadItem[];
+  [key: string]: any;
+}
+
+// Props & Emits
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
+
+// Inject
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+
+// State
+const returnData: Ref<RecommendData> = ref({ thread_list: [] });
+const isLoading = ref<boolean>(true);
+const isThreadsLoading = ref<boolean>(true);
+const threadList: Ref<ThreadItem[]> = ref([]);
+const currentPage = ref<number>(1);
+
+// API实例
+const apiStore = useApiStore();
+const api = apiStore.getApi();
+
+// 加载数据
+const loadData = async (): Promise<void> => {
+  try {
+    isThreadsLoading.value = true;
+
+    const user: User = await getCurrentUser();
+    const response = await api.getHomeRecommend(user.bduss, user.stoken);
+    returnData.value = response.data;
+
+    console.log('Home Recommend Data:', returnData.value);
+
+    // 通过插件管理器处理数据
+    if ((window as any).pluginManager) {
+      returnData.value = await (window as any).pluginManager.dispatchEvent(
+        'threadListUpdated',
+        returnData.value
+      );
+    }
+
+    // 合并线程列表
+    threadList.value = [...threadList.value, ...returnData.value.thread_list];
+  } catch (error) {
+    console.error('加载推荐内容失败:', error);
+  } finally {
+    isThreadsLoading.value = false;
+  }
+};
+
+// 生命周期
+onMounted(async (): Promise<void> => {
+  updateTabMeta?.({ key: props.key_, title: "首页", icon: "/assets/home.svg" });
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
 });
 
-const onScroll = (target) => {
-  if ((target.scrollTop + target.clientHeight + 20 >= target.scrollHeight)) {
-    nextPage();
+// 滚动处理
+const onScroll = (target: HTMLElement): void => {
+  const { scrollTop, clientHeight, scrollHeight } = target;
+  if (scrollTop + clientHeight + 20 >= scrollHeight) {
+    if (!isThreadsLoading.value) {
+      nextPage();
+    }
   }
-}
+};
 
-const handleClick = (id) => {
+// 线程点击处理
+const handleClick = (id: string | number): void => {
   emit('threadClick', id);
-}
+};
 
-const emit = defineEmits(['threadClick', 'setTabInfo', 'UserNameClicked']);
+// 用户名点击处理
+const onUserNameClicked = (uid: string | number): void => {
+  emit('UserNameClicked', uid);
+};
 
-const nextPage = async () => {
+// 加载下一页
+const nextPage = async (): Promise<void> => {
   currentPage.value++;
-  loadData();
-}
-
+  await loadData();
+};
 </script>
 <style scoped>
 .bgr {

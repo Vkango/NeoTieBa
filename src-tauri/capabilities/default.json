@@ -9,6 +9,21 @@
     "core:default",
     "opener:default",
     "fs:allow-resource-read-recursive",
-    "fs:allow-read-dir"
+    "fs:allow-read-dir",
+    "fs:allow-mkdir",
+    "fs:allow-exists",
+    "fs:allow-write-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-text-file",
+    "fs:allow-read-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$APP_DATA",
+        "$APP_DATA/**",
+        "$APPDATA/com.vkango.neotieba",
+        "$APPDATA/com.vkango.neotieba/**"
+      ]
+    }
   ]
 }

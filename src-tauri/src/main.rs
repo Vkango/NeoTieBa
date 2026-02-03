@@ -14,6 +14,7 @@ use request::{
 use tauri::Manager;
 use window_vibrancy::*;
 // use api::{ get_user_info };
+use base64::{engine::general_purpose, Engine as _};
 use reqwest::header::HeaderMap;
 use serde_json::Value;
 use tauri::command;
@@ -113,6 +114,19 @@ async fn fetch_data_with_headers_command(url: &str, headers_json: &str) -> Resul
         Err(e) => Err(format!("Failed to fetch data: {}", e)),
     }
 }
+
+#[command]
+async fn fetch_data_buffer_base64(
+    url: &str,
+    buffer: Vec<u8>,
+    proxy_url: Option<&str>,
+    file_name: &str,
+) -> Result<String, String> {
+    match fetch_data_buffer(url, buffer, file_name).await {
+        Ok(data) => Ok(general_purpose::STANDARD.encode(&data)),
+        Err(e) => Err(format!("Failed to fetch data: {}", e)),
+    }
+}
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -126,6 +140,7 @@ fn main() {
             fetch_data_with_cookie,
             fetch_data_post,
             fetch_data_buffer,
+            fetch_data_buffer_base64,
             open_login,
             handle_browser_login,
             get_cookies,
@@ -144,9 +159,9 @@ fn main() {
                 .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
 
             #[cfg(target_os = "windows")]
-            let _ = apply_mica(&window, Some(true));
-            // apply_acrylic(&window, Some((255, 255, 255, 0)))
-            //     .expect("Unsupported platform! 'apply_mica' is only supported on Windows");
+            // let _ = apply_mica(&window, Some(true));
+            apply_acrylic(&window, Some((255, 255, 255, 0)))
+                .expect("Unsupported platform! 'apply_acrylic' is only supported on Windows");
             window.open_devtools();
             Ok(())
         })

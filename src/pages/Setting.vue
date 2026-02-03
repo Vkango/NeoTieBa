@@ -1,50 +1,31 @@
-<script setup>
-import Container from '../components/Container.vue';
-import RippleButton from '../components/RippleButton.vue';
-import { defineEmits, onMounted, ref, computed } from 'vue';
-import { getUserList } from '../user-manage';
-import Bar from '../components/Bar.vue';
-import Item from '../components/Item.vue';
-import UserManageCard from '../components/UserManageCard.vue';
+<script setup lang="ts">
+import { onMounted, ref, computed, inject, type ComputedRef, type Ref } from 'vue';
+import { getUserList, type User } from '@/services/user-manage';
+import type { SettingItem, MenuSettingItem, InfoItem } from '@/types/settings';
 
-const emit = defineEmits(['setTabInfo', 'userChanged']);
-const user = ref([]);
-const showUserManage = ref(false);
+// Props 定义
+interface Props {
+  key_: string | number;
+}
 
-const props = defineProps({
-  key_: {
-    required: true
-  },
-});
+const props = defineProps<Props>();
 
-const currentUser = computed(() => {
-  return user.value.find(u => u.current);
-});
+// Emits 定义
+interface Emits {
+  (e: 'setTabInfo', info: { key: string | number; title: string; icon: string }): void;
+  (e: 'userChanged'): void;
+}
 
-const loadUsers = async () => {
-  user.value = await getUserList();
-};
+const emit = defineEmits<Emits>();
 
-onMounted(async () => {
-  await loadUsers();
-  emit('setTabInfo', { key: props.key_, title: "设置", icon: "/assets/settings.svg" });
-});
+// Inject
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
 
-const openUserManage = () => {
-  showUserManage.value = true;
-};
-
-const handleQRLogin = () => {
-  showUserManage.value = false;
-};
-
-const handleUserChanged = async () => {
-  await loadUsers();
-  emit('userChanged');
-};
-
-const currentPage = ref(0);
-const generalSettingItems = ref([{
+// State 定义
+const user: Ref<User[]> = ref([]);
+const showUserManage = ref<boolean>(false);
+const currentPage = ref<number>(0);
+const generalSettingItems = ref<MenuSettingItem[]>([{
   title: '显示',
   icon: '/assets/personalize.svg',
   id: 0,
@@ -58,7 +39,8 @@ const generalSettingItems = ref([{
   icon: '/assets/info.svg',
   id: 2,
 }]);
-const pluginSettings = ref([{
+
+const pluginSettings: Ref<MenuSettingItem[]> = ref([{
   title: '插件管理',
   icon: '/assets/plugin.svg',
   id: 3,
@@ -75,7 +57,8 @@ const pluginSettings = ref([{
   icon: '/assets/plugin.svg',
   id: 6,
 }]);
-const currentSettingItems = ref([
+
+const currentSettingItems: Ref<InfoItem[]> = ref([
   { title: 'NeoTieBa', icon: 'rocket', desc: 'InDev 2025', id: 7 },
   { title: '更新历史', icon: 'history', desc: '查看拉了什么史' },
   { title: '联系', icon: 'hub', desc: '查看项目地址 (GitHub)' },
@@ -85,22 +68,64 @@ const currentSettingItems = ref([
 ]);
 
 // 设置项配置
-const displaySettings = ref([
+const displaySettings: Ref<SettingItem[]> = ref([
   { id: 'show_user_id', icon: 'person', title: '同时显示用户名与ID', type: 'toggle', desc: '在帖子中同时显示用户名和用户ID', value: false },
   { id: 'only_author', icon: 'person', title: '默认只看楼主', type: 'toggle', desc: '只显示楼主的帖子内容', value: false },
   { id: 'no_image', icon: 'image_not_supported', title: '无图模式', type: 'toggle', desc: '禁用图片显示以节省流量', value: false },
   { id: 'theme', icon: 'palette', title: '主题', type: 'select', desc: '选择应用的主题风格', value: 'auto', options: ['跟随系统', '浅色', '深色'] }
 ]);
 
-const networkSettings = ref([
+const networkSettings: Ref<SettingItem[]> = ref([
   { id: 'use_proxy', icon: 'settings', title: '使用代理', type: 'toggle', desc: '启用或禁用代理服务器', value: false },
   { id: 'proxy_url', icon: 'link', title: '代理地址', type: 'input', desc: '代理服务器的地址', value: '', placeholder: 'http://127.0.0.1:7890' },
-  { id: 'connection_test', title: '连接测试', type: 'button', desc: '测试连接是否成功', action: 'test' }
+  { id: 'connection_test', icon: 'network_check', title: '连接测试', type: 'button', desc: '测试连接是否成功', action: 'test' }
 ]);
 
-const testConnection = () => {
-  console.log('Testing connection...');
-  // TODO: 实现连接测试功能
+// Computed
+const currentUser: ComputedRef<User | undefined> = computed(() => {
+  return user.value.find((u: User) => u.current);
+});
+
+// 加载用户列表
+const loadUsers = async (): Promise<void> => {
+  try {
+    user.value = await getUserList();
+  } catch (error) {
+    console.error('加载用户列表失败:', error);
+    user.value = [];
+  }
+};
+
+// 生命周期钩子
+onMounted(async (): Promise<void> => {
+  await loadUsers();
+  updateTabMeta?.({ key: props.key_, title: "设置", icon: "/assets/settings.svg" });
+});
+
+// 打开用户管理
+const openUserManage = (): void => {
+  showUserManage.value = true;
+};
+
+// QR登录处理
+const handleQRLogin = (): void => {
+  showUserManage.value = false;
+};
+
+// 用户变更处理
+const handleUserChanged = async (): Promise<void> => {
+  await loadUsers();
+  emit('userChanged');
+};
+
+// 连接测试
+const testConnection = (): void => {
+
+};
+
+// 滚动处理
+const onScroll = (_target: HTMLElement): void => {
+
 };
 
 
@@ -120,11 +145,11 @@ const testConnection = () => {
               @click="openUserManage">
 
               <div v-if="currentUser" style="display: flex; gap: 10px; text-align: left; width: 100%;">
-                <img class="avatar" :src="currentUser.avatar" referrerpolicy="no-referrer">
+                <img class="avatar" :src="currentUser.avatar || ''" referrerpolicy="no-referrer">
                 <div style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
                   <div
                     style="font-weight: bold; color: rgb(var(--text-color)); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ currentUser.user_name }}
+                    {{ currentUser.user_name || currentUser.username }}
                   </div>
                   <div style="text-align: left; font-size: 13px; color: rgba(var(--text-color), 0.5)">
                     轻按进入账号管理
@@ -177,8 +202,9 @@ const testConnection = () => {
             </div>
             <div class="setting-section">
               <Item v-for="setting in displaySettings" :key="setting.id" :title="setting.title" :desc="setting.desc"
-                :icon="setting.icon" :type="setting.type" v-model="setting.value" :options="setting.options"
-                :placeholder="setting.placeholder" />
+                :icon="setting.icon" :type="setting.type" :value="(setting as any).value"
+                @update:value="(setting as any).value = $event" :options="(setting as any).options"
+                :placeholder="(setting as any).placeholder" />
             </div>
           </div>
 
@@ -189,8 +215,10 @@ const testConnection = () => {
             </div>
             <div class="setting-section">
               <Item v-for="setting in networkSettings" :key="setting.id" :title="setting.title" :desc="setting.desc"
-                :icon="setting.icon" :type="setting.type" v-model="setting.value" :options="setting.options"
-                :placeholder="setting.placeholder" @click="setting.action === 'test' ? testConnection() : null" />
+                :icon="setting.icon" :type="setting.type" :value="(setting as any).value"
+                @update:value="(setting as any).value = $event" :options="(setting as any).options"
+                :placeholder="(setting as any).placeholder"
+                @click="(setting as any).action === 'test' ? testConnection() : null" />
             </div>
           </div>
 
@@ -215,7 +243,6 @@ const testConnection = () => {
       </div>
     </div>
 
-    <!-- 用户管理卡片 -->
     <UserManageCard :visible="showUserManage" @close="showUserManage = false" @qrLogin="handleQRLogin"
       @userChanged="handleUserChanged" />
   </Container>

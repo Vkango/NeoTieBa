@@ -3,7 +3,7 @@
         <div id="content">{{ Tip }}</div>
     </div>
 </template>
-<script setup>
+<script setup lang="ts">
 defineProps({
     Tip: {
         required: true

@@ -1,37 +1,131 @@
-<script setup>
-import RippleButtonWithIcon from './components/RippleButtonWithIcon.vue';
-import { onMounted, ref, getCurrentInstance, provide, nextTick } from 'vue';
-import FollowBar from './pages/FollowBar.vue';
-import Tabs from './components/Tabs.vue';
-import ViewBarThreads from './pages/ViewBarThreads.vue';
-import TitleBar from './components/TitleBar.vue';
-import ViewThread from './pages/ViewThread.vue';
-import My from './pages/My.vue';
-import Favourite from './pages/Favourite.vue';
-import User from './pages/User.vue';
-import Search from './pages/Search.vue';
+<script setup lang="ts">
+import { onMounted, ref, provide, nextTick, type Ref, type Component } from 'vue';
+import type { NotificationComponent } from '@/components';
+import type { TabItem } from '@/types/common';
+import FollowBar from './pages/user/FollowBar.vue';
+import ViewBarThreads from './pages/threads/ViewBarThreads.vue';
+import ViewThread from './pages/threads/ViewThread.vue';
+import My from './pages/user/My.vue';
+import Favourite from './pages/user/Favourite.vue';
+import User from './pages/user/User.vue';
+import Search from './pages/search/Search.vue';
 import Welcome from './pages/Welcome.vue';
-import TabList from './components/TabList.vue';
 import Setting from './pages/Setting.vue';
-import Notification from "./components/Notification.vue";
-import { errorService } from './error-service';
-import ImageViewer from './components/ImageViewer.vue';
-import NotificationBox from './components/NotificationBox.vue';
-import Tip from './components/Notification/Tip.vue';
+import { errorService } from '@/core/error-service';
+import Tip from '@/components/notification/Tip.vue';
 import Debug from './pages/Debug.vue';
-import Toast from './components/Toast.vue';
-import Drawer from './components/Drawer.vue';
 import Home from './pages/Home.vue';
-import { read_file } from './file-io';
-import SearchInBar from './pages/SearchInBar.vue';
-import { clipboardService } from './clipboard-service';
-import { URLParser } from './url-parser';
-import { tieBaAPI } from './tieba-api';
+import { read_file } from '@/core/file-io';
+import SearchInBar from './pages/search/SearchInBar.vue';
+import { clipboardService } from '@/services/clipboard-service';
+import { URLParser } from '@/services/url-parser';
+import { useApiStore } from '@/stores';
+import { useTabStore } from '@/stores/tabs';
 
-const notificationComponent = ref(null);
-const isNotificationReady = ref(false);
+// Type definitions
+interface NavItem {
+  id: number;
+  icon: string;
+  title: string;
+  selected: boolean;
+}
 
-const safeAddNotification = async (title, source, component, clickHandler, props = {}, duration = 5000) => {
+interface TabInfo {
+  key: string | number;
+  title: string;
+  icon: string;
+}
+
+interface ToastComponent {
+  showToast: (title: string, duration: number) => void;
+}
+
+interface TitleBarComponent {
+  updateAvatar: () => Promise<void>;
+}
+
+interface JumpResult {
+  onClick: () => void;
+  title: string;
+  description: string;
+}
+
+interface SearchInBarData {
+  barName: string;
+  barIcon: string;
+}
+
+// Refs with explicit types
+const notificationComponent: Ref<NotificationComponent | null> = ref<NotificationComponent | null>(null);
+const isNotificationReady: Ref<boolean> = ref<boolean>(false);
+const imageViewerVisibility: Ref<boolean> = ref<boolean>(false);
+const imageViewerSrc: Ref<string> = ref<string>('');
+const ToastComponent: Ref<any> = ref<any>(null);
+const activeTab: Ref<any> = ref<any>({});
+const showTabList: Ref<boolean> = ref<boolean>(false);
+const showNotificationBox: Ref<boolean> = ref<boolean>(false);
+const titleBarRef: Ref<TitleBarComponent | null> = ref<TitleBarComponent | null>(null);
+const processedUrls: Ref<string[]> = ref<string[]>([]);
+
+// Navigation items
+const naviListItem: Ref<NavItem[]> = ref<NavItem[]>([]);
+if (!import.meta.env.PROD) {
+  naviListItem.value = [
+    { id: 0, icon: 'search', title: '搜索', selected: false },
+    { id: 1, icon: 'home', title: '首页', selected: false },
+    { id: 2, icon: 'apps', title: '贴吧', selected: false },
+    { id: 3, icon: 'person', title: '我的', selected: false },
+    { id: 4, icon: 'settings', title: '设置', selected: false },
+    { id: 5, icon: 'bug_report', title: '调试', selected: false }
+  ];
+} else {
+  naviListItem.value = [
+    { id: 0, icon: 'search', title: '搜索', selected: false },
+    { id: 1, icon: 'home', title: '首页', selected: false },
+    { id: 2, icon: 'apps', title: '贴吧', selected: false },
+    { id: 3, icon: 'person', title: '我的', selected: false },
+    { id: 4, icon: 'settings', title: '设置', selected: false },
+  ];
+}
+
+const apiStore = useApiStore();
+const Api = apiStore.getApi();
+const tabStore = useTabStore();
+
+// Watch for tab changes and update activeTab
+import { watch } from 'vue';
+watch(
+  () => tabStore.activeKey,
+  (newActiveKey) => {
+    if (newActiveKey) {
+      const tab = tabStore.tabs.find((t: TabItem) => t.key === newActiveKey);
+      if (tab) {
+        activeTab.value = {
+          component: tab.component,
+          props: tab.props,
+          key: tab.key,
+          renderKey: tab.renderKey || String(tab.key),
+          if: true,
+          origin: {
+            icon: tab.origin?.icon,
+            title: tab.origin?.title
+          }
+        };
+      }
+    }
+  },
+  { immediate: false }
+);
+
+// Notification system
+const safeAddNotification = async (
+  title: string,
+  source: string,
+  component: Component,
+  clickHandler: (() => void) | null,
+  props: Record<string, unknown> = {},
+  duration = 5000
+): Promise<void> => {
   let attempts = 0;
   while (!notificationComponent.value && attempts < 50) {
     await nextTick();
@@ -46,245 +140,140 @@ const safeAddNotification = async (title, source, component, clickHandler, props
 
 provide('sendNotification', safeAddNotification);
 
-const imageViewerVisibility = ref(false);
-const imageViewerSrc = ref('');
-const naviListItem = ref([]);
-if (! import.meta.env.PROD) {
-  naviListItem.value = [
-    { id: 0, icon: 'search', title: '搜索', selected: false },
-    { id: 1, icon: 'home', title: '首页', selected: false },
-    { id: 2, icon: 'apps', title: '贴吧', selected: false },
-    { id: 3, icon: 'person', title: '我的', selected: false },
-    { id: 4, icon: 'settings', title: '设置', selected: false },
-    { id: 5, icon: 'bug_report', title: '调试', selected: false }
-  ];
-}
-else {
-  naviListItem.value = [
-    { id: 0, icon: 'search', title: '搜索', selected: false },
-    { id: 1, icon: 'home', title: '首页', selected: false },
-    { id: 2, icon: 'apps', title: '贴吧', selected: false },
-    { id: 3, icon: 'person', title: '我的', selected: false },
-    { id: 4, icon: 'settings', title: '设置', selected: false },
-  ];
-}
-const ToastComponent = ref(null);
-const activeTab = ref({});
-const TabsRef = ref(null);
-const showTabList = ref(false);
-const showNotificationBox = ref(false);
-const titleBarRef = ref(null);
-const onBarThreadClick = (id) => {
-  if (id == undefined) throw new Error("贴子ID为空！");
-  const key = generateUniqueId('ViewThread' + id);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: id, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked }, undefined, undefined, "TID " + id)
-}
-provide('sendToast', (title, duration = 3000) => {
-  ToastComponent.value.showToast(title, duration);
-})
-const setTabInfo = (info) => {
-  TabsRef.value.setTitle(info.key, info.title);
-  TabsRef.value.setIcon(info.key, info.icon);
-}
+provide('sendToast', (title: string, duration = 3000): void => {
+  if (ToastComponent.value) {
+    ToastComponent.value.showToast(title, duration);
+  }
+});
 
-provide('openImageViewer', (url) => {
+provide('openImageViewer', (url: string): void => {
   onOpenImageViewer(url);
-})
-provide('deleteTab', (key) => {
-  TabsRef.value.handleDelete(TabsRef.value.findIdByKey(key));
-})
+});
 
-const onOpenImageViewer = (url) => {
-  imageViewerVisibility.value = true;
-  imageViewerSrc.value = url;
-}
+provide('deleteTab', (key: string | number): void => {
+  tabStore.removeTab(key);
+});
 
-function generateUniqueId(text) {
+// Utility functions
+function generateUniqueId(text: string): number {
   let hash = 0;
   if (text.length === 0) return hash;
 
   for (let i = 0; i < text.length; i++) {
-    let char = text.charCodeAt(i);
+    const char = text.charCodeAt(i);
     hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
-  return Math.abs(hash)
+  return Math.abs(hash);
 }
 
-
-const onBarNameClicked = (barName) => {
-  if (barName == undefined) throw new Error("吧名为空！")
-  const key = generateUniqueId('ViewBarThreads' + barName);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewBarThreads, { key_: key, barName: barName, onThreadClick: onBarThreadClick, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onSearchInBar: onSearchInBar })
-}
-const userNameClicked = (uid) => {
-  if (uid == undefined) throw new Error('用户ID为空！')
-  const key = generateUniqueId('User' + uid);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", User, { key_: key, uid: uid, onSetTabInfo: setTabInfo, onThreadClicked: onBarThreadClick }, undefined, undefined, "UID " + uid)
-}
-
-const onSearchInBar = (data) => {
-  const key = generateUniqueId('Search' + data.barName);
-  TabsRef.value.addTab(key, "/assets/search.svg", "吧内搜索", SearchInBar, { key_: key, barName: data.barName, barIcon: data.barIcon, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSetTabInfo: setTabInfo }, true)
-}
-
-
-
-let processedUrls = [];
-const Api = new tieBaAPI();
-onMounted(async () => {
-  await nextTick();
-  isNotificationReady.value = true;
-
-  errorService.addHandler(async (error, info) => {
-    try {
-      await safeAddNotification(
-        info,
-        '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
-        Tip,
-        null,
-        { Tip: error },
-        60000
-      );
-    } catch (e) {
-      console.error('Failed to show error notification:', e);
-      alert('Error in application, failed to pop notification: please restart: \n' + error + '\n' + info);
-    }
-  });
-
-  clipboardService.addHandler(async (url) => {
-    try {
-      if (processedUrls.find(u => u === url)) return;
-      const parser = new URLParser(url);
-      if (parser.getProtocol().toLowerCase() == 'neotieba') {
-        let jump_result = {};
-        const params = parser.toObject().params;
-        switch (parser.getPathname().toLowerCase()) {
-          case 'viewthread': {
-            const thread = await Api.get_post(Number(params?.tid), 1);
-            jump_result = {
-              onClick: () => onBarThreadClick(params?.tid),
-              title: thread.data.thread.title,
-              description: '来自 ' + thread.data.forum.name + '吧'
-            }
-            break;
-          }
-        }
-        if (jump_result !== {}) {
-          await safeAddNotification(
-            jump_result.title,
-            '<span class="material-symbols-outlined" style="font-size: 17px;">content_paste</span>Clipboard 跳转',
-            Tip,
-            jump_result.onClick,
-            { Tip: jump_result.description },
-            60000
-          );
-        }
-      }
-
-    } catch (e) {
-
-    } finally {
-      processedUrls.push(url);
-    }
-  });
-
-  let key = generateUniqueId('Welcome');
-  TabsRef.value.addTab(key, "/assets/apps.svg", "欢迎", Welcome, { key_: key, onSetTabInfo: setTabInfo }, true, false);
-});
-function onSwitchTabs(id) {
-
-  const tabItem = TabsRef.value.getTab(id);
-  activeTab.value = {
-    component: tabItem.component,
-    props: tabItem.props,
-    key: tabItem.key,
-    renderKey: tabItem.renderKey || tabItem.key,
-    if: true,
-    origin: {
-      icon: tabItem.origin.icon,
-      title: tabItem.origin.title
-    }
-  };
-  naviListItem.value.forEach(element => {
-    element.selected = false;
-  });
-  switch (activeTab.value.component.__name) {
-    case 'Home':
-      naviListItem.value[1].selected = true;
-      break;
-    case 'User':
-      naviListItem.value[2].selected = true;
-      break;
-    case 'ViewThread':
-      naviListItem.value[2].selected = true;
-      break;
-    case 'ViewBarThreads':
-      naviListItem.value[2].selected = true;
-      break;
-    case 'FollowBar':
-      naviListItem.value[2].selected = true;
-      break;
-    case 'Favourite':
-      naviListItem.value[3].selected = true;
-      break;
-    case 'My':
-      naviListItem.value[3].selected = true;
-      break;
-    case 'Search':
-      naviListItem.value[0].selected = true;
-      break;
-    case 'SearchInBar':
-      naviListItem.value[0].selected = true;
-      break;
-    case 'Setting':
-      naviListItem.value[4].selected = true;
-      break;
-    case 'Debug':
-      naviListItem.value[5].selected = true;
-      break;
-    default:
-      break;
-  }
-}
-
-function onRefreshTab(id) {
-  const tabItem = TabsRef.value.getTab(id);
-  const key = tabItem.key;
-  const isActiveTab = activeTab.value.key === key;
-  const newRenderKey = `${key}-${Date.now()}`;
-  TabsRef.value.setTab(id, {
-    ...tabItem,
-    renderKey: newRenderKey,
-    icon: '/assets/loading.svg',
-    title: '正在加载'
-  });
-
-  if (isActiveTab) {
-    activeTab.value = {
-      ...activeTab.value,
-      renderKey: newRenderKey,
-      icon: '/assets/loading.svg',
-      title: '正在加载'
-    };
-  }
-}
-
-const onDeactivated = (key) => {
-  console.log('Tab deactivated:', key);
+const onOpenImageViewer = (url: string): void => {
+  imageViewerVisibility.value = true;
+  imageViewerSrc.value = url;
 };
 
-const onTabDelete = (key) => {
-  if (activeTab.value.key === key) {
-    activeTab.value = {};
-  }
-}
-const onFavouriteClicked = () => {
-  const key = generateUniqueId('Favourite');
-  TabsRef.value.addTab(key, "/assets/favourite.svg", "我的收藏", Favourite, { key_: key, onSetTabInfo: setTabInfo, onThreadClick: onBarThreadClick }, true)
-}
+const setTabInfo = (info: TabInfo): void => {
+  const keyStr = String(info.key);
+  tabStore.updateTabMeta(keyStr, { title: info.title, icon: info.icon });
 
-const openLocalThread = async (file) => {
+  // 如果是当前活动tab，直接更新activeTab显示
+  if (String(activeTab.value.key) === keyStr) {
+    const updatedTab = tabStore.tabs.find((t: TabItem) => t.key === keyStr);
+    if (updatedTab) {
+      activeTab.value = {
+        component: updatedTab.component,
+        props: updatedTab.props,
+        key: updatedTab.key,
+        renderKey: updatedTab.renderKey || String(updatedTab.key),
+        if: true,
+        origin: {
+          icon: updatedTab.origin?.icon,
+          title: updatedTab.origin?.title
+        }
+      };
+    }
+  }
+};
+
+// 提供updateTabMeta给子组件，避免长链props回调
+provide('updateTabMeta', setTabInfo);
+const onBarThreadClick = (id: string | number | undefined): void => {
+  if (id === undefined) throw new Error("贴子ID为空！");
+
+  const key = generateUniqueId('ViewThread' + id);
+  tabStore.addTab({
+    key: String(key),
+    icon: "/assets/loading.svg",
+    title: "正在加载",
+    component: ViewThread,
+    props: { tid: id, key_: key, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked },
+
+    origin: ({ icon: "/assets/loading.svg", title: "正在加载" } as unknown) as import('@/types/common').TabItem
+  });
+};
+
+const onBarNameClicked = (barName: string | undefined): void => {
+  if (barName === undefined) throw new Error("吧名为空！");
+
+  const key = generateUniqueId('ViewBarThreads' + barName);
+  tabStore.addTab({
+    key: String(key),
+    icon: "/assets/loading.svg",
+    title: "正在加载",
+    component: ViewBarThreads,
+    props: { key_: key, barName: barName, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSearchInBar: onSearchInBar },
+    origin: ({ icon: "/assets/loading.svg", title: "正在加载" } as unknown) as import('@/types/common').TabItem
+  });
+};
+
+const userNameClicked = (uid: string | number | undefined): void => {
+  if (uid === undefined) throw new Error('用户ID为空！');
+
+  const key = generateUniqueId('User' + uid);
+  tabStore.addTab({
+    key: String(key),
+    icon: "/assets/loading.svg",
+    title: "正在加载",
+    component: User,
+    props: { key_: key, uid: uid, onThreadClicked: onBarThreadClick },
+    origin: ({ icon: "/assets/loading.svg", title: "正在加载" } as unknown) as import('@/types/common').TabItem
+  });
+};
+
+const onSearchInBar = (data: SearchInBarData): void => {
+  const key = generateUniqueId('Search' + data.barName);
+  tabStore.addTab({
+    key: String(key),
+    icon: "/assets/search.svg",
+    title: "吧内搜索",
+    component: SearchInBar,
+    props: {
+      key_: key,
+      barName: data.barName,
+      barIcon: data.barIcon,
+      onBarNameClicked: onBarNameClicked,
+      onUserNameClicked: userNameClicked,
+      onThreadClick: onBarThreadClick
+    },
+
+    origin: ({ icon: "/assets/search.svg", title: "吧内搜索" } as unknown) as import('@/types/common').TabItem
+  });
+};
+
+const onFavouriteClicked = (): void => {
+  const key = generateUniqueId('Favourite');
+  tabStore.addTab({
+    key: String(key),
+    icon: "/assets/favourite.svg",
+    title: "我的收藏",
+    component: Favourite,
+    props: { key_: key, onThreadClick: onBarThreadClick },
+
+    origin: ({ icon: "/assets/favourite.svg", title: "我的收藏" } as unknown) as import('@/types/common').TabItem
+  });
+};
+
+const openLocalThread = async (file: string): Promise<void> => {
   let tid = 0;
   try {
     const ret = JSON.parse(await read_file(file + '/page1.json'));
@@ -295,60 +284,261 @@ const openLocalThread = async (file) => {
   }
 
   const key = generateUniqueId('ViewThread' + tid);
-  TabsRef.value.addTab(key, "/assets/loading.svg", "正在加载", ViewThread, { tid: tid, local: true, local_dir: file, key_: key, onSetTabInfo: setTabInfo, onUserNameClicked: userNameClicked, onBarNameClicked: onBarNameClicked }, undefined, undefined, file)
-}
+  tabStore.addTab({
+    key: String(key),
+    icon: "/assets/loading.svg",
+    title: "正在加载",
+    component: ViewThread,
+    props: {
+      tid: tid,
+      local: true,
+      local_dir: file,
+      key_: key,
+      onUserNameClicked: userNameClicked,
+      onBarNameClicked: onBarNameClicked
+    },
+    origin: ({ icon: "/assets/loading.svg", title: file } as unknown) as import('@/types/common').TabItem
+  });
+};
 
-const addBar = async (id) => {
+// Tab management
+function onSwitchTabs(id: number): void {
+  const tabItem = tabStore.getTab(id);
+  if (!tabItem) return;
+  activeTab.value = {
+    component: tabItem.component,
+    props: tabItem.props,
+    key: tabItem.key,
+    renderKey: tabItem.renderKey || String(tabItem.key),
+    if: true,
+    origin: {
+      icon: tabItem.origin?.icon,
+      title: tabItem.origin?.title
+    }
+  };
+
   naviListItem.value.forEach(element => {
     element.selected = false;
   });
-  naviListItem.value[id].selected = true;
-  let key;
-  switch (id) {
-    case 0:
-      key = generateUniqueId('Search');
-      TabsRef.value.addTab(key, "/assets/search.svg", "搜索", Search, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSetTabInfo: setTabInfo }, true)
+
+  const componentName = (tabItem.component as { __name?: string }).__name;
+  switch (componentName) {
+    case 'Home':
+      naviListItem.value[1].selected = true;
       break;
-    case 1:
-      key = generateUniqueId('Home');
-      TabsRef.value.addTab(key, '/assets/home.svg', '首页', Home, { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick, onUserNameClicked: userNameClicked, onSetTabInfo: setTabInfo }, true)
+    case 'User':
+    case 'ViewThread':
+    case 'ViewBarThreads':
+    case 'FollowBar':
+      naviListItem.value[2].selected = true;
       break;
-    case 2:
-      key = generateUniqueId('FollowBar');
-      TabsRef.value.addTab(key, "/assets/apps.svg", "进吧", FollowBar, { key_: key, onBarNameClicked: onBarNameClicked, onSetTabInfo: setTabInfo }, true)
+    case 'Favourite':
+    case 'My':
+      naviListItem.value[3].selected = true;
       break;
-    case 3:
-      key = generateUniqueId('My');
-      TabsRef.value.addTab(key, "/assets/user.svg", "我的", My, { key_: key, onSetTabInfo: setTabInfo, onFavouriteClicked: onFavouriteClicked, onUserNameClicked: userNameClicked, onThreadClicked: onBarThreadClick }, true)
+    case 'Search':
+    case 'SearchInBar':
+      naviListItem.value[0].selected = true;
       break;
-    case 4:
-      key = generateUniqueId('Setting');
-      TabsRef.value.addTab(key, "/assets/settings.svg", "设置", Setting, { key_: key, onSetTabInfo: setTabInfo, onUserChanged: handleUserChanged }, true)
+    case 'Setting':
+      naviListItem.value[4].selected = true;
       break;
-    case 5:
-      key = generateUniqueId('Debug');
-      TabsRef.value.addTab(key, "/assets/bug.svg", "调试", Debug, { key_: key, onSetTabInfo: setTabInfo, onOpenLocalThread: openLocalThread }, true, true)
+    case 'Debug':
+      if (naviListItem.value.length > 5) {
+        naviListItem.value[5].selected = true;
+      }
       break;
     default:
       break;
   }
 }
 
-const onShowTabs = () => {
+function onRefreshTab(id: number): void {
+  const tabItem = tabStore.getTab(id);
+  if (!tabItem) return;
+  const key = tabItem.key;
+  const isActiveTab = (activeTab.value as TabItem).key === key;
+  const newRenderKey = `${key}-${Date.now()}`;
+
+  tabStore.setTab(id, {
+    ...tabItem,
+    renderKey: newRenderKey,
+    icon: '/assets/loading.svg',
+    title: '正在加载'
+  });
+
+  if (isActiveTab && activeTab.value && typeof activeTab.value === 'object') {
+    activeTab.value = {
+      ...activeTab.value,
+      renderKey: newRenderKey,
+      icon: '/assets/loading.svg',
+      title: '正在加载'
+    } as TabItem;
+  }
+}
+
+const onDeactivated = (key: string | number): void => {
+  console.log('Tab deactivated:', key);
+};
+
+const onTabDelete = (key: string | number): void => {
+  if ((activeTab.value as TabItem).key === key) {
+    activeTab.value = {};
+  }
+};
+
+const addBar = async (id: number): Promise<void> => {
+  naviListItem.value.forEach(element => {
+    element.selected = false;
+  });
+  naviListItem.value[id].selected = true;
+
+  let key: number;
+  switch (id) {
+    case 0:
+      key = generateUniqueId('Search');
+      tabStore.addTab({
+        key: `${key}`,
+        icon: "/assets/search.svg",
+        title: "搜索",
+        component: Search,
+        props: { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick }
+      });
+      break;
+    case 1:
+      key = generateUniqueId('Home');
+      tabStore.addTab({
+        key: `${key}`,
+        icon: '/assets/home.svg',
+        title: '首页',
+        component: Home,
+        props: { key_: key, onBarNameClicked: onBarNameClicked, onUserNameClicked: userNameClicked, onThreadClick: onBarThreadClick }
+      });
+      break;
+    case 2:
+      key = generateUniqueId('FollowBar');
+      tabStore.addTab({
+        key: `${key}`,
+        icon: "/assets/apps.svg",
+        title: "进吧",
+        component: FollowBar,
+        props: { key_: key, onBarNameClicked: onBarNameClicked }
+      });
+      break;
+    case 3:
+      key = generateUniqueId('My');
+      tabStore.addTab({
+        key: `${key}`,
+        icon: "/assets/user.svg",
+        title: "我的",
+        component: My,
+        props: { key_: key, onFavouriteClicked: onFavouriteClicked, onUserNameClicked: userNameClicked, onThreadClicked: onBarThreadClick }
+      });
+      break;
+    case 4:
+      key = generateUniqueId('Setting');
+      tabStore.addTab({
+        key: `${key}`,
+        icon: "/assets/settings.svg",
+        title: "设置",
+        component: Setting,
+        props: { key_: key, onUserChanged: handleUserChanged }
+      });
+      break;
+    case 5:
+      key = generateUniqueId('Debug');
+      tabStore.addTab({
+        key: `${key}`,
+        icon: "/assets/bug.svg",
+        title: "调试",
+        component: Debug,
+        props: { key_: key, onOpenLocalThread: openLocalThread }
+      });
+      break;
+    default:
+      break;
+  }
+};
+
+const onShowTabs = (): void => {
   showTabList.value = !showTabList.value;
   showNotificationBox.value = false;
-}
+};
 
-const onshowNotificationBox = () => {
+const onShowNotificationBox = (): void => {
   showNotificationBox.value = !showNotificationBox.value;
   showTabList.value = false;
-}
+};
 
-const handleUserChanged = async () => {
+const handleUserChanged = async (): Promise<void> => {
   if (titleBarRef.value) {
     await titleBarRef.value.updateAvatar();
   }
 };
+
+// Lifecycle
+onMounted(async (): Promise<void> => {
+  await nextTick();
+  isNotificationReady.value = true;
+
+  errorService.addHandler(async (error: unknown, info: unknown): Promise<void> => {
+    try {
+      await safeAddNotification(
+        String(info),
+        '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
+        Tip,
+        null,
+        { Tip: String(error) },
+        60000
+      );
+    } catch (e) {
+      console.error('Failed to show error notification:', e);
+      alert('Error in application, failed to pop notification: please restart: \n' + error + '\n' + info);
+    }
+  });
+
+  clipboardService.addHandler(async (url: string): Promise<void> => {
+    try {
+      if (processedUrls.value.find((u: string) => u === url)) return;
+
+      const parser = new URLParser(url);
+      if (parser.getProtocol().toLowerCase() === 'neotieba') {
+        const params = parser.toObject().params;
+        let jump_result: JumpResult | null = null;
+
+        switch (parser.getPathname().toLowerCase()) {
+          case 'viewthread': {
+            const thread = await Api.get_post(Number(params?.tid), 1);
+            jump_result = {
+              onClick: (): void => onBarThreadClick(params?.tid),
+              title: thread.data.thread.title,
+              description: '来自 ' + thread.data.forum.name + '吧'
+            };
+            break;
+          }
+        }
+
+        if (jump_result !== null) {
+          await safeAddNotification(
+            jump_result.title,
+            '<span class="material-symbols-outlined" style="font-size: 17px;">content_paste</span>Clipboard 跳转',
+            Tip,
+            jump_result.onClick,
+            { Tip: jump_result.description },
+            60000
+          );
+        }
+      }
+    } catch (e) {
+      // console.error('Clipboard handler error:', e);
+    } finally {
+      processedUrls.value.push(url);
+    }
+  });
+
+  const key = generateUniqueId('Welcome');
+  tabStore.addTab({ key: String(key), icon: "/assets/apps.svg", title: "欢迎", component: Welcome, props: { key_: key }, origin: ({ icon: "/assets/apps.svg", title: "欢迎" } as unknown) as import('@/types/common').TabItem });
+});
 </script>
 
 <template>
@@ -361,7 +551,7 @@ const handleUserChanged = async () => {
         :class="{ 'selected': item.selected }" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
     </div>
     <div class="container">
-      <div v-for="tab in TabsRef?.tabs" v-show="tab.key === activeTab.key" :key="tab.key" class="tab-pane">
+      <div v-for="tab in tabStore.tabs" v-show="tab.key === activeTab.key" :key="tab.key" class="tab-pane">
         <keep-alive>
           <component @deactivated="onDeactivated(tab.key)" :is="tab.component" :key="tab.renderKey || tab.key"
             v-if="tab.if" v-bind="tab.props" />
@@ -369,19 +559,18 @@ const handleUserChanged = async () => {
       </div>
     </div>
     <TitleBar ref="titleBarRef" title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"
-      @showTabs="onShowTabs" @showNotificationBox="onshowNotificationBox"
-      :msgCount="notificationComponent?.notifications?.length + notificationComponent?.hiddenNotifications?.length" />
-    <Tabs ref="TabsRef" class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete"
-      @onTabRefresh="onRefreshTab">
+      @showTabs="onShowTabs" @showNotificationBox="onShowNotificationBox"
+      :msgCount="(notificationComponent?.notifications?.length || 0) + (notificationComponent?.hiddenNotifications?.length || 0)" />
+    <Tabs class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete" @onTabRefresh="onRefreshTab">
     </Tabs>
     <Transition name="notification-box">
-      <TabList class="notification-box" v-if="showTabList" :tabsRef="TabsRef"></TabList>
+      <TabList class="notification-box" v-if="showTabList"></TabList>
     </Transition>
     <Transition name="notification-box">
       <Notification ref="notificationComponent" v-show="!showNotificationBox && !showTabList" />
     </Transition>
     <Transition name="notification-box">
-      <NotificationBox class="notification-box" v-if="showNotificationBox && !showTabList"
+      <NotificationBox class="notification-box" v-if="showNotificationBox && !showTabList && notificationComponent"
         :tabsRef="notificationComponent">
       </NotificationBox>
     </Transition>
@@ -757,63 +946,7 @@ input {
   opacity: 0;
 }
 
-:root {
-  font-family: 'Microsoft YaHei';
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-  color: #0f0f0f;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-  user-select: none;
-  --text-color: 0, 0, 0;
-  --background-color: 0, 0, 0;
-  --invert: 1;
-  --background-color: 255, 255, 255;
-}
 
-.filter-button {
-  font-size: 80%;
-  opacity: 0.5;
-  transition: all 0.3s ease;
-}
-
-.filter-button.selected {
-  opacity: 1;
-  font-weight: bold;
-}
-
-.filter-button:hover {
-  opacity: 1;
-}
-
-.thread-img {
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: 5px;
-}
-
-.list-title {
-  margin-top: 30px;
-  padding: 10px 5px;
-  font-size: 16px;
-  font-weight: bold;
-  position: relative;
-}
-
-.reply-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-h3 {
-  margin-top: 30px;
-}
 
 ::-webkit-scrollbar {
   width: 7px;
@@ -821,7 +954,6 @@ h3 {
 }
 
 ::-webkit-scrollbar-track {
-
   border-radius: 0;
 }
 
@@ -840,6 +972,7 @@ a {
   font-weight: 500;
   color: rgb(0, 179, 255);
   text-decoration: inherit;
+  transition: color 0.25s;
 }
 
 a:hover {
@@ -861,10 +994,8 @@ button {
   background-color: #ffffff;
   transition: border-color 0.25s;
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
-}
-
-button {
   cursor: pointer;
+  outline: none;
 }
 
 button:hover {
@@ -886,14 +1017,6 @@ button {
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: transparent;
-    --text-color: 255, 255, 255;
-    --invert: 0;
-    --background-color: 34, 34, 34;
-  }
-
   a:hover {
     color: #24c8db;
   }

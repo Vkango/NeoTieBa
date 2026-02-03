@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use tauri::{command, AppHandle, Manager, Runtime};
+use url::Url;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CookieData {
@@ -17,113 +18,19 @@ pub async fn get_cookies<R: Runtime>(
         .get_webview_window(&window_label)
         .ok_or_else(|| format!("Window '{}' not found", window_label))?;
 
-    #[cfg(target_os = "windows")]
-    {
-        use tokio::sync::oneshot;
-        use webview2_com::{
-            take_pwstr, GetCookiesCompletedHandler,
-            Microsoft::Web::WebView2::Win32::ICoreWebView2_2,
-        };
-        use windows::core::{Interface, HSTRING, PWSTR};
-        let (done_tx, done_rx) = oneshot::channel::<Result<Vec<CookieData>, String>>();
-        let url_clone = url.clone();
+    let url_obj = Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
 
-        window
-            .with_webview(move |webview| unsafe {
-                let _ = (|| -> Result<(), String> {
-                    let core = webview
-                        .controller()
-                        .CoreWebView2()
-                        .map_err(|e| format!("Failed to get CoreWebView2: {:?}", e))?;
+    let cookies = window
+        .cookies_for_url(url_obj)
+        .map_err(|e| format!("Failed to get cookies: {}", e))?;
 
-                    let core2 = Interface::cast::<ICoreWebView2_2>(&core)
-                        .map_err(|e| format!("Failed to cast to ICoreWebView2_2: {:?}", e))?;
-                    let uri = HSTRING::from(url_clone.as_str());
-                    let manager = core2
-                        .CookieManager()
-                        .map_err(|e| format!("Failed to get CookieManager: {:?}", e))?;
-
-                    GetCookiesCompletedHandler::wait_for_async_operation(
-                        Box::new(move |handler| {
-                            manager
-                                .GetCookies(&uri, &handler)
-                                .map_err(|e| webview2_com::Error::WindowsError(e))
-                        }),
-                        Box::new(move |hresult, list| {
-                            if let Err(e) = hresult {
-                                let _ = done_tx.send(Err(format!("GetCookies failed: {:?}", e)));
-                                return Ok(());
-                            }
-
-                            match list {
-                                Some(list) => {
-                                    let mut count: u32 = 0;
-                                    if let Err(e) = list.Count(&mut count) {
-                                        let _ = done_tx.send(Err(format!("Count failed: {:?}", e)));
-                                        return Ok(());
-                                    }
-
-                                    let mut cookies = Vec::new();
-                                    for i in 0..count {
-                                        match list.GetValueAtIndex(i) {
-                                            Ok(cookie) => {
-                                                let mut name = PWSTR::null();
-                                                let mut value = PWSTR::null();
-
-                                                if let Err(e) = cookie.Name(&mut name) {
-                                                    let _ = done_tx
-                                                        .send(Err(format!("Name failed: {:?}", e)));
-                                                    return Ok(());
-                                                }
-                                                if let Err(e) = cookie.Value(&mut value) {
-                                                    let _ = done_tx.send(Err(format!(
-                                                        "Value failed: {:?}",
-                                                        e
-                                                    )));
-                                                    return Ok(());
-                                                }
-
-                                                cookies.push(CookieData {
-                                                    name: take_pwstr(name),
-                                                    value: take_pwstr(value),
-                                                });
-                                            }
-                                            Err(e) => {
-                                                let _ = done_tx.send(Err(format!(
-                                                    "GetValueAtIndex failed: {:?}",
-                                                    e
-                                                )));
-                                                return Ok(());
-                                            }
-                                        }
-                                    }
-
-                                    let _ = done_tx.send(Ok(cookies));
-                                }
-                                None => {
-                                    let _ = done_tx.send(Ok(Vec::new()));
-                                }
-                            }
-                            Ok(())
-                        }),
-                    )
-                    .map_err(|e| format!("wait_for_async_operation failed: {:?}", e))?;
-
-                    Ok(())
-                })();
-            })
-            .map_err(|e| format!("with_webview failed: {:?}", e))?;
-
-        done_rx
-            .await
-            .map_err(|e| format!("Channel receive failed: {:?}", e))?
-    }
-
-    // Windows only
-    #[cfg(not(target_os = "windows"))]
-    {
-        Err("Cookie access is only supported on Windows platform".to_string())
-    }
+    Ok(cookies
+        .into_iter()
+        .map(|c| CookieData {
+            name: c.name().to_string(),
+            value: c.value().to_string(),
+        })
+        .collect())
 }
 
 /// 获取特定 cookie

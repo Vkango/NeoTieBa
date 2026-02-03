@@ -1,0 +1,477 @@
+:root {
+    font-family: 'Microsoft YaHei';
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    color: #0f0f0f;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    user-select: none;
+    --text-color: 0, 0, 0;
+    --background-color: 255, 255, 255;
+    --invert: 1;
+    --blur-value: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        color: #f6f6f6;
+        background-color: transparent;
+        --text-color: 255, 255, 255;
+        --invert: 0;
+        --background-color: 34, 34, 34;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--text-color), 0.3);
+    border-radius: 0;
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--text-color), 0.5);
+}
+
+a {
+    font-weight: 500;
+    color: rgb(0, 179, 255);
+    text-decoration: inherit;
+    transition: color 0.25s;
+}
+
+a:hover {
+    color: rgb(83, 91, 242);
+}
+
+@media (prefers-color-scheme: dark) {
+    a:hover {
+        color: #24c8db;
+    }
+}
+
+h1 {
+    text-align: center;
+}
+
+h3 {
+    margin-top: 30px;
+}
+
+input {
+    border: none;
+    outline: none;
+    border-radius: 5px;
+    height: 100%;
+    padding: 10px 15px;
+    box-sizing: border-box;
+}
+
+button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    color: #0f0f0f;
+    background-color: #ffffff;
+    transition: border-color 0.25s;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    outline: none;
+}
+
+button:hover {
+    border-color: #396cd8;
+}
+
+button:active {
+    border-color: #396cd8;
+    background-color: #e8e8e8;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    input,
+    button {
+        color: #ffffff;
+        background-color: #0f0f0f5e;
+    }
+
+    button:active {
+        background-color: #0f0f0f69;
+    }
+}
+
+
+#greet-input {
+    margin-right: 5px;
+}
+
+.user-name {
+    font-weight: bold;
+    font-size: 110%;
+}
+
+.desc {
+    opacity: 0.5;
+}
+
+.thread-content {
+    font-size: 120%;
+    white-space: break-spaces;
+    line-height: 200%;
+}
+
+.list-title {
+    margin-top: 30px;
+    padding: 10px 5px;
+    font-size: 16px;
+    font-weight: bold;
+    position: relative;
+}
+
+.icon_ {
+    filter: invert(var(--invert));
+}
+
+.emoticon {
+    width: 32px;
+    height: 32px;
+}
+
+.level {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 3px 10px;
+    margin-left: 10px;
+    border-radius: 5px;
+    width: fit-content;
+    margin-bottom: 5px;
+}
+
+.level.color1 {
+    background-color: rgba(0, 255, 166, 0.1);
+}
+
+.level.color2 {
+    background-color: rgba(0, 119, 255, 0.1);
+}
+
+.level.color3 {
+    background-color: rgba(255, 255, 0, 0.1);
+}
+
+.level.color4 {
+    background-color: rgba(255, 0, 0, 0.1);
+}
+
+#container {
+    background-size: cover;
+    background-position: center;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    position: absolute;
+    width: calc(100% - 70px);
+    top: 45px;
+    left: 70px;
+    height: calc(100% - 45px);
+    border-radius: 5px 0 0 0;
+}
+
+.list {
+    top: 0;
+    height: 100%;
+    position: relative;
+    width: 220px;
+    padding: 5px 10px;
+    background-color: rgba(30, 31, 32, 0.3);
+}
+
+.navi {
+    top: 0px;
+    width: 70px;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+    background-color: rgba(30, 31, 32, 0);
+    overflow-y: auto;
+}
+
+.navi-button {
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.navi-button:hover {
+    opacity: 0.8;
+}
+
+.navi-button.selected {
+    opacity: 1;
+}
+
+.filter-button {
+    font-size: 80%;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.filter-button:hover,
+.filter-button.selected {
+    opacity: 1;
+}
+
+.filter-button.selected {
+    font-weight: bold;
+}
+
+.tab {
+    position: relative;
+    width: 100%;
+    height: 48px;
+}
+
+.tab-pane {
+    width: 100%;
+}
+
+.tabs {
+    position: fixed;
+    top: 5px;
+    width: calc(100% - 350px);
+    left: 70px;
+    overflow-x: hidden;
+    height: 42px;
+    overflow-y: hidden;
+}
+
+.thread {
+    width: 80%;
+    box-sizing: border-box;
+    padding: 5px 15px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    font-size: 13px;
+    gap: 10px;
+    transition: background-color 0.3s ease;
+    background-color: rgba(var(--text-color), 0.02);
+}
+
+.thread:hover {
+    background-color: rgba(var(--text-color), 0.1);
+}
+
+.thread .avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.thread-img {
+    max-width: 100px;
+    max-height: 100px;
+    border-radius: 5px;
+}
+
+.reply-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+.user-info {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: fit-content;
+    transition: background-color 0.3s ease;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+
+.user-info:hover {
+    background-color: rgba(var(--text-color), 0.1);
+}
+
+.at-button {
+    background-color: transparent;
+    box-shadow: none;
+    padding: 0;
+    color: #46a0ff;
+    font-weight: bold;
+    border: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.at-button:hover {
+    opacity: 0.5;
+}
+
+.notification-container {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    z-index: 2000;
+    overflow-y: auto;
+    overflow-x: hidden;
+    right: 0px;
+    top: 50px;
+    padding-right: 10px;
+    height: calc(100% - 50px);
+    pointer-events: none;
+    width: 300px;
+}
+
+.notification {
+    pointer-events: all;
+    background-color: rgba(var(--background-color), 0.5);
+    backdrop-filter: blur(var(--blur-value));
+    border-radius: 4px;
+    box-shadow: 0px 3px 10px -3px rgba(0, 0, 0, 0.6);
+    width: calc(100% - 10px);
+    margin: 10px;
+    margin-top: 0px;
+}
+
+.notification-source {
+    font-size: 12px;
+    margin-bottom: 4px;
+    text-align: left;
+    width: 210px;
+    opacity: 0.5;
+    word-wrap: break-word;
+    align-items: center;
+    display: flex;
+    gap: 5px;
+}
+
+.notification-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    text-align: left;
+    width: 250px;
+    color: rgba(var(--text-color));
+    word-wrap: break-word;
+}
+
+.notification-message {
+    font-size: 14px;
+    color: rgba(var(--text-color), 0.5);
+    text-align: left;
+    width: 100%;
+    margin-top: 5px;
+    height: fit-content;
+}
+
+.notification-content {
+    width: 100%;
+    background-color: rgba(var(--background-color), 0.2);
+}
+
+.notification-close,
+.notification-hide {
+    border: none;
+    background: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    box-shadow: none;
+    width: 32px;
+    padding: 0;
+    height: 32px;
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.notification-close:hover,
+.notification-hide:hover {
+    opacity: 1;
+}
+
+.notification-close {
+    right: 0px;
+    top: 0px;
+}
+
+.notification-hide {
+    right: 30px;
+    top: 0px;
+}
+
+.notification-box-enter-active,
+.notification-box-leave-active {
+    transition: all 0.3s ease;
+}
+
+.notification-box-enter-from,
+.notification-box-leave-to {
+    transform: translateX(100%);
+}
+
+.fade-notify-enter-active,
+.fade-notify-leave-active,
+.fade-notify-move {
+    transition: all 0.3s ease;
+}
+
+.fade-notify-enter-from,
+.fade-notify-leave-to {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.fade1-enter-active,
+.fade1-leave-active {
+    transition: opacity 0.5s ease;
+}
+
+.fade1-enter-from,
+.fade1-leave-to {
+    opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+    transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+    transform: translateY(100%);
+    opacity: 0;
+}
+
+.loading-box {
+    position: absolute;
+    left: 30px;
+    bottom: 20px;
+}
