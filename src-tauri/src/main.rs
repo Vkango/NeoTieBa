@@ -7,11 +7,12 @@ use cookie_manager::{
     clear_cookies, delete_cookie, get_baidu_auth_cookies, get_cookie, get_cookies,
     get_cookies_string, set_cookie,
 };
-use file_io::{read_file, write_file};
+use file_io::{copy_file_to_install_dir, read_file, read_file_bytes, write_file};
 use request::{
     fetch_data, fetch_data_buffer, fetch_data_post, fetch_data_with_cookie, fetch_data_with_headers,
 };
 use tauri::Manager;
+#[cfg(target_os = "windows")]
 use window_vibrancy::*;
 // use api::{ get_user_info };
 use base64::{engine::general_purpose, Engine as _};
@@ -81,6 +82,47 @@ async fn handle_browser_login<R: Runtime>(app: AppHandle<R>) -> Result<(), Strin
     }
 }
 
+#[tauri::command]
+fn toggle_devtools<R: Runtime>(window: tauri::WebviewWindow<R>) {
+    if window.is_devtools_open() {
+        window.close_devtools();
+    } else {
+        window.open_devtools();
+    }
+}
+
+#[tauri::command]
+fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &str) -> Result<(), String> {
+    if let Err(e) = apply_effect(&window, effect) {
+        return Err(format!("apply_effect({}) failed: {}", effect, e));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn set_window_dark_mode<R: Runtime>(window: tauri::WebviewWindow<R>, dark: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    if let Err(e) = apply_mica(&window, Some(dark)) {
+        return Err(format!("apply_mica(dark) failed: {}", e));
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn apply_effect<R: Runtime>(window: &tauri::WebviewWindow<R>, effect: &str) -> Result<(), String> {
+    match effect {
+        "acrylic" => apply_acrylic(window, Some((255, 255, 255, 0)))
+            .map_err(|e| format!("{}", e)),
+        "mica" => apply_mica(window, None).map_err(|e| format!("{}", e)),
+        _ => Ok(()),
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn apply_effect<R: Runtime>(_window: &tauri::WebviewWindow<R>, _effect: &str) -> Result<(), String> {
+    Ok(())
+}
+
 #[command]
 async fn fetch_data_command(url: &str, proxy_url: Option<String>) -> Result<Value, String> {
     match fetch_data(url, proxy_url.as_deref()).await {
@@ -143,9 +185,14 @@ fn main() {
         .plugin(tauri_plugin_clipboard_x::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            toggle_devtools,
+            set_wallpaper_effect,
+            set_window_dark_mode,
             fetch_data_command,
             fetch_data_with_headers_command,
             read_file,
+            read_file_bytes,
+            copy_file_to_install_dir,
             write_file,
             fetch_data_with_cookie,
             fetch_data_post,
@@ -169,10 +216,7 @@ fn main() {
                 .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
 
             #[cfg(target_os = "windows")]
-            // let _ = apply_mica(&window, Some(true));
-            apply_acrylic(&window, Some((255, 255, 255, 0)))
-                .expect("Unsupported platform! 'apply_acrylic' is only supported on Windows");
-            window.open_devtools();
+            let _ = apply_acrylic(&window, Some((255, 255, 255, 0)));
             Ok(())
         })
         .run(tauri::generate_context!())

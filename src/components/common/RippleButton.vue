@@ -84,6 +84,17 @@ export default {
   background-color: rgba(var(--background-color), 0.3);
 }
 
+:root.dark .ripple-button {
+  background-color: transparent;
+}
+
+:root.dark .ripple-button:hover {
+  background-color: rgba(var(--text-color), 0.1);
+}
+
+:root.dark .ripple-button:active {
+  background-color: rgba(var(--text-color), 0.15);
+}
 
 
 .ripple {

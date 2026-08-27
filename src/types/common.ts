@@ -142,6 +142,15 @@ export interface ForumData {
     thread_num: number;
     first_class?: string;
     second_class?: string;
+    managers?: Array<{
+        id?: string | number;
+        name?: string;
+        show_name?: string;
+        portrait?: string;
+        level?: number;
+        level_id?: number;
+        [key: string]: any;
+    }>;
     [key: string]: any;
 }
 

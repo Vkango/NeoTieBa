@@ -71,6 +71,7 @@ const getIconPath = (icon: string | undefined): string => {
   width: 16px;
   height: 16px;
   border-radius: 16px;
+  filter: invert(var(--invert));
 }
 
 
@@ -117,10 +118,6 @@ const getIconPath = (icon: string | undefined): string => {
   box-shadow: none;
   font-weight: bold;
   backdrop-filter: blur(10px);
-}
-
-.tab-ripplebutton.invert .icon {
-  filter: invert(var(--invert));
 }
 
 .tab-ripplebutton.show {

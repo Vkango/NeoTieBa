@@ -9,14 +9,13 @@
       'show': !tab.show,
       'dragging': tabStore.draggingTabId === tab.id,
       'closing': tab.isClosing
-    }" :key="tab.id" :data-tab-id="tab.id" @click="handleClick(tab)"
-      @mousedown.stop="startDrag($event, tab)" @mouseenter="showTabInfo = true; updateTabInfoPos(tab)"
-      :style="getTabStyle(tab)">
+    }" :key="tab.id" :data-tab-id="tab.id" @click="handleClick(tab)" @mousedown.stop="startDrag($event, tab)"
+      @mouseenter="showTabInfo = true; updateTabInfoPos(tab)" :style="getTabStyle(tab)">
       <div class="tab-content">
         <img class="icon" :src="getIconPath(tab.icon)" referrerpolicy="no-referrer" />
         <div class="title">{{ tab.title }}</div>
-        <span v-if="tab.closable !== false" class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop
-          @click="showTabInfo = false; handleDelete(tab)">close</span>
+        <span v-if="tab.closable !== false" class="material-symbols-outlined" id="close" style="font-size: 12px;"
+          @click.stop @click="showTabInfo = false; handleDelete(tab)">close</span>
       </div>
     </RippleButton>
 
@@ -423,6 +422,7 @@ defineExpose({
   width: 16px;
   height: 16px;
   border-radius: 16px;
+  filter: invert(var(--invert));
 }
 
 
@@ -455,6 +455,14 @@ defineExpose({
   transition: all 0.3s ease;
   touch-action: none;
   position: relative;
+}
+
+:root.dark .tab-ripplebutton {
+  background-color: transparent;
+}
+
+:root.dark .tab-ripplebutton.selected {
+  background-color: rgba(var(--text-color), 0.1);
 }
 
 .tab-ripplebutton.closing {
@@ -504,10 +512,6 @@ defineExpose({
   background-color: rgba(var(--text-color), 0.1);
   box-shadow: none;
   font-weight: bold;
-}
-
-.tab-ripplebutton.invert .icon {
-  filter: invert(var(--invert));
 }
 
 .tab-ripplebutton.show {
@@ -561,6 +565,7 @@ defineExpose({
   width: 16px;
   height: 16px;
   border-radius: 16px;
+  filter: invert(var(--invert));
 }
 
 
@@ -591,10 +596,18 @@ defineExpose({
   margin-right: 5px;
   min-width: 100px;
   /* max-width: 200px;
-  min-width: 100px; */
+    min-width: 100px; */
   transition: all 0.3s ease;
   touch-action: none;
   position: relative;
+}
+
+:root.dark .tab-ripplebutton {
+  background-color: transparent;
+}
+
+:root.dark .tab-ripplebutton.selected {
+  background-color: rgba(var(--text-color), 0.1);
 }
 
 .tab-ripplebutton.closing {
@@ -644,10 +657,6 @@ defineExpose({
   background-color: rgba(var(--text-color), 0.1);
   box-shadow: none;
   font-weight: bold;
-}
-
-.tab-ripplebutton.invert .icon {
-  filter: invert(var(--invert));
 }
 
 .tab-ripplebutton.show {

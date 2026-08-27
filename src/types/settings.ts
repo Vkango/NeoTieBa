@@ -23,6 +23,19 @@ export interface InputSettingItem extends BaseSettingItem {
     placeholder?: string;
 }
 
+export interface ColorSettingItem extends BaseSettingItem {
+    type: 'color';
+    value: string;
+}
+
+export interface SliderSettingItem extends BaseSettingItem {
+    type: 'slider';
+    value: number;
+    min?: number;
+    max?: number;
+    step?: number;
+}
+
 export interface ButtonSettingItem extends BaseSettingItem {
     type: 'button';
     action?: string;
@@ -31,7 +44,7 @@ export interface ButtonSettingItem extends BaseSettingItem {
     placeholder?: never;
 }
 
-export type SettingItem = ToggleSettingItem | SelectSettingItem | InputSettingItem | ButtonSettingItem;
+export type SettingItem = ToggleSettingItem | SelectSettingItem | InputSettingItem | ColorSettingItem | SliderSettingItem | ButtonSettingItem;
 
 export function isToggleSetting(item: SettingItem): item is ToggleSettingItem {
     return item.type === 'toggle';
@@ -43,6 +56,10 @@ export function isSelectSetting(item: SettingItem): item is SelectSettingItem {
 
 export function isInputSetting(item: SettingItem): item is InputSettingItem {
     return item.type === 'input';
+}
+
+export function isSliderSetting(item: SettingItem): item is SliderSettingItem {
+    return item.type === 'slider';
 }
 
 export function isButtonSetting(item: SettingItem): item is ButtonSettingItem {

@@ -21,10 +21,9 @@
     {
       "identifier": "fs:scope",
       "allow": [
-        "$APP_DATA/**",
-        "$LOCAL_APP_DATA/**",
-        "$TEMP/**",
-        "$APPDATA/com.vkango.neotieba/**"
+        "$APPDATA/**",
+        "$APPLOCALDATA/**",
+        "$TEMP/**"
       ]
     }
   ]

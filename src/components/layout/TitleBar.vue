@@ -241,4 +241,18 @@ const emit = defineEmits(['showTabs', 'showNotificationBox']);
 .control-button:active {
   background-color: rgba(var(--text-color), 0.1);
 }
+
+:root.dark .control-button,
+:root.dark .control-button:active {
+  background: none;
+  background-color: transparent;
+}
+
+:root.dark .control-button:hover {
+  background-color: rgba(var(--text-color), 0.1);
+}
+
+:root.dark #close:hover {
+  background-color: rgba(255, 0, 0, 0.5);
+}
 </style>

@@ -55,6 +55,20 @@ interface ForumData {
     id?: string | number;
     avatar: string;
     slogan?: string;
+    member_num?: number;
+    post_num?: number;
+    thread_num?: number;
+    first_class?: string;
+    second_class?: string;
+    managers?: Array<{
+      id?: string | number;
+      name?: string;
+      show_name?: string;
+      portrait?: string;
+      level?: number;
+      level_id?: number;
+      [key: string]: unknown;
+    }>;
     cur_score?: number;
     level_id?: number;
     level_name?: string;
@@ -301,8 +315,9 @@ const loadData = async (): Promise<void> => {
       threadList.value[i].author = userMap.get(threadList.value[i].author_id);
     }
 
-    // 确保主题颜色存在
-    if (!returnData.value?.forum?.theme_color?.dark?.light_color) {
+    const rawColor = String(returnData.value.forum.theme_color?.dark?.light_color ?? '').replace('#', '').trim();
+    const isValidHex = /^[0-9a-fA-F]{6}$/.test(rawColor);
+    if (!isValidHex) {
       if (!returnData.value.forum.theme_color) {
         returnData.value.forum.theme_color = {};
       }
@@ -312,8 +327,7 @@ const loadData = async (): Promise<void> => {
       returnData.value.forum.theme_color.dark.light_color = '000000';
     }
 
-    // 设置主题颜色
-    const hex = returnData.value.forum.theme_color.dark.light_color.replace('#', '');
+    const hex = isValidHex ? rawColor : '000000';
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
@@ -420,7 +434,7 @@ onMounted(async (): Promise<void> => {
 
             <RippleButton class="filter-button"
               style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;"
-                    @click="openSearchInBar()">
+              @click="openSearchInBar()">
               <div style="display: flex; gap: 10px; align-items: center;">
                 <img src="/assets/search.svg" width="18px" class="icon_">
                 <span>吧内搜索</span>
@@ -457,15 +471,16 @@ onMounted(async (): Promise<void> => {
     </transition>
 
     <BarInfoCard :visible="barDetailVisible" :forumData="{
-      id: props.barName,
-      name: returnData.forum.name || '',
+      id: String(returnData.forum.id || ''),
+      name: returnData.forum.name || props.barName,
       avatar: returnData.forum.avatar || '',
       slogan: returnData.forum.slogan || '',
-      member_num: 0,
-      post_num: 0,
-      thread_num: 0,
-      first_class: '',
-      second_class: ''
+      member_num: Number(returnData.forum.member_num || 0),
+      post_num: Number(returnData.forum.post_num || 0),
+      thread_num: Number(returnData.forum.thread_num || 0),
+      first_class: returnData.forum.first_class || '',
+      second_class: returnData.forum.second_class || '',
+      managers: Array.isArray(returnData.forum.managers) ? returnData.forum.managers : []
     }" @close="hidebarDetail" />
   </Container>
 </template>

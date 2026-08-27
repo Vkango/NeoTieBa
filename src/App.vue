@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, provide, nextTick, type Ref, type Component, watch } from 'vue';
+import { onMounted, ref, provide, nextTick, computed, type Ref, type Component, watch } from 'vue';
 import type { NotificationComponent } from '@/components';
 import type { TabItem } from '@/types/common';
 import type { OpenSearchInBarPayload } from '@/types/navigation';
@@ -17,7 +17,7 @@ import Debug from './pages/Debug.vue';
 import Home from './pages/Home.vue';
 import { clipboardService } from '@/services/clipboard-service';
 import { URLParser } from '@/services/url-parser';
-import { useApiStore, useHistoryStore } from '@/stores';
+import { useApiStore, useHistoryStore, useSettingsStore } from '@/stores';
 import { useTabStore } from '@/stores/tabs';
 import { useTabNavigation } from '@/composables/useTabNavigation';
 
@@ -83,6 +83,45 @@ const apiStore = useApiStore();
 const Api = apiStore.getApi();
 const tabStore = useTabStore();
 const historyStore = useHistoryStore();
+const settingsStore = useSettingsStore();
+
+const containerStyle = computed(() => {
+  if (!settingsStore.wallpaperUrl) {
+    return {} as Record<string, string>;
+  }
+  return {
+    'background-image': `url(${settingsStore.wallpaperUrl})`,
+    'background-size': 'cover',
+    'background-position': 'center',
+  } as Record<string, string>;
+});
+
+const overlayStyle = computed(() => {
+  const base: Record<string, string> = {
+    transition: 'all 0.3s ease',
+  };
+
+  const accent = Math.max(0, Math.min(100, settingsStore.wallpaperAccent));
+  const overlayAlpha = 0.85 * (1 - accent / 100);
+
+  base.background = `rgba(var(--wallpaper-overlay), ${overlayAlpha.toFixed(3)})`;
+
+  if (settingsStore.wallpaperEffect === 'image') {
+    const blur = Math.max(0, Math.min(200, settingsStore.wallpaperBlur));
+    if (blur > 0) {
+      base.backdropFilter = `blur(${blur}px)`;
+      base.webkitBackdropFilter = `blur(${blur}px)`;
+    }
+  }
+
+  return base;
+});
+
+const solidBackgroundStyle = computed(() =>
+  settingsStore.wallpaperEffect === 'solid'
+    ? { 'background-color': settingsStore.wallpaperSolidColor } as Record<string, string>
+    : {} as Record<string, string>
+);
 const {
   openThread,
   openBar,
@@ -116,6 +155,35 @@ watch(
   { immediate: false }
 );
 
+interface QueuedNotification {
+  title: string;
+  source: string;
+  component: Component;
+  clickHandler: (() => void) | null;
+  props: Record<string, unknown>;
+  duration: number;
+}
+
+const MAX_QUEUED_NOTIFICATIONS = 20;
+const queuedNotifications: QueuedNotification[] = [];
+
+const flushQueuedNotifications = async (): Promise<void> => {
+  const target = notificationComponent.value;
+  if (!target || !target.addNotification) {
+    return;
+  }
+
+  while (queuedNotifications.length > 0) {
+    const item = queuedNotifications.shift();
+    if (!item) break;
+    try {
+      await target.addNotification(item.title, item.source, item.component, item.clickHandler, item.props, item.duration);
+    } catch (e) {
+      console.error('Failed to flush queued notification:', e);
+    }
+  }
+};
+
 const safeAddNotification = async (
   title: string,
   source: string,
@@ -124,15 +192,20 @@ const safeAddNotification = async (
   props: Record<string, unknown> = {},
   duration = 5000
 ): Promise<void> => {
-  let attempts = 0;
-  while (!notificationComponent.value && attempts < 50) {
-    await nextTick();
-    attempts++;
-    await new Promise(resolve => setTimeout(resolve, 10));
+  const target = notificationComponent.value;
+  if (!target || !target.addNotification) {
+    if (queuedNotifications.length < MAX_QUEUED_NOTIFICATIONS) {
+      queuedNotifications.push({ title, source, component, clickHandler, props, duration });
+    } else {
+      console.error('Notification queue full, dropping notification:', title);
+    }
+    return;
   }
 
-  if (notificationComponent.value && notificationComponent.value.addNotification) {
-    notificationComponent.value.addNotification(title, source, component, clickHandler, props, duration);
+  try {
+    await target.addNotification(title, source, component, clickHandler, props, duration);
+  } catch (e) {
+    console.error('Failed to add notification:', e);
   }
 };
 
@@ -402,6 +475,9 @@ const handleOpenSearchInBar = (data: OpenSearchInBarPayload): void => {
 onMounted(async (): Promise<void> => {
   await nextTick();
   isNotificationReady.value = true;
+  await flushQueuedNotifications();
+  settingsStore.applyWallpaperEffect(settingsStore.wallpaperEffect);
+  settingsStore.initWallpaper();
 
   errorService.addHandler(async (error: unknown, info: unknown): Promise<void> => {
     try {
@@ -415,7 +491,6 @@ onMounted(async (): Promise<void> => {
       );
     } catch (e) {
       console.error('Failed to show error notification:', e);
-      alert('Error in application, failed to pop notification: please restart: \n' + error + '\n' + info);
     }
   });
 
@@ -477,10 +552,8 @@ onMounted(async (): Promise<void> => {
 </script>
 
 <template>
-  <div id="container" style="background-image: url(../public/assets/background.jpg);">
-    <div id="container"
-      style="backdrop-filter: blur(0px); background-color: rgba(var(--background-color), 0.85); transition: all 0.3s ease;">
-    </div>
+  <div id="container" :style="{ ...containerStyle, ...solidBackgroundStyle }">
+    <div id="container-overlay" :style="overlayStyle"></div>
     <div class="navi">
       <RippleButtonWithIcon @click="addBar(item.id)" class="navi-button" v-for="item in naviListItem"
         :class="{ 'selected': item.selected }" :icon="item.icon" :title="item.title"></RippleButtonWithIcon>
@@ -561,6 +634,13 @@ onMounted(async (): Promise<void> => {
   width: 100%;
   height: 100%;
   position: fixed;
+}
+
+#container-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .flex-content {
@@ -944,19 +1024,17 @@ button {
   margin-right: 5px;
 }
 
-@media (prefers-color-scheme: dark) {
-  a:hover {
-    color: #24c8db;
-  }
+:root.dark a:hover {
+  color: #24c8db;
+}
 
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f5e;
-  }
+:root.dark input,
+:root.dark button {
+  color: #ffffff;
+  background-color: #0f0f0f5e;
+}
 
-  button:active {
-    background-color: #0f0f0f69;
-  }
+:root.dark button:active {
+  background-color: #0f0f0f69;
 }
 </style>

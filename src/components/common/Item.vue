@@ -23,9 +23,16 @@
         <input v-else-if="type === 'input'" class="input" :value="String(value ?? '')" :placeholder="placeholder"
           @input="handleInput">
 
+        <input v-else-if="type === 'color'" type="color" class="color" :value="String(value ?? '#000000')"
+          @input="handleColor">
+
+        <RangeSlider v-else-if="type === 'slider'" class="slider" :model-value="Number(value ?? 0)"
+          :min="min ?? 0" :max="max ?? 100" :step="step ?? 1" :aria-label="title"
+          @update:model-value="handleSlider" />
+        <!--
         <button v-else-if="type === 'button'" class="action-button" type="button" @click="emit('click')">
           运行
-        </button>
+        </button> -->
       </div>
     </div>
   </RippleButton>
@@ -34,8 +41,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import RippleButton from '#components/common/RippleButton.vue';
+import RangeSlider from '#components/common/RangeSlider.vue';
 
-type ItemType = 'default' | 'toggle' | 'select' | 'input' | 'button';
+type ItemType = 'default' | 'toggle' | 'select' | 'input' | 'color' | 'slider' | 'button';
 type SelectOption = string | { label: string; value: string };
 
 const props = withDefaults(defineProps<{
@@ -46,16 +54,22 @@ const props = withDefaults(defineProps<{
   value?: string | boolean | number;
   options?: SelectOption[];
   placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
 }>(), {
   type: 'default',
   value: '',
   options: () => [],
   placeholder: '',
+  min: 0,
+  max: 100,
+  step: 1,
 });
 
 const emit = defineEmits<{
   (event: 'click'): void;
-  (event: 'update:value', value: string | boolean): void;
+  (event: 'update:value', value: string | boolean | number): void;
 }>();
 
 const normalizedOptions = computed(() =>
@@ -74,7 +88,15 @@ function handleSelect(event: Event) {
 }
 
 function handleInput(event: Event) {
-  emit('update:value', (event.target as HTMLInputElement).value);
+    emit('update:value', (event.target as HTMLInputElement).value);
+}
+
+function handleColor(event: Event) {
+    emit('update:value', (event.target as HTMLInputElement).value);
+}
+
+function handleSlider(value: number) {
+    emit('update:value', value);
 }
 </script>
 
@@ -84,7 +106,6 @@ function handleInput(event: Event) {
   align-items: center;
   gap: 15px;
   padding: 0 10px;
-  width: 100%;
 }
 
 .item-icon {
@@ -175,10 +196,22 @@ function handleInput(event: Event) {
   color: rgb(var(--text-color));
   background: rgba(var(--background-color), 0.55);
   outline: none;
+  width: 220px;
 }
 
-.input {
+.color {
+  width: 48px;
+  height: 32px;
+  border: 1px solid rgba(var(--text-color), 0.12);
+  border-radius: 6px;
+  padding: 2px;
+  background: rgba(var(--background-color), 0.55);
+  cursor: pointer;
+}
+
+.slider {
   width: 220px;
+  margin: 4px 0;
 }
 
 .action-button {

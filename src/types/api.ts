@@ -107,8 +107,14 @@ export interface BawuInfoMember {
     id: string | number;
     name: string;
     name_show?: string;
+    nick_name_new?: string;
+    show_name?: string;
+    user_name?: string;
     portrait: string;
+    avatar?: string;
+    level?: number;
     level_id?: number;
+    user_level?: number;
     [key: string]: any;
 }
 
@@ -117,6 +123,14 @@ export interface BawuInfoResponse {
     admin?: BawuInfoMember[];
     manager?: BawuInfoMember[];
     assist?: BawuInfoMember[];
+    voice_editor?: BawuInfoMember[];
+    image_editor?: BawuInfoMember[];
+    video_editor?: BawuInfoMember[];
+    broadcast_editor?: BawuInfoMember[];
+    journal_chief_editor?: BawuInfoMember[];
+    journal_editor?: BawuInfoMember[];
+    profess_admin?: BawuInfoMember[];
+    fourth_admin?: BawuInfoMember[];
     [key: string]: any;
 }
 

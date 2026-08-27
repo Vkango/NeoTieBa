@@ -19,6 +19,28 @@ fn resolve_file_path(app: &AppHandle, input_path: &str) -> Result<PathBuf, Strin
 }
 
 #[command]
+pub fn read_file_bytes(path: &str) -> Result<Vec<u8>, String> {
+    std::fs::read(Path::new(path)).map_err(|error| format!("Failed to read {}: {}", path, error))
+}
+
+#[command]
+pub fn copy_file_to_install_dir(src: &str, file_name: &str) -> Result<String, String> {
+    let exe_path =
+        std::env::current_exe().map_err(|e| format!("Failed to resolve current exe: {}", e))?;
+    let exe_dir = exe_path
+        .parent()
+        .ok_or_else(|| "current exe has no parent dir".to_string())?;
+    let dst = exe_dir.join("data").join(file_name);
+    if let Some(parent) = dst.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("Failed to create {}: {}", parent.display(), error))?;
+    }
+    std::fs::copy(src, &dst)
+        .map(|_| dst.to_string_lossy().to_string())
+        .map_err(|error| format!("Failed to copy {} -> {}: {}", src, dst.display(), error))
+}
+
+#[command]
 pub fn read_file(app: AppHandle, relative_path: &str) -> Result<String, String> {
     let resolved_path = resolve_file_path(&app, relative_path)?;
     let legacy_path = Path::new(relative_path);

@@ -4,6 +4,9 @@ import { getUserList, type User } from '@/services/user-manage';
 import type { SettingItem, MenuSettingItem, InfoItem } from '@/types/settings';
 import { useSettingsStore } from '@/stores/settings';
 import { fetchText } from '@/core/request';
+import { invoke } from '@tauri-apps/api/core';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import { WALLPAPER_EFFECT_OPTIONS } from '@/stores/settings';
 
 // Props 定义
 interface Props {
@@ -24,6 +27,7 @@ const emit = defineEmits<Emits>();
 const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
 const settingsStore = useSettingsStore();
 const connectionTestDesc = ref('测试当前网络配置是否可用');
+const wallpaperDesc = ref('选择本地图片作为背景壁纸');
 
 // State 定义
 const user: Ref<User[]> = ref([]);
@@ -91,12 +95,41 @@ const displaySettings: ComputedRef<SettingItem[]> = computed(() => [
       { label: '深色', value: 'dark' },
     ],
   },
+  { id: 'wallpaper_accent', icon: 'contrast', title: '背景亮度', type: 'slider', desc: '亮度越高底色越淡 (0-100)', value: settingsStore.wallpaperAccent ?? 0, min: 0, max: 100 },
+  {
+    id: 'wallpaper_effect',
+    icon: 'blur_on',
+    title: '背景选项',
+    type: 'select',
+    desc: '图片 / Acrylic / Mica / 纯色，切换即时生效',
+    value: settingsStore.wallpaperEffect,
+    options: WALLPAPER_EFFECT_OPTIONS,
+  },
+
+  ...(settingsStore.wallpaperEffect === 'image'
+    ? [
+      { id: 'wallpaper', icon: 'wallpaper', title: '壁纸图片', type: 'button' as const, desc: wallpaperDesc.value, action: 'wallpaper' },
+      { id: 'wallpaper_blur', icon: 'blur_on', title: '壁纸模糊', type: 'slider' as const, desc: '数字越大越模糊，0 为不模糊 (0-200)', value: settingsStore.wallpaperBlur ?? 0, min: 0, max: 200 },
+      { id: 'wallpaper_remove', icon: 'wallpaper', title: '移除壁纸', type: 'button' as const, desc: '恢复默认背景', action: 'remove_wallpaper' },
+    ]
+    : []),
+  ...(settingsStore.wallpaperEffect === 'solid'
+    ? [{
+      id: 'wallpaper_solid_color',
+      icon: 'colorize',
+      title: '纯色背景颜色',
+      type: 'color' as const,
+      desc: '选择纯色模式的背景颜色',
+      value: settingsStore.wallpaperSolidColor,
+    }]
+    : []),
 ]);
 
 const networkSettings: ComputedRef<SettingItem[]> = computed(() => [
   { id: 'use_proxy', icon: 'settings', title: '使用代理', type: 'toggle', desc: '让 API 请求走下面填写的代理地址', value: settingsStore.useProxy },
   { id: 'proxy_url', icon: 'link', title: '代理地址', type: 'input', desc: '例如 http://127.0.0.1:7890', value: settingsStore.proxyUrl, placeholder: 'http://127.0.0.1:7890' },
   { id: 'connection_test', icon: 'network_check', title: '连接测试', type: 'button', desc: connectionTestDesc.value, action: 'test' },
+  { id: 'devtools', icon: 'bug_report', title: '打开开发者工具', type: 'button', desc: '打开 DevTools 调试窗口', action: 'devtools' },
 ]);
 
 // Computed
@@ -136,8 +169,8 @@ const handleUserChanged = async (): Promise<void> => {
   emit('userChanged');
 };
 
-const updateSetting = (id: string, value: string | boolean): void => {
-  if (['show_user_id', 'only_author', 'no_image', 'theme'].includes(id)) {
+const updateSetting = (id: string, value: string | boolean | number): void => {
+  if (['show_user_id', 'only_author', 'no_image', 'theme', 'wallpaper_path', 'wallpaper_accent', 'wallpaper_blur', 'wallpaper_effect', 'wallpaper_solid_color'].includes(id)) {
     settingsStore.updateDisplaySetting(id, value);
     return;
   }
@@ -145,6 +178,24 @@ const updateSetting = (id: string, value: string | boolean): void => {
   if (['use_proxy', 'proxy_url'].includes(id)) {
     settingsStore.updateNetworkSetting(id, value);
   }
+};
+
+const pickWallpaper = async (): Promise<void> => {
+  wallpaperDesc.value = '正在选择...';
+  try {
+    const path = await settingsStore.pickWallpaper();
+    wallpaperDesc.value = path
+      ? `当前壁纸: ${path.split(/[\\/]/).pop() || path}`
+      : '选择壁纸图片作为背景';
+  } catch (error) {
+    wallpaperDesc.value = '选择壁纸失败';
+    throw error;
+  }
+};
+
+const removeWallpaper = (): void => {
+  settingsStore.removeWallpaper();
+  wallpaperDesc.value = '已恢复默认背景';
 };
 
 // 连接测试
@@ -160,6 +211,28 @@ const testConnection = async (): Promise<void> => {
   } catch (error) {
     connectionTestDesc.value = error instanceof Error ? error.message : '连接失败';
   }
+};
+
+const handleSettingAction = (setting: SettingItem): void => {
+  if ('action' in setting && setting.action === 'test') {
+    testConnection();
+  } else if ('action' in setting && setting.action === 'devtools') {
+    openDevTools();
+  } else if ('action' in setting && setting.action === 'wallpaper') {
+    pickWallpaper();
+  } else if ('action' in setting && setting.action === 'remove_wallpaper') {
+    removeWallpaper();
+  }
+};
+
+const openDevTools = (): void => {
+  invoke('toggle_devtools').catch((error) => {
+    console.error('切换开发者工具失败:', error);
+  });
+};
+
+const openProjectUrl = (): void => {
+  openUrl('https://github.com/Vkango/NeoTieBa');
 };
 
 // 滚动处理
@@ -243,7 +316,9 @@ const onScroll = (_target: HTMLElement): void => {
               <Item v-for="setting in displaySettings" :key="setting.id" :title="setting.title" :desc="setting.desc"
                 :icon="setting.icon" :type="setting.type" :value="'value' in setting ? setting.value : undefined"
                 @update:value="updateSetting(setting.id, $event)" :options="'options' in setting ? setting.options : []"
-                :placeholder="'placeholder' in setting ? setting.placeholder : undefined" />
+                :placeholder="'placeholder' in setting ? setting.placeholder : undefined"
+                :min="'min' in setting ? setting.min : undefined" :max="'max' in setting ? setting.max : undefined"
+                :step="'step' in setting ? setting.step : undefined" @click="handleSettingAction(setting)" />
             </div>
           </div>
 
@@ -257,7 +332,7 @@ const onScroll = (_target: HTMLElement): void => {
                 :icon="setting.icon" :type="setting.type" :value="'value' in setting ? setting.value : undefined"
                 @update:value="updateSetting(setting.id, $event)" :options="'options' in setting ? setting.options : []"
                 :placeholder="'placeholder' in setting ? setting.placeholder : undefined"
-                @click="'action' in setting && setting.action === 'test' ? testConnection() : null" />
+                @click="handleSettingAction(setting)" />
             </div>
           </div>
 
@@ -275,7 +350,7 @@ const onScroll = (_target: HTMLElement): void => {
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px">
               <Item v-for="item in currentSettingItems" :key="item.id" :icon="item.icon" :title="item.title"
-                :desc="item.desc" style="width: 100%;"></Item>
+                :desc="item.desc" style="width: 100%;" @click="item.title === '联系' ? openProjectUrl() : null"></Item>
             </div>
           </div>
         </div>

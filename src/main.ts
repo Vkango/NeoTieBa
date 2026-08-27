@@ -8,6 +8,9 @@ import { readText } from '@tauri-apps/plugin-clipboard-manager';
 import pluginManager from '@/plugin/plugin-manager';
 import { clipboardService } from "@/services/clipboard-service";
 import "@/styles/global.css";
+import { applyTheme, getStoredTheme } from "@/styles/theme";
+
+applyTheme(getStoredTheme());
 
 const appWindow = getCurrentWindow();
 appWindow.onFocusChanged(async ({ payload: focused }) => {

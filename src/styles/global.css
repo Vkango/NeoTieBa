@@ -13,18 +13,18 @@
     user-select: none;
     --text-color: 0, 0, 0;
     --background-color: 255, 255, 255;
+    --wallpaper-overlay: 255, 255, 255;
     --invert: 1;
     --blur-value: 20px;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        color: #f6f6f6;
-        background-color: transparent;
-        --text-color: 255, 255, 255;
-        --invert: 0;
-        --background-color: 34, 34, 34;
-    }
+:root.dark {
+    color: #f6f6f6;
+    background-color: transparent;
+    --text-color: 255, 255, 255;
+    --wallpaper-overlay: 0, 0, 0;
+    --invert: 0;
+    --background-color: 34, 34, 34;
 }
 
 ::-webkit-scrollbar {
@@ -58,10 +58,8 @@ a:hover {
     color: rgb(83, 91, 242);
 }
 
-@media (prefers-color-scheme: dark) {
-    a:hover {
-        color: #24c8db;
-    }
+:root.dark a:hover {
+    color: #24c8db;
 }
 
 h1 {
@@ -105,17 +103,14 @@ button:active {
     background-color: #e8e8e8;
 }
 
-@media (prefers-color-scheme: dark) {
+:root.dark input,
+:root.dark button {
+    color: #ffffff;
+    background-color: #0f0f0f5e;
+}
 
-    input,
-    button {
-        color: #ffffff;
-        background-color: #0f0f0f5e;
-    }
-
-    button:active {
-        background-color: #0f0f0f69;
-    }
+:root.dark button:active {
+    background-color: #0f0f0f69;
 }
 
 
