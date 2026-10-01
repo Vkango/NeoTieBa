@@ -1,5 +1,6 @@
 <template>
-  <transition-group name="tab-list" tag="div" class="tabs" data-tauri-drag-region @wheel="onTabScroll"
+  <transition-group ref="tabsRef" name="tab-list" :move-class="isDragging || isSettling ? 'tab-drag-move' : 'tab-list-move'"
+    tag="div" class="tabs" data-tauri-drag-region @wheel="onTabScroll" @scroll="updateDragPreview"
     @before-leave="(el: Element) => setItemPosition(el as HTMLElement)"
     @leave="(el: Element, done: () => void) => handleLeave(el as HTMLElement, done)"
     @mouseleave="showTabInfo = false;">
@@ -10,7 +11,7 @@
       'dragging': tabStore.draggingTabId === tab.id,
       'closing': tab.isClosing
     }" :key="tab.id" :data-tab-id="tab.id" @click="handleClick(tab)" @mousedown.stop="startDrag($event, tab)"
-      @mouseenter="showTabInfo = true; updateTabInfoPos(tab)" :style="getTabStyle(tab)">
+      @mouseenter="onTabHover(tab)" :style="getTabStyle(tab)">
       <div class="tab-content">
         <img class="icon" :class="{ 'invert': tab.icon_invert }" :src="getIconPath(tab.icon)"
           referrerpolicy="no-referrer" />
@@ -37,14 +38,7 @@ import { computed, ref, onBeforeUnmount, nextTick, type Component, watch } from 
 import { useTabStore } from '@/stores/tabs';
 import RippleButton from '#components/common/RippleButton.vue';
 import TabInfo from './TabInfo.vue';
-
-// Type definitions
-interface TabPosition {
-  left: number;
-  right: number;
-  width: number;
-  id: number | string;
-}
+import { getTabDragPreview, type DragTabLayout } from './tab-drag';
 
 interface TabMouseOnInfo {
   title: string;
@@ -90,11 +84,28 @@ watch(
   { immediate: true }
 );
 const itemPositions = ref(new Map<HTMLElement, DOMRect>());
-const dragStartX = ref(0);
-const _dragStartY = ref(0);
-const _tabElements = ref<Element[]>([]);
-const tabPositions = ref<TabPosition[]>([]);
+const tabsRef = ref<{ $el: HTMLElement } | null>(null);
 const isDragging = ref(false);
+const isSettling = ref(false);
+const settlingTabId = ref<number | null>(null);
+let settleTimer: ReturnType<typeof setTimeout> | null = null;
+const previewOffsets = ref(new Map<number, number>());
+let dragSession: {
+  id: number;
+  startX: number;
+  currentX: number;
+  scrollLeft: number;
+  layout: DragTabLayout[];
+  order: number[];
+  finishing: boolean;
+} | null = null;
+let suppressClick = false;
+
+function onTabHover(tab: TabItem): void {
+  if (isDragging.value) return;
+  showTabInfo.value = true;
+  updateTabInfoPos(tab);
+}
 
 const updateTabInfoPos = (tab: TabItem): void => {
   const elem = document.getElementsByClassName('tab-info')[0] as HTMLElement | undefined;
@@ -116,7 +127,7 @@ const updateTabInfoPos = (tab: TabItem): void => {
 };
 
 const onTabScroll = (event: WheelEvent): void => {
-  const container = document.getElementsByClassName('tabs')[0] as HTMLElement | undefined;
+  const container = tabsRef.value?.$el;
   if (!container) return;
   const deltaX = event.deltaY;
   container.scrollLeft += deltaX;
@@ -126,109 +137,144 @@ function getTabStyle(tab: TabItem): Record<string, string> {
   const isTabDragging = tabStore.draggingTabId === tab.id && isDragging.value;
 
   return {
-    transform: isTabDragging ? `translateX(${tabStore.dragOffsetX}px)` : '',
+    transform: isDragging.value && previewOffsets.value.has(tab.id)
+      ? `translateX(${previewOffsets.value.get(tab.id)}px)` : '',
     zIndex: isTabDragging ? '200' : (tab.isClosing ? '-1' : 'auto'),
-    transition: isTabDragging ? 'none' : 'all 0.3s ease',
+    transition: isSettling.value
+      ? (!isDragging.value && settlingTabId.value === tab.id ? 'transform 0.3s ease' : 'none')
+      : (isTabDragging ? 'none' : 'all 0.3s ease'),
     pointerEvents: tab.isClosing ? 'none' : 'auto',
     cursor: isTabDragging ? 'grabbing' : 'pointer'
   };
 }
 
 function startDrag(event: MouseEvent, tab: TabItem): void {
-  if (tab.isClosing) return;
-  if ((event.target as HTMLElement).id === 'close') return;
-  isDragging.value = true;
-  dragStartX.value = event.clientX;
-  _dragStartY.value = event.clientY;
-  tabStore.startDrag(tab.id);
-  nextTick(() => {
-    captureTabPositions();
+  if (event.button !== 0 || tab.isClosing || dragSession || isSettling.value) return;
+  if ((event.target as HTMLElement).closest('#close')) return;
+  const container = tabsRef.value?.$el;
+  if (!container) return;
+  suppressClick = false;
+  const elements = Array.from(container.querySelectorAll<HTMLElement>('.tab-ripplebutton'))
+    .filter(el => !el.classList.contains('closing') && !el.classList.contains('show'));
+  const layout = elements.map((el, index) => {
+    const next = elements[index + 1];
+    return {
+      id: Number(el.dataset.tabId),
+      left: el.offsetLeft,
+      width: el.offsetWidth,
+      span: next ? next.offsetLeft - el.offsetLeft
+        : el.offsetWidth + parseFloat(getComputedStyle(el).marginRight || '0')
+    };
   });
+  dragSession = {
+    id: tab.id, startX: event.clientX, currentX: event.clientX,
+    scrollLeft: container.scrollLeft, layout, order: layout.map(item => item.id), finishing: false
+  };
   window.addEventListener('mousemove', onDrag);
   window.addEventListener('mouseup', endDrag);
+  window.addEventListener('blur', cancelDrag);
+  window.addEventListener('resize', cancelDrag);
   event.preventDefault();
 }
 
-function captureTabPositions(): void {
-  const tabEls = document.querySelectorAll('.tab-ripplebutton');
-  _tabElements.value = Array.from(tabEls);
-  tabPositions.value = _tabElements.value.map(el => {
-    const rect = el.getBoundingClientRect();
-    const tabId = el.getAttribute('data-tab-id');
-    return {
-      left: rect.left,
-      right: rect.right,
-      width: rect.width,
-      id: tabId ? parseInt(tabId, 10) : 0
-    };
-  });
+function updateDragPreview(): void {
+  const session = dragSession;
+  if (!session || session.finishing || !isDragging.value) return;
+  const scroll = tabsRef.value?.$el.scrollLeft ?? session.scrollLeft;
+  const offset = session.currentX - session.startX + scroll - session.scrollLeft;
+  const preview = getTabDragPreview(session.layout, session.id, offset);
+  session.order = preview.order;
+  previewOffsets.value = preview.offsets;
+  tabStore.updateDragOffset(offset);
 }
 
 function onDrag(event: MouseEvent): void {
-  if (!tabStore.draggingTabId || !isDragging.value) return;
-
-  const deltaX = event.clientX - dragStartX.value;
-  tabStore.updateDragOffset(deltaX);
-
-  const tabId = tabStore.draggingTabId;
-  const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`) as HTMLElement | null;
-  if (tabElement) {
-    tabElement.style.transform = `translateX(${deltaX}px)`;
+  const session = dragSession;
+  if (!session || session.finishing) return;
+  session.currentX = event.clientX;
+  if (!isDragging.value) {
+    if (Math.abs(session.currentX - session.startX) < 5) return;
+    isDragging.value = true;
+    showTabInfo.value = false;
+    tabStore.startDrag(session.id);
   }
-
-  const draggedTabId = tabId;
-  const draggedIdStr = String(draggedTabId);
-  if (draggedIdStr.startsWith('closing-')) {
-    return;
-  }
-
-  const draggedTabIndex = tabStore.tabs.findIndex((t: TabItem) => t.id === draggedTabId);
-  if (draggedTabIndex === -1) return;
-
-  const currentX = event.clientX;
-  for (let i = 0; i < tabStore.tabs.length; i++) {
-    if (i !== draggedTabIndex) {
-      const targetTabPos = tabPositions.value.find(p => p.id == tabStore.tabs[i].id);
-      if (!targetTabPos) continue;
-
-      const dragThreshold = targetTabPos.width * 0.5;
-
-      if (
-        (draggedTabIndex < i && currentX > targetTabPos.left + dragThreshold) ||
-        (draggedTabIndex > i && currentX < targetTabPos.right - dragThreshold)
-      ) {
-        const oldX = event.clientX;
-        tabStore.reorderTabs(draggedTabId as number, tabStore.tabs[i].id);
-        nextTick(() => {
-          captureTabPositions();
-          dragStartX.value = oldX - tabStore.dragOffsetX + targetTabPos.width * (deltaX < 0 ? -1 : 1);
-        });
-        break;
-      }
-    }
-  }
+  updateDragPreview();
 }
 
-function endDrag(): void {
-  if (!isDragging.value) return;
-  isDragging.value = false;
-  if (tabStore.draggingTabId) {
-    const tabId = tabStore.draggingTabId;
-    const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`) as HTMLElement | null;
-    if (tabElement) {
-      tabElement.style.transform = '';
-    }
-  }
-  nextTick(() => {
-    tabStore.endDrag();
-  });
+function removeDragListeners(): void {
   window.removeEventListener('mousemove', onDrag);
   window.removeEventListener('mouseup', endDrag);
+  window.removeEventListener('blur', cancelDrag);
+  window.removeEventListener('resize', cancelDrag);
 }
+
+function finishDrag(commit: boolean): void {
+  const session = dragSession;
+  if (!session || session.finishing) return;
+  session.finishing = true;
+  removeDragListeners();
+  suppressClick = isDragging.value;
+  // Preview already put neighbors in their final visual slots. Changing their
+  // layout positions and resetting transforms must be one unanimated handoff.
+  isSettling.value = isDragging.value;
+  settlingTabId.value = isDragging.value ? session.id : null;
+  if (commit && isDragging.value) {
+    const from = session.layout.findIndex(tab => tab.id === session.id);
+    const to = session.order.indexOf(session.id);
+    const target = session.layout[to];
+    if (target && from !== to) {
+      const dragged = session.layout[from];
+      const newLeft = session.layout[0].left + session.order.slice(0, to).reduce((left, id) =>
+        left + session.layout.find(tab => tab.id === id)!.span, 0);
+      // After committing, offsets must be relative to the new DOM positions.
+      previewOffsets.value = new Map([[session.id, dragged.left + tabStore.dragOffsetX - newLeft]]);
+      tabStore.reorderTabs(session.id, target.id);
+    }
+  }
+  // Apply rebased transforms with transitions disabled after the DOM reorder.
+  // Then animate only the dragged tab's remaining distance to its final slot.
+  nextTick(() => {
+    tabsRef.value?.$el.getBoundingClientRect();
+    dragSession = null;
+    previewOffsets.value = new Map();
+    isDragging.value = false;
+    tabStore.endDrag();
+    nextTick(() => {
+      if (!isSettling.value) return;
+      // Keep FLIP disabled for the entire landing animation: unrelated renders
+      // (for example the ripple) must not overwrite the dragged tab's transform.
+      settleTimer = setTimeout(() => {
+        settleTimer = null;
+        settlingTabId.value = null;
+        isSettling.value = false;
+      }, 350);
+    });
+  });
+}
+
+function endDrag(event: MouseEvent): void {
+  if (dragSession && !dragSession.finishing) {
+    dragSession.currentX = event.clientX;
+    updateDragPreview();
+  }
+  finishDrag(true);
+}
+
+function cancelDrag(): void {
+  finishDrag(false);
+}
+
+// A tab can be added, hidden or removed while a mouse gesture is in progress.
+watch(() => displayedTabs.value.filter(tab => !tab.isClosing).map(tab => tab.id).join(','), () => {
+  if (dragSession && !dragSession.finishing) cancelDrag();
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('mousemove', onDrag);
-  window.removeEventListener('mouseup', endDrag);
+  removeDragListeners();
+  if (settleTimer !== null) clearTimeout(settleTimer);
+  isSettling.value = false;
+  dragSession = null;
+  tabStore.endDrag();
 });
 
 function setItemPosition(el: HTMLElement): void {
@@ -266,6 +312,10 @@ const handleDelete = (tab: TabItem): void => {
 };
 
 const handleClick = (tab: TabItem): void => {
+  if (suppressClick) {
+    suppressClick = false;
+    return;
+  }
   if (String(tab.id).startsWith('closing-')) {
     return;
   }
@@ -349,152 +399,13 @@ defineExpose({
 </script>
 
 <style scoped>
-.tab-list-move {
-  transition: transform 0.3s ease;
-  position: relative;
-  z-index: 1;
-}
-
-.tab-list-enter-active,
-.tab-list-leave-active {
-  transition: all 0.3s ease;
-}
-
-.tab-list-enter-from,
-.tab-list-leave-to {
-  opacity: 0;
-  width: 0;
-  transform: translateX(-30px);
-}
-
-#close {
-  position: absolute;
-  right: 10px;
-}
-
-#close:hover {
-  opacity: 0.5;
-}
-
-.icon {
-  width: 16px;
-  height: 16px;
-  border-radius: 16px;
-}
-
-.icon.invert {
-  filter: invert(var(--invert));
-}
-
-
-.tabs {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-}
-
-.tabs:hover {
-  overflow-x: scroll;
-}
-
-.tab-ripplebutton:hover {
-  background-color: rgba(var(--text-color), 0.1);
-}
-
-.tab-ripplebutton {
-  text-align: left;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 5px 10px;
-  font-size: 13px;
-  font-weight: normal;
-  height: 35px;
-  width: 180px;
-  margin-right: 5px;
-  min-width: 100px;
-  transition: all 0.3s ease;
-  touch-action: none;
-  position: relative;
-}
-
-:root.dark .tab-ripplebutton {
-  background-color: transparent;
-}
-
-:root.dark .tab-ripplebutton.selected {
-  background-color: rgba(var(--text-color), 0.1);
-}
-
-.tab-ripplebutton.closing {
-  opacity: 0;
-  width: 0;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  transform: translateX(-30px);
-  pointer-events: none;
-  position: absolute;
-}
-
-.tab-ripplebutton.dragging {
-  opacity: 0.9;
-  background-color: rgba(var(--text-color), 0.2);
-  user-select: none;
-  pointer-events: none;
+/* TransitionGroup checks a cloned child's computed transition. A different
+   move-class alone does not disable FLIP: the child's inline `all` transition
+   still passes that check and lets Vue erase our drag transform. */
+.tab-drag-move {
   transition: none !important;
-  will-change: transform;
 }
 
-.tab-content {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  align-items: center;
-}
-
-.title {
-  left: 35px;
-  width: calc(100% - 60px);
-  overflow: hidden;
-  position: absolute;
-  white-space: nowrap;
-  -webkit-mask-image: linear-gradient(to right, black, black, black, black, transparent);
-  mask-image: linear-gradient(to right, black, black, black, black, transparent);
-}
-
-
-.ripple-button-title {
-  font-size: 13px;
-  margin-top: 5px;
-}
-
-.tab-ripplebutton.selected {
-  background-color: rgba(var(--text-color), 0.1);
-  box-shadow: none;
-  font-weight: bold;
-}
-
-.tab-ripplebutton.show {
-  display: none;
-}
-
-#RippleButton {
-  background-color: transparent;
-  box-shadow: none;
-  padding: 10px 5px;
-}
-
-.material-symbols-outlined {
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 100,
-    'GRAD' 0,
-    'opsz' 24
-}
-</style>
-
-<style scoped>
 .tab-list-move {
   transition: transform 0.3s ease;
   position: relative;
@@ -559,8 +470,6 @@ defineExpose({
   width: 180px;
   margin-right: 5px;
   min-width: 100px;
-  /* max-width: 200px;
-    min-width: 100px; */
   transition: all 0.3s ease;
   touch-action: none;
   position: relative;
