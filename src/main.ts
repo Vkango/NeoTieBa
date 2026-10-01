@@ -42,4 +42,16 @@ app.config.errorHandler = (err, _instance, info) => {
 const IsDrawerOpen = reactive({ state: false });
 app.config.globalProperties.$IsDrawerOpen = IsDrawerOpen;
 app.config.globalProperties.$pluginManager = pluginManager;
-app.mount("#app");
+// Decorum 1.1.1 starts observing childList changes in DOMContentLoaded,
+// but does not create controls until it sees a mutation. Mount Vue in the
+// next task after all DOMContentLoaded listeners have run, so the initial
+// render (including the titlebar Teleport) reliably triggers that observer.
+function scheduleMount(): void {
+    setTimeout(() => app.mount("#app"), 0);
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleMount, { once: true });
+} else {
+    scheduleMount();
+}
