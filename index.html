@@ -7,10 +7,87 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NeoTieBa</title>
+  <style>
+    /* 原生样式标题栏：最小化/最大化/关闭按钮由 tauri-plugin-decorum 注入，
+       头像与标签按钮由 TitleBar.vue 挂载。
+       宽度 330px 与 .tabs 的 calc(100% - 400px) 对齐（70px 侧边栏 + 400px 保留区），
+       与标签条零重叠：标签条可正常点击，右侧固定留出拖动空隙。 */
+    #decorum-titlebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 330px;
+      height: 45px;
+      z-index: 1100;
+      display: flex;
+      align-items: stretch;
+      background: transparent;
+      color: rgba(var(--text-color), 0.9);
+    }
+
+    /* 剩余可伸缩拖动区域（位于标签条与头像之间） */
+    #decorum-titlebar #titlebar-drag-flex {
+      flex: 1 1 auto;
+      min-width: 36px;
+    }
+
+    /* 一小块固定拖动区域（紧贴头像按钮左侧） */
+    #decorum-titlebar #titlebar-drag-fixed {
+      flex: 0 0 12px;
+    }
+
+    #decorum-titlebar #titlebar-mount {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: stretch;
+    }
+
+    /* decorum 注入的原生窗口控制按钮，尺寸与悬停配色对齐应用主题 */
+    #decorum-titlebar .decorum-tb-btn {
+      flex: 0 0 46px;
+      width: 46px;
+      height: 45px;
+      border: none;
+      padding: 0;
+      margin: 0;
+      outline: none;
+      box-shadow: none;
+      border-radius: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 300;
+      font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+      color: rgba(var(--text-color), 0.9);
+      background-color: transparent;
+      cursor: default;
+      transition: background 0.1s;
+    }
+
+    #decorum-titlebar .decorum-tb-btn:hover {
+      background-color: rgba(var(--text-color), 0.1);
+    }
+
+    #decorum-titlebar .decorum-tb-btn:active {
+      background-color: rgba(var(--text-color), 0.05);
+    }
+
+    #decorum-titlebar #decorum-tb-close:hover {
+      background-color: rgba(255, 0, 0, 0.5) !important;
+      color: white;
+    }
+  </style>
 </head>
 
 <body style="margin: 0">
+  <div id="decorum-titlebar" data-tauri-decorum-tb aria-label="窗口标题栏">
+    <div id="titlebar-drag-flex" data-tauri-drag-region aria-label="拖动窗口"></div>
+    <div id="titlebar-drag-fixed" data-tauri-drag-region aria-label="拖动窗口"></div>
+    <div id="titlebar-mount"></div>
+  </div>
   <div id="app"></div>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 

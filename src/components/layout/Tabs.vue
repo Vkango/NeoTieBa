@@ -1,8 +1,8 @@
 <template>
-  <transition-group name="tab-list" tag="div" class="tabs" @wheel="onTabScroll"
+  <transition-group name="tab-list" tag="div" class="tabs" data-tauri-drag-region @wheel="onTabScroll"
     @before-leave="(el: Element) => setItemPosition(el as HTMLElement)"
-    @leave="(el: Element, done: () => void) => handleLeave(el as HTMLElement, done)" @mousedown="startDragging"
-    @mouseup="stopDragging" @mouseleave="stopDragging; showTabInfo = false;" @dblclick="handleTabsDblClick">
+    @leave="(el: Element, done: () => void) => handleLeave(el as HTMLElement, done)"
+    @mouseleave="showTabInfo = false;">
     <RippleButton class="tab-ripplebutton" v-for="tab in displayedTabs" :class="{
       'selected': tab.selected,
       'invert': tab.icon_invert,
@@ -35,7 +35,6 @@ import type { TabItem } from '@/types/common';
 import { computed, ref, onBeforeUnmount, nextTick, type Component, watch } from 'vue';
 import { useTabStore } from '@/stores/tabs';
 import RippleButton from '#components/common/RippleButton.vue';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import TabInfo from './TabInfo.vue';
 
 // Type definitions
@@ -55,10 +54,7 @@ interface TabMouseOnInfo {
   component: { __name?: string };
 }
 
-const isMaximized = ref(false);
 const showTabInfo = ref(false);
-const isMouseDown = ref(false);
-const _isMoved = ref(false);
 const tabMouseOn = ref<TabMouseOnInfo>({
   title: '',
   desc: '',
@@ -123,45 +119,6 @@ const onTabScroll = (event: WheelEvent): void => {
   if (!container) return;
   const deltaX = event.deltaY;
   container.scrollLeft += deltaX;
-};
-
-const startDragging = (event: MouseEvent): void => {
-  if (event.y > 33) return;
-  isMouseDown.value = true;
-  _isMoved.value = false;
-  if (isMaximized.value) {
-    return;
-  }
-  const window = getCurrentWindow();
-  window.startDragging();
-};
-
-const stopDragging = (): void => {
-  isMouseDown.value = false;
-};
-
-const toggleWindowMaximize = async (): Promise<void> => {
-  const window = getCurrentWindow();
-  const maximized = await window.isMaximized();
-  if (maximized) {
-    await window.unmaximize();
-    return;
-  }
-  await window.maximize();
-};
-
-const handleTabsDblClick = async (event: MouseEvent): Promise<void> => {
-  const target = event.target as HTMLElement | null;
-  if (!target) {
-    return;
-  }
-
-  // Only blank area should toggle maximize. Interactions on a tab item are excluded.
-  if (target.closest('.tab-ripplebutton')) {
-    return;
-  }
-
-  await toggleWindowMaximize();
 };
 
 function getTabStyle(tab: TabItem): Record<string, string> {

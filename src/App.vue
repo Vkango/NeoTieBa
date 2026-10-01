@@ -568,8 +568,7 @@ onMounted(async (): Promise<void> => {
         </keep-alive>
       </div>
     </div>
-    <TitleBar ref="titleBarRef" title="" style="z-index: 0; left: 70px; width: calc(100% - 70px);"
-      @showTabs="onShowTabs" @showNotificationBox="onShowNotificationBox"
+    <TitleBar ref="titleBarRef" @showTabs="onShowTabs" @showNotificationBox="onShowNotificationBox"
       :msgCount="(notificationComponent?.notifications?.length || 0) + (notificationComponent?.hiddenNotifications?.length || 0)" />
     <Tabs class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete" @onTabRefresh="onRefreshTab">
     </Tabs>
@@ -698,11 +697,14 @@ onMounted(async (): Promise<void> => {
 .tabs {
   position: fixed;
   top: 5px;
-  width: calc(100% - 350px);
+  /* 400px = 330px 标题栏(拖动区+头像/标签按钮+窗口控制) + 70px 侧边栏，
+     保证标签过多时右侧仍有可拖动空隙 */
+  width: calc(100% - 400px);
   left: 70px;
   overflow-x: hidden;
   height: 42px;
   overflow-y: hidden;
+  z-index: 1101;
 }
 
 .thread .avatar {

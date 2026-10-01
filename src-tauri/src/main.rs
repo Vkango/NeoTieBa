@@ -12,6 +12,7 @@ use request::{
     fetch_data, fetch_data_buffer, fetch_data_post, fetch_data_with_cookie, fetch_data_with_headers,
 };
 use tauri::Manager;
+use tauri_plugin_decorum::WebviewWindowExt;
 #[cfg(target_os = "windows")]
 use window_vibrancy::*;
 // use api::{ get_user_info };
@@ -184,6 +185,7 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_clipboard_x::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_decorum::init())
         .invoke_handler(tauri::generate_handler![
             toggle_devtools,
             set_wallpaper_effect,
@@ -210,6 +212,11 @@ fn main() {
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
+
+            // decorum 内置标题栏：注入最小化/最大化/关闭按钮（含 Win11 分屏 Snap Layouts）
+            window
+                .create_overlay_titlebar()
+                .expect("failed to create overlay titlebar");
 
             #[cfg(target_os = "macos")]
             apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)

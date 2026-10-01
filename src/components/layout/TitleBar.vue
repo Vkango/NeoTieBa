@@ -1,47 +1,30 @@
 <template>
-  <div class="title-bar" @mousedown="startDragging" @mouseup="stopDragging" @mouseleave="stopDragging"
-    @mousemove="handleDraggingMaxized" @dblclick="handleTitleBarDblClick">
-    <div class="title">{{ title }}</div>
-    <div class="controls" @mouseup.stop @mouseleave.stop @mousedown.stop>
-      <RippleButton class="control-button" style="padding: 0; width: 48px; height: 45px;" id="avatar"
-        @click="emit('showNotificationBox')">
-        <img class="avatar" style="width: 20px; height: 20px; border-radius: 20px; padding: 0; margin-top: 5px;"
-          :src="user.avatar">
-        <div id="msgCount" v-if="msgCount > 0">{{ msgCount > 99 ? `99+` : msgCount }}</div>
-      </RippleButton>
-      <RippleButton class="control-button" @click="emit('showTabs')"> <!--Tabs-->
-        <img class="icon" src="/assets/list.svg">
-      </RippleButton>
-      <RippleButton class="control-button" @click="minimizeWindow">
-        <img class="icon" src="/assets/minimize.svg">
-      </RippleButton>
-      <RippleButton v-if="isMaximized" class="control-button" @click="maximizeWindow">
-        <img class="icon" src="/assets/restore.svg">
-      </RippleButton>
-      <RippleButton v-if="!isMaximized" class="control-button" @click="maximizeWindow">
-        <img class="icon" src="/assets/maximize.svg">
-      </RippleButton>
-      <RippleButton class="control-button" id="close" @click="closeWindow"><img class="icon" src="/assets/close1.svg">
-      </RippleButton>
-    </div>
-  </div>
+  <Teleport to="#titlebar-mount">
+    <RippleButton class="control-button" style="padding: 0; width: 48px; height: 45px;" id="avatar"
+      @click="emit('showNotificationBox')">
+      <img class="avatar" style="width: 20px; height: 20px; border-radius: 20px; padding: 0; margin-top: 5px;"
+        :src="user.avatar">
+      <div id="msgCount" v-if="msgCount > 0">{{ msgCount > 99 ? `99+` : msgCount }}</div>
+    </RippleButton>
+    <RippleButton class="control-button" @click="emit('showTabs')"> <!--Tabs-->
+      <img class="icon" src="/assets/list.svg">
+    </RippleButton>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-// import RippleButton from './RippleButton.vue';
+import RippleButton from '#components/common/RippleButton.vue';
 import { getCurrentUser } from '@/services/user-manage';
-const isMaximized = ref(false);
-const isMouseDown = ref(false);
-const isMoved = ref(false);
+
 interface UserDisplay {
   name: string;
   avatar: string;
 }
+
 const user = ref<UserDisplay>({ name: '', avatar: '' });
 
-const updateAvatar = async () => {
+const updateAvatar = async (): Promise<void> => {
   try {
     const usr = await getCurrentUser();
     user.value.name = usr?.user_name || usr?.username || '';
@@ -52,82 +35,19 @@ const updateAvatar = async () => {
 };
 
 onMounted(async () => {
-  const window = getCurrentWindow();
-  isMaximized.value = await window.isMaximized();
-  await window.onResized(handleResize);
   await updateAvatar();
 });
 
 defineExpose({
   updateAvatar
 });
-const handleResize = async () => {
-  const window = getCurrentWindow();
-  isMaximized.value = await window.isMaximized();
-};
+
 const props = defineProps({
-  title: {
-    type: String,
-    default: 'Tauri App'
-  },
   msgCount: {
     type: Number,
     default: 0
   }
 });
-const handleDraggingMaxized = () => {
-  isMoved.value = true;
-  if (isMaximized.value && isMouseDown.value) {
-    const window = getCurrentWindow();
-    window.startDragging();
-    isMaximized.value = false;
-  }
-};
-const startDragging = () => {
-  isMouseDown.value = true;
-  isMoved.value = false;
-  if (isMaximized.value) {
-    return;
-  }
-  const window = getCurrentWindow();
-  window.startDragging();
-
-};
-const stopDragging = () => {
-
-  isMouseDown.value = false;
-};
-const minimizeWindow = async () => {
-  const window = getCurrentWindow();
-  await window.minimize();
-};
-const maximizeWindow = async () => {
-  const window = getCurrentWindow();
-  isMaximized.value = await window.isMaximized();
-  if (isMaximized.value) {
-    await window.unmaximize();
-  } else {
-    await window.maximize();
-  }
-  isMaximized.value = await window.isMaximized();
-};
-
-const handleTitleBarDblClick = async (event: MouseEvent) => {
-  const target = event.target as HTMLElement | null;
-  if (!target) {
-    return;
-  }
-  if (target.closest('.controls')) {
-    return;
-  }
-  await maximizeWindow();
-};
-
-const closeWindow = async () => {
-  const window = getCurrentWindow();
-  await window.close();
-};
-
 
 const emit = defineEmits(['showTabs', 'showNotificationBox']);
 
@@ -155,14 +75,6 @@ const emit = defineEmits(['showTabs', 'showNotificationBox']);
   overflow: hidden;
 }
 
-.search-box {
-  position: relative;
-  left: 30px;
-  height: 30px;
-  width: 300px;
-  font-size: 13px;
-}
-
 #msgCount {
   opacity: 1;
   position: absolute;
@@ -176,33 +88,6 @@ const emit = defineEmits(['showTabs', 'showNotificationBox']);
   border-radius: 10px;
   color: white;
 
-}
-
-.title-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 45px;
-  color: rgba(var(--text-color));
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  z-index: 4;
-}
-
-.title {
-  font-size: 12px;
-  font-weight: normal;
-  left: 15px;
-  position: relative;
-  color: rgba(var(--text-color), 0.5);
-}
-
-.controls {
-  display: flex;
-  position: absolute;
-  right: 0px;
 }
 
 .control-button img {
@@ -233,11 +118,6 @@ const emit = defineEmits(['showTabs', 'showNotificationBox']);
   background-color: rgba(var(--text-color), 0.1);
 }
 
-#close:hover {
-  color: white;
-  background-color: rgba(255, 0, 0, 0.5);
-}
-
 .control-button:active {
   background-color: rgba(var(--text-color), 0.1);
 }
@@ -250,9 +130,5 @@ const emit = defineEmits(['showTabs', 'showNotificationBox']);
 
 :root.dark .control-button:hover {
   background-color: rgba(var(--text-color), 0.1);
-}
-
-:root.dark #close:hover {
-  background-color: rgba(255, 0, 0, 0.5);
 }
 </style>

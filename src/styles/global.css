@@ -254,11 +254,14 @@ button:active {
 
 .tabs {
     position: fixed;
-    top: 5px;
-    width: calc(100% - 350px);
+    top: 0px;
+    /* 400px = 330px 标题栏(拖动区+头像/标签按钮+窗口控制) + 70px 侧边栏，
+       保证标签过多时右侧仍有可拖动空隙 */
+    width: calc(100% - 400px);
     left: 70px;
     overflow-x: hidden;
-    height: 42px;
+    height: 47px;
+    padding-top: 5px;
     overflow-y: hidden;
 }
 
