@@ -1,7 +1,18 @@
 <template>
   <div style="padding-bottom: 10px;">
 
-    <div style="font-weight: bold; margin-left: 10px; margin: 10px; font-size: 15px;">打开的标签 ({{ displayedTabs.length }})
+    <div class="drawer-header">
+      <div class="drawer-title">打开的标签 ({{ displayedTabs.length }})</div>
+      <div class="drawer-actions">
+        <RippleButton class="drawer-action" title="刷新当前标签" aria-label="刷新当前标签"
+          :disabled="!currentTab" @click="refreshCurrentTab">
+          <span class="material-symbols-outlined">refresh</span>
+        </RippleButton>
+        <RippleButton class="drawer-action" title="复制当前标签链接" aria-label="复制当前标签链接"
+          :disabled="!currentTab" @click="copyCurrentTabLink">
+          <span class="material-symbols-outlined">content_copy</span>
+        </RippleButton>
+      </div>
     </div>
     <div class="tabs-list-">
       <transition-group name="tab-list" tag="div" class="tabs-list-">
@@ -25,9 +36,33 @@
 import RippleButton from '#components/common/RippleButton.vue';
 import { useTabStore } from '@/stores/tabs';
 import { computed } from 'vue';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { errorService } from '@/core/error-service';
+
+const emit = defineEmits<{ (e: 'refresh', id: number): void }>();
 
 const tabStore = useTabStore();
 const displayedTabs = computed(() => tabStore.tabs.filter(tab => tab.show));
+const currentTab = computed(() => tabStore.currentTab);
+
+function refreshCurrentTab(): void {
+  if (currentTab.value) emit('refresh', currentTab.value.id);
+}
+
+async function copyCurrentTabLink(): Promise<void> {
+  const tab = currentTab.value;
+  if (!tab) return;
+  const props = tab.props || {};
+  let link = `neotieba://${(tab.component?.__name || 'container').toLowerCase()}`;
+  if (props.tid) link = `https://tieba.baidu.com/p/${encodeURIComponent(String(props.tid))}`;
+  else if (props.uid) link = `https://tieba.baidu.com/home/main?id=${encodeURIComponent(String(props.uid))}`;
+  else if (props.barName) link = `https://tieba.baidu.com/f?kw=${encodeURIComponent(String(props.barName))}`;
+  try {
+    await writeText(link);
+  } catch (error) {
+    errorService.handleError(error, '复制标签链接');
+  }
+}
 
 const getIconPath = (icon: string | undefined): string => {
   if (!icon) return '';
@@ -47,6 +82,44 @@ const getIconPath = (icon: string | undefined): string => {
 </script>
 
 <style scoped>
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px;
+}
+
+.drawer-title {
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.drawer-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.drawer-action .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.drawer-action:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .tab-list-enter-active,
 .tab-list-leave-active {
   transition: all 0.3s ease;

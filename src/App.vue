@@ -582,10 +582,10 @@ onMounted(async (): Promise<void> => {
     </div>
     <TitleBar ref="titleBarRef" @showTabs="onShowTabs" @showNotificationBox="onShowNotificationBox"
       :msgCount="(notificationComponent?.notifications?.length || 0) + (notificationComponent?.hiddenNotifications?.length || 0)" />
-    <Tabs class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete" @onTabRefresh="onRefreshTab">
+    <Tabs class="tabs" @onSwitchTabs="onSwitchTabs" @onTabDelete="onTabDelete">
     </Tabs>
     <Transition name="notification-box">
-      <TabList class="notification-box" v-if="showTabList"></TabList>
+      <TabList class="notification-box" v-if="showTabList" @refresh="onRefreshTab"></TabList>
     </Transition>
     <Transition name="notification-box">
       <Notification ref="notificationComponent" v-show="!showNotificationBox && !showTabList" />

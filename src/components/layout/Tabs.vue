@@ -2,8 +2,7 @@
   <transition-group ref="tabsRef" name="tab-list" :move-class="isDragging || isSettling ? 'tab-drag-move' : 'tab-list-move'"
     tag="div" class="tabs" data-tauri-drag-region @wheel="onTabScroll" @scroll="updateDragPreview"
     @before-leave="(el: Element) => setItemPosition(el as HTMLElement)"
-    @leave="(el: Element, done: () => void) => handleLeave(el as HTMLElement, done)"
-    @mouseleave="showTabInfo = false;">
+    @leave="(el: Element, done: () => void) => handleLeave(el as HTMLElement, done)">
     <RippleButton class="tab-ripplebutton" v-for="tab in displayedTabs" :class="{
       'selected': tab.selected,
       'invert': tab.icon_invert,
@@ -11,24 +10,17 @@
       'dragging': tabStore.draggingTabId === tab.id,
       'closing': tab.isClosing
     }" :key="tab.id" :data-tab-id="tab.id" @click="handleClick(tab)" @mousedown.stop="startDrag($event, tab)"
-      @mouseenter="onTabHover(tab)" :style="getTabStyle(tab)">
+      :style="getTabStyle(tab)">
       <div class="tab-content">
         <img class="icon" :class="{ 'invert': tab.icon_invert }" :src="getIconPath(tab.icon)"
           referrerpolicy="no-referrer" />
         <div class="title">{{ tab.title }}</div>
         <span v-if="tab.closable !== false" class="material-symbols-outlined" id="close" style="font-size: 12px;"
-          @click.stop @click="showTabInfo = false; handleDelete(tab)">close</span>
+          @click.stop="handleDelete(tab)">close</span>
       </div>
     </RippleButton>
 
   </transition-group>
-  <Transition name="fade1">
-    <TabInfo :title="tabMouseOn.title" :desc="tabMouseOn.desc" v-show="showTabInfo" @mouseenter="showTabInfo = true"
-      @mouseleave="showTabInfo = false" :componentkey="tabMouseOn.component.__name ?? ''" :icon="tabMouseOn.icon ?? ''"
-      :id="tabMouseOn.id" @refresh="emit('onTabRefresh', tabMouseOn.id)">
-      <div v-html="tabMouseOn.content"></div>
-    </TabInfo>
-  </Transition>
 
 </template>
 
@@ -37,27 +29,8 @@ import type { TabItem } from '@/types/common';
 import { computed, ref, onBeforeUnmount, nextTick, type Component, watch } from 'vue';
 import { useTabStore } from '@/stores/tabs';
 import RippleButton from '#components/common/RippleButton.vue';
-import TabInfo from './TabInfo.vue';
+
 import { getTabDragPreview, type DragTabLayout } from './tab-drag';
-
-interface TabMouseOnInfo {
-  title: string;
-  desc: string;
-  icon: string;
-  id: number;
-  content: string;
-  component: { __name?: string };
-}
-
-const showTabInfo = ref(false);
-const tabMouseOn = ref<TabMouseOnInfo>({
-  title: '',
-  desc: '',
-  icon: '',
-  id: 0,
-  content: '',
-  component: { __name: '' }
-});
 
 const tabStore = useTabStore();
 const displayedTabs = computed(() => tabStore.visibleTabs.filter((tab: TabItem) => tab.show));
@@ -67,7 +40,6 @@ const emit = defineEmits<{
   (e: 'click'): void;
   (e: 'onSwitchTabs', id: number): void;
   (e: 'onTabDelete', key: string | number): void;
-  (e: 'onTabRefresh', id: number): void;
 }>();
 
 // Watch for activeKey changes and emit event
@@ -100,31 +72,6 @@ let dragSession: {
   finishing: boolean;
 } | null = null;
 let suppressClick = false;
-
-function onTabHover(tab: TabItem): void {
-  if (isDragging.value) return;
-  showTabInfo.value = true;
-  updateTabInfoPos(tab);
-}
-
-const updateTabInfoPos = (tab: TabItem): void => {
-  const elem = document.getElementsByClassName('tab-info')[0] as HTMLElement | undefined;
-  const tabEls = document.querySelectorAll('.tab-ripplebutton');
-  const tabIndex = displayedTabs.value.indexOf(tab);
-  const currentTab = Array.from(tabEls)[tabIndex] as HTMLElement | undefined;
-  if (!elem || !currentTab) return;
-
-  tabMouseOn.value = {
-    title: tab.title,
-    desc: tab.desc,
-    icon: tab.icon,
-    id: tab.id,
-    content: tab.content,
-    component: { __name: (tab.component as Component & { __name?: string })?.__name || '' }
-  };
-  const rect = currentTab.getBoundingClientRect();
-  elem.style.left = rect.left + 'px';
-};
 
 const onTabScroll = (event: WheelEvent): void => {
   const container = tabsRef.value?.$el;
@@ -195,7 +142,6 @@ function onDrag(event: MouseEvent): void {
   if (!isDragging.value) {
     if (Math.abs(session.currentX - session.startX) < 5) return;
     isDragging.value = true;
-    showTabInfo.value = false;
     tabStore.startDrag(session.id);
   }
   updateDragPreview();
