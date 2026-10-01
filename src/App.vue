@@ -1047,10 +1047,5 @@ button {
 :root.dark input,
 :root.dark button {
   color: #ffffff;
-  background-color: #0f0f0f5e;
-}
-
-:root.dark button:active {
-  background-color: #0f0f0f69;
 }
 </style>
