@@ -450,7 +450,6 @@ onMounted(async () => {
 
     // 监听浏览器登录成功事件
     unlistenBrowserLogin = await listen('browser-login-cookies', (event) => {
-        console.log('收到浏览器登录 cookies:', event.payload);
         handleBrowserLoginSuccess(event.payload);
     });
 

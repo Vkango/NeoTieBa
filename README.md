@@ -38,7 +38,7 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 
 > [!note]
 >
-> 目前暂时没有除 Windows 端以外其他端的移植计划.
+> 当前发布构建仍以 Windows 为主; 其他平台因缺少相关设备, 不能保证稳定使用.
 
 > [!warning]
 >
@@ -63,6 +63,15 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 运行 Dev 版: `pnpm tauri dev`
 
 构建发布版: `pnpm tauri build`
+
+macOS 需要 Xcode Command Line Tools。本项目的透明窗口使用 `macOSPrivateApi` 配置和 `macos-private-api` Cargo feature。
+
+Ubuntu/Debian 构建前需安装系统依赖（其他发行版请参考 [Tauri 前置要求](https://v2.tauri.app/zh-cn/start/prerequisites/)）：
+
+```sh
+sudo apt-get update
+sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libssl-dev libxdo-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+```
 
 
 

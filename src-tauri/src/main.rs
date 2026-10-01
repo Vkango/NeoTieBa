@@ -13,7 +13,7 @@ use request::{
 };
 use tauri::Manager;
 use tauri_plugin_decorum::WebviewWindowExt;
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 use window_vibrancy::*;
 // use api::{ get_user_info };
 use base64::{engine::general_purpose, Engine as _};
@@ -22,65 +22,92 @@ use serde_json::Value;
 use tauri::command;
 
 // src-tauri/src/main.rs
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use tauri::{AppHandle, Emitter, Runtime, WebviewUrl, WebviewWindowBuilder};
 use url::Url;
 
 #[tauri::command]
 async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    // 创建登录窗口
+    if let Some(window) = app.get_webview_window("login_window") {
+        return window.set_focus().map_err(|e| e.to_string());
+    }
+
     let url = Url::parse("https://passport.baidu.com/v2/?login&u=https%3A%2F%2Ftieba.baidu.com")
         .map_err(|e| format!("无效的URL: {}", e))?;
 
-    let _window = WebviewWindowBuilder::new(&app, "login_window", WebviewUrl::External(url))
-        .title("登录百度账号")
-        .inner_size(800.0, 600.0)
-        .center()
-        .initialization_script(include_str!("login_bridge.js"))
-        .build()
-        .map_err(|e| format!("创建窗口失败: {}", e))?;
+    // Clear the native cookie store before any login requests can recreate cookies.
+    let window = WebviewWindowBuilder::new(
+        &app,
+        "login_window",
+        WebviewUrl::External(Url::parse("about:blank").unwrap()),
+    )
+    .title("登录百度账号")
+    .inner_size(800.0, 600.0)
+    .center()
+    .build()
+    .map_err(|e| format!("创建窗口失败: {}", e))?;
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-
-    let urls = vec![
-        "https://passport.baidu.com",
-        "https://tieba.baidu.com",
-        "https://www.baidu.com",
-    ];
-
-    for url in urls {
-        let _ = clear_cookies(app.clone(), "login_window".to_string(), url.to_string()).await;
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let destroyed = cancelled.clone();
+    window.on_window_event(move |event| {
+        if matches!(event, tauri::WindowEvent::Destroyed) {
+            destroyed.store(true, Ordering::Relaxed);
+        }
+    });
+    if let Err(error) = cookie_manager::clear_baidu_cookies(window.clone()).await {
+        let _ = window.close();
+        return Err(error);
     }
-
+    if let Err(error) = window.navigate(url) {
+        let _ = window.close();
+        return Err(format!("打开登录页失败: {}", error));
+    }
+    tauri::async_runtime::spawn(async move {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(300);
+        let result = async {
+            loop {
+                if cancelled.load(Ordering::Relaxed) {
+                    return Ok(());
+                }
+                if let Some((bduss, stoken)) =
+                    cookie_manager::read_baidu_auth(window.clone()).await?
+                {
+                    if cancelled.load(Ordering::Relaxed) {
+                        return Ok(());
+                    }
+                    let main = app
+                        .get_webview_window("main")
+                        .ok_or_else(|| "无法找到主窗口".to_string())?;
+                    main.emit(
+                        "browser-login-cookies",
+                        serde_json::json!({
+                            "bduss": bduss, "stoken": stoken,
+                        }),
+                    )
+                    .map_err(|e| e.to_string())?;
+                    let _ = window.close();
+                    return Ok::<(), String>(());
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("登录超时，请重新打开登录窗口".to_string());
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        }
+        .await;
+        if let Err(error) = result {
+            if !cancelled.load(Ordering::Relaxed) {
+                if let Some(main) = app.get_webview_window("main") {
+                    let _ = main.emit("browser-login-error", error);
+                }
+                let _ = window.close();
+            }
+        }
+    });
     Ok(())
-}
-
-#[tauri::command]
-async fn handle_browser_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    let auth_result = get_baidu_auth_cookies(app.clone(), "login_window".to_string()).await?;
-
-    if let Some((bduss, stoken)) = auth_result {
-        let cookie_data = serde_json::json!({
-            "bduss": bduss,
-            "stoken": stoken
-        });
-
-        if let Some(main_window) = app.get_webview_window("main") {
-            main_window
-                .emit("browser-login-cookies", cookie_data)
-                .map_err(|e| format!("发送事件失败: {}", e))?;
-        } else {
-            return Err("无法找到主窗口".to_string());
-        }
-
-        if let Some(login_window) = app.get_webview_window("login_window") {
-            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-            let _ = login_window.close();
-        }
-
-        Ok(())
-    } else {
-        Err("未找到有效的登录凭证".to_string())
-    }
 }
 
 #[tauri::command]
@@ -93,7 +120,10 @@ fn toggle_devtools<R: Runtime>(window: tauri::WebviewWindow<R>) {
 }
 
 #[tauri::command]
-fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &str) -> Result<(), String> {
+fn set_wallpaper_effect<R: Runtime>(
+    window: tauri::WebviewWindow<R>,
+    effect: &str,
+) -> Result<(), String> {
     if let Err(e) = apply_effect(&window, effect) {
         return Err(format!("apply_effect({}) failed: {}", effect, e));
     }
@@ -101,7 +131,10 @@ fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &st
 }
 
 #[tauri::command]
-fn set_window_dark_mode<R: Runtime>(window: tauri::WebviewWindow<R>, dark: bool) -> Result<(), String> {
+fn set_window_dark_mode<R: Runtime>(
+    window: tauri::WebviewWindow<R>,
+    dark: bool,
+) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     if let Err(e) = apply_mica(&window, Some(dark)) {
         return Err(format!("apply_mica(dark) failed: {}", e));
@@ -112,15 +145,17 @@ fn set_window_dark_mode<R: Runtime>(window: tauri::WebviewWindow<R>, dark: bool)
 #[cfg(target_os = "windows")]
 fn apply_effect<R: Runtime>(window: &tauri::WebviewWindow<R>, effect: &str) -> Result<(), String> {
     match effect {
-        "acrylic" => apply_acrylic(window, Some((255, 255, 255, 0)))
-            .map_err(|e| format!("{}", e)),
+        "acrylic" => apply_acrylic(window, Some((255, 255, 255, 0))).map_err(|e| format!("{}", e)),
         "mica" => apply_mica(window, None).map_err(|e| format!("{}", e)),
         _ => Ok(()),
     }
 }
 
 #[cfg(not(target_os = "windows"))]
-fn apply_effect<R: Runtime>(_window: &tauri::WebviewWindow<R>, _effect: &str) -> Result<(), String> {
+fn apply_effect<R: Runtime>(
+    _window: &tauri::WebviewWindow<R>,
+    _effect: &str,
+) -> Result<(), String> {
     Ok(())
 }
 
@@ -201,7 +236,6 @@ fn main() {
             fetch_data_buffer,
             fetch_data_buffer_base64,
             open_login,
-            handle_browser_login,
             get_cookies,
             get_cookie,
             set_cookie,
@@ -214,13 +248,10 @@ fn main() {
             let window = app.get_webview_window("main").unwrap();
 
             // decorum 内置标题栏：注入最小化/最大化/关闭按钮（含 Win11 分屏 Snap Layouts）
-            window
-                .create_overlay_titlebar()
-                .expect("failed to create overlay titlebar");
+            window.create_overlay_titlebar()?;
 
             #[cfg(target_os = "macos")]
-            apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)
-                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
+            let _ = apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None);
 
             #[cfg(target_os = "windows")]
             let _ = apply_acrylic(&window, Some((255, 255, 255, 0)));
