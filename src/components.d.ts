@@ -36,6 +36,7 @@ declare module 'vue' {
     Tabs: typeof import('./components/layout/Tabs.vue')['default']
     Tag: typeof import('./components/common/Tag.vue')['default']
     Thread: typeof import('./components/thread/Thread.vue')['default']
+    ThreadFloorIndex: typeof import('./components/thread/ThreadFloorIndex.vue')['default']
     ThreadLite: typeof import('./components/thread/ThreadLite.vue')['default']
     Tip: typeof import('./components/notification/Tip.vue')['default']
     TitleBar: typeof import('./components/layout/TitleBar.vue')['default']

@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, inject, type Ref } from 'vue';
-import { useApiStore } from '@/stores';
+import { computed, nextTick, ref, onMounted, onBeforeUnmount, onActivated, watch, inject, type Ref } from 'vue';
+import { useApiStore, useSettingsStore, useUserStore } from '@/stores';
+import Container from '@/components/common/Container.vue';
+import { getCurrentUser } from '@/services/user-manage';
 import { read_file } from '@/core/file-io';
 import Reply from '@/components/thread/Reply.vue';
+import ThreadFloorIndex from '@/components/thread/ThreadFloorIndex.vue';
+import { findReadingFloor, floorPreview } from '@/utils/thread-index';
 import ReplyView from '@/components/thread/SubPostView.vue';
 import domToImage from 'dom-to-image';
 
@@ -29,6 +33,7 @@ interface User {
 }
 
 interface Post {
+  id: string | number;
   authorId: string | number;
   author?: User;
   agree: {
@@ -39,9 +44,13 @@ interface Post {
 }
 
 interface ThreadData {
+  error?: { errorno?: number; errmsg?: string };
   data?: {
     thread: {
       title: string;
+      author?: User;
+      collectStatus?: number;
+      collectMarkPid?: string;
     };
     forum: {
       name: string;
@@ -50,7 +59,9 @@ interface ThreadData {
     userList: User[];
     postList: Post[];
     page: {
-      hasMore: boolean;
+      hasMore: boolean | number;
+      totalPage?: number;
+      newTotalPage?: number;
     };
   };
 }
@@ -76,7 +87,6 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 // Injects
-const deleteTab = inject<(key: string | number) => void>('deleteTab');
 const sendToast = inject<(title: string, duration: number) => void>('sendToast');
 const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
@@ -87,8 +97,42 @@ const isLoading = ref<boolean>(true);
 const isThreadsLoading = ref<boolean>(true);
 const threadList: Ref<Post[]> = ref([]);
 const currentPage = ref<number>(1);
+const userStore = useUserStore();
+const onlyThreadAuthor = ref(!props.local && useSettingsStore().onlyAuthor);
+const threadAuthorId = ref<string>('');
+const containerRef = ref<InstanceType<typeof Container> | null>(null);
+const floorIndexRef = ref<InstanceType<typeof ThreadFloorIndex> | null>(null);
+const activePostId = ref('');
+const readingIndex = ref(0);
+const firstLoadedPage = ref(1);
+const isFloorNavigating = ref(false);
+const postPages = new Map<string, number>();
+const postElements = new Map<string, HTMLElement>();
+let readingFrame = 0;
+let contentObserver: ResizeObserver | undefined;
+const activePost = computed(() => threadList.value.find(post => String(post.id) === activePostId.value) ?? threadList.value[0]);
+const readingPage = computed(() => postPages.get(activePostId.value) ?? currentPage.value);
+const floorEntries = computed(() => threadList.value.map(post => ({
+  id: String(post.id),
+  floor: Number(post.floor),
+  avatar: 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + (post.author?.portrait || 'default'),
+  preview: floorPreview(post.content, threadTitle.value),
+})));
+const isJumpOpen = ref(false);
+const jumpInput = ref('1');
+const jumpError = ref('');
+const pageInputRef = ref<HTMLInputElement | null>(null);
+const isFavourite = ref(false);
+const isFavouriteLoading = ref(false);
+const favouritePostId = ref('');
+const favouriteAccountId = ref('');
+const totalPages = computed(() => {
+  const page = returnData.value.data?.page;
+  const total = Number(page?.totalPage || page?.newTotalPage || 0);
+  return Number.isInteger(total) && total > 0 ? total : undefined;
+});
 const threadTitle = ref<string>("");
-const isDeleted = ref<boolean>(false);
+const loadError = ref('');
 const isSubPostCardOpen = ref(false);
 const currentSubPostInfo: Ref<SubPostInfo> = ref({
   like: 0,
@@ -139,72 +183,214 @@ const handleShare = async () => {
 const apiStore = useApiStore();
 const api = apiStore.getApi();
 
-// 加载数据
-const loadData = async (): Promise<void> => {
+// Commit page/filter changes only after success so failures preserve the current view.
+const loadData = async (page = currentPage.value, replace = false, onlyAuthor = onlyThreadAuthor.value, prepend = false): Promise<boolean> => {
+  if (isThreadsLoading.value && !isLoading.value) return false;
+  isThreadsLoading.value = true;
   try {
-    isThreadsLoading.value = true;
-
+    let response: ThreadData;
+    const user = userStore.currentUser;
     if (!props.local) {
-      returnData.value = await api.get_post(Number(props.tid), currentPage.value);
+      response = await api.get_post(String(props.tid), page, 30, 0, onlyAuthor, false, user?.bduss ?? '', 10, user?.stoken ?? '');
     } else if (props.local_dir) {
-      const jsonData = await read_file(`${props.local_dir}/page${currentPage.value}.json`);
-      returnData.value = JSON.parse(jsonData);
-    }
-
-    if (returnData.value?.data?.postList) {
-      const { thread, forum, userList: newUsers, postList } = returnData.value.data;
-
-      threadTitle.value = thread.title;
-      updateTabMeta?.({
-        key: props.key_,
-        title: thread.title,
-        icon: forum.avatar,
-        icon_invert: false
-      });
-
-
-      // 合并用户列表，避免重复
-      const existingUserIds = new Set(userList.value.map(u => u.id));
-      const uniqueNewUsers = newUsers.filter(user => !existingUserIds.has(user.id));
-      userList.value.push(...uniqueNewUsers);
-
-      // 关联作者信息
-      const userMap = new Map(userList.value.map(user => [user.id, user]));
-      const enrichedPosts = postList.map(post => ({
-        ...post,
-        author: userMap.get(post.authorId)
-      }));
-
-      threadList.value = [...threadList.value, ...enrichedPosts];
+      response = JSON.parse(await read_file(props.local_dir + '/page' + page + '.json'));
     } else {
-      isDeleted.value = true;
-      updateTabMeta?.({ key: props.key_, title: '贴子已被删除', icon: '/assets/apps.svg', icon_invert: true });
-      sendToast?.('贴子已被删除', 3000);
-      deleteTab?.(props.key_);
+      throw new Error('缺少本地帖子目录');
     }
+    if (response.error?.errorno) throw new Error(response.error.errmsg || '帖子加载失败');
+    const data = response.data;
+    if (!data || !Array.isArray(data.postList)) throw new Error('帖子数据不可用');
+    if (page > 1 && data.postList.length === 0) {
+      sendToast?.('该页没有内容', 2000);
+      return false;
+    }
+    const { thread, forum, userList: newUsers = [], postList } = data;
+    const users = new Map((replace ? [] : userList.value).map(user => [String(user.id), user]));
+    for (const user of newUsers) users.set(String(user.id), user);
+    const posts = postList.map(post => ({ ...post, author: users.get(String(post.authorId)) }));
+    if (thread.author?.id !== undefined && String(thread.author.id) !== '0') threadAuthorId.value = String(thread.author.id);
+    else {
+      const firstFloor = postList.find(post => Number(post.floor) === 1);
+      if (firstFloor) threadAuthorId.value = String(firstFloor.authorId);
+    }
+    if (!isFavouriteLoading.value) {
+      isFavourite.value = Number(thread.collectStatus) === 2;
+      favouritePostId.value = thread.collectMarkPid || '';
+      favouriteAccountId.value = user?.userId ?? '';
+    }
+    if (!prepend || replace) returnData.value = response;
+    loadError.value = '';
+    if (!prepend || replace) currentPage.value = page;
+    if (replace) {
+      firstLoadedPage.value = page;
+      postPages.clear();
+      activePostId.value = String(posts[0]?.id ?? '');
+    } else if (prepend) firstLoadedPage.value = page;
+    for (const post of posts) postPages.set(String(post.id), page);
+    onlyThreadAuthor.value = onlyAuthor;
+    userList.value = [...users.values()];
+    if (replace) threadList.value = posts;
+    else {
+      const ids = new Set(threadList.value.map(post => String(post.id)));
+      const added = posts.filter(post => !ids.has(String(post.id)));
+      if (prepend) threadList.value = [...added, ...threadList.value];
+      else threadList.value.push(...added);
+    }
+    threadTitle.value = thread.title;
+    updateTabMeta?.({ key: props.key_, title: thread.title, icon: forum.avatar, icon_invert: false });
+    if (replace) {
+      await nextTick();
+      containerRef.value?.scrollToTop();
+    }
+    return true;
   } catch (error) {
     console.error('加载数据失败:', error);
+    loadError.value = '加载失败，请重试';
     sendToast?.('加载失败，请重试', 3000);
+    return false;
   } finally {
     isThreadsLoading.value = false;
   }
 };
 
-// 生命周期
-onMounted(async (): Promise<void> => {
+const openJump = async () => {
+  jumpInput.value = String(readingPage.value);
+  jumpError.value = '';
+  isJumpOpen.value = true;
+  await nextTick();
+  pageInputRef.value?.focus();
+  pageInputRef.value?.select();
+};
+
+const jumpToPage = async () => {
+  const input = String(jumpInput.value).trim();
+  const page = Number(input);
+  if (!/^\d+$/.test(input) || !Number.isSafeInteger(page) || page < 1 || (totalPages.value && page > totalPages.value)) {
+    jumpError.value = totalPages.value ? '请输入 1～' + totalPages.value + ' 的整数页码' : '请输入大于零的整数页码';
+    return;
+  }
+  jumpError.value = '';
+  if (await loadData(page, true)) isJumpOpen.value = false;
+};
+
+const toggleOnlyAuthor = async () => {
+  if (await loadData(1, true, !onlyThreadAuthor.value)) {
+    sendToast?.(onlyThreadAuthor.value ? '已切换为只看楼主' : '已显示全部回复', 2000);
+  }
+};
+
+const toggleFavourite = async (cancelOnly = false) => {
+  if (isFavouriteLoading.value || isThreadsLoading.value || props.local) return;
+  const positionPost = activePost.value;
+  isFavouriteLoading.value = true;
+  try {
+    const user = await getCurrentUser();
+    if (!user.bduss) throw new Error('请先登录再收藏');
+    if (favouriteAccountId.value !== user.userId) {
+      const response = await api.get_post(String(props.tid), 1, 30, 0, false, false, user.bduss, 10, user.stoken);
+      isFavourite.value = Number(response.data?.thread?.collectStatus) === 2;
+      favouritePostId.value = response.data?.thread?.collectMarkPid || '';
+      favouriteAccountId.value = user.userId;
+    }
+    const post = positionPost;
+    const cancel = isFavourite.value && (cancelOnly || favouritePostId.value === String(post?.id));
+    const pid = cancel && favouritePostId.value ? favouritePostId.value : String(post?.id ?? '');
+    if (!pid) throw new Error('没有可收藏的楼层');
+    await api.setThreadFavourite(user.bduss, user.stoken, String(props.tid), pid, cancel);
+    isFavourite.value = !cancel;
+    favouritePostId.value = cancel ? '' : pid;
+    sendToast?.(cancel ? '已取消收藏' : '已收藏到第 ' + post?.floor + ' 楼', 2500);
+  } catch (error) {
+    sendToast?.(error instanceof Error ? error.message : '收藏操作失败，请重试', 3000);
+  } finally {
+    isFavouriteLoading.value = false;
+  }
+};
+
+function setPostElement(id: string | number, element: unknown) {
+  if (element instanceof HTMLElement) postElements.set(String(id), element);
+  else postElements.delete(String(id));
+}
+
+function updateReadingPosition() {
+  const container = containerRef.value?.getScrollElement();
+  if (!container || !threadList.value.length) return;
+  const anchor = container.getBoundingClientRect().top + Math.min(100, container.clientHeight * 0.2);
+  const index = findReadingFloor(threadList.value.length, index =>
+    postElements.get(String(threadList.value[index].id))?.getBoundingClientRect().bottom ?? Infinity, anchor);
+  if (index >= 0) {
+    activePostId.value = String(threadList.value[index].id);
+    const element = postElements.get(activePostId.value);
+    const next = postElements.get(String(threadList.value[index + 1]?.id));
+    if (element) {
+      const top = element.getBoundingClientRect().top;
+      const bottom = next?.getBoundingClientRect().top ?? element.getBoundingClientRect().bottom;
+      readingIndex.value = index + Math.max(0, Math.min(1, (anchor - top) / Math.max(1, bottom - top)));
+    }
+  }
+}
+
+function scheduleReadingPosition() {
+  if (readingFrame) return;
+  readingFrame = requestAnimationFrame(() => {
+    readingFrame = 0;
+    updateReadingPosition();
+  });
+}
+
+const navigateToFloor = async (id: string, edge?: 'start' | 'end') => {
+  if (isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value) return;
+  isFloorNavigating.value = true;
+  try {
+    const index = threadList.value.findIndex(post => String(post.id) === id);
+    if (edge === 'start' && index === 0 && firstLoadedPage.value > 1) {
+      await loadData(firstLoadedPage.value - 1, false, onlyThreadAuthor.value, true);
+    } else if (edge === 'end' && index === threadList.value.length - 1 && returnData.value.data?.page?.hasMore) {
+      await loadData(currentPage.value + 1);
+    }
+    await nextTick();
+    const element = postElements.get(id);
+    if (element) {
+      containerRef.value?.scrollToElement(element);
+      activePostId.value = id;
+      floorIndexRef.value?.reveal(id, edge);
+    }
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+  } finally {
+    isFloorNavigating.value = false;
+    scheduleReadingPosition();
+  }
+};
+
+// Layout changes (including late-loading images) can change which floor is being read.
+watch(captureRef, element => {
+  contentObserver?.disconnect();
+  if (!element) return;
+  contentObserver = new ResizeObserver(scheduleReadingPosition);
+  contentObserver.observe(element);
+  const container = containerRef.value?.getScrollElement();
+  if (container) contentObserver.observe(container);
+}, { flush: 'post' });
+watch(() => [threadList.value.length, isLoading.value], async () => {
+  await nextTick();
+  scheduleReadingPosition();
+});
+onMounted(async () => {
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
+});
+onActivated(scheduleReadingPosition);
+onBeforeUnmount(() => {
+  contentObserver?.disconnect();
+  cancelAnimationFrame(readingFrame);
 });
 
 // 滚动处理
 const onScroll = (target: HTMLElement): void => {
   const { scrollTop, clientHeight, scrollHeight } = target;
   if (scrollTop + clientHeight + 20 >= scrollHeight) {
-    if (isThreadsLoading.value || !returnData.value.data?.page?.hasMore) {
-      sendToast?.('没有更多内容了', 2000);
-      return;
-    }
+    if (isLoading.value || isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value || isJumpOpen.value || !returnData.value.data?.page?.hasMore) return;
     nextPage();
   }
 };
@@ -221,8 +407,7 @@ const openBar = (barName: string): void => {
 
 // 下一页
 const nextPage = async (): Promise<void> => {
-  currentPage.value++;
-  await loadData();
+  await loadData(currentPage.value + 1);
 };
 
 // 查看所有回复
@@ -233,10 +418,11 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 </script>
 
 <template>
-  <Container :tab-key="props.key_" :scroll-key="`thread-${props.key_}`" @yscroll="onScroll">
+  <div class="thread-view" @keydown.esc="isJumpOpen = false">
+  <Container ref="containerRef" :tab-key="props.key_" :scroll-key="`thread-${props.key_}`" @yscroll="onScroll" @positionchange="scheduleReadingPosition">
     <transition name="fade1">
       <div v-if="!isLoading">
-        <div class="thread-list" v-if="!isDeleted" ref="captureRef">
+        <div class="thread-list" v-if="threadList.length" ref="captureRef">
           <h3 class="thread-title">
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
               <RippleButton v-if="returnData.data"
@@ -255,14 +441,16 @@ const ViewAllReplie = (data: SubPostInfo): void => {
               </RippleButton>
             </div>
           </h3>
-          <Reply v-for="item in threadList" :key="item.id" :like="item.agree.agreeNum - item.agree.disagreeNum"
+          <div v-for="item in threadList" :key="item.id" :ref="element => setPostElement(item.id, element)" class="post-anchor">
+          <Reply :like="item.agree.agreeNum - item.agree.disagreeNum"
             :user_name="item.author?.nameShow || item.author?.name || '匿名用户'" :uid="item.authorId"
             @openUser="onUserNameClicked" :avatar="item.author?.portrait || 'default'"
             :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
             :create_time="item.time" :reply_num="item.subPostNumber" :tid="String(tid)" :pid="String(item.id)"
-            :floor="item.floor" :is_lz="item.authorId === threadList[0]?.authorId" :level="item.author?.levelId || 0"
+            :floor="item.floor" :is_lz="String(item.authorId) === threadAuthorId" :level="item.author?.levelId || 0"
             :ipAddress="item.author?.ipAddress || ''" @viewAllReplies="ViewAllReplie">
           </Reply>
+          </div>
         </div>
 
       </div>
@@ -287,21 +475,96 @@ const ViewAllReplie = (data: SubPostInfo): void => {
       </div>
     </Transition>
     <transition name="fade1">
-      <div v-if="isDeleted" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
+      <div v-if="loadError && !threadList.length" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
           justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center;
           opacity: 0.5; gap: 10px;">
-        <img src="/assets/delete.svg" width="120px" style="margin-bottom: 20px;filter: invert(var(--invert));">
-        <div style="font-size: 220%; font-weight: bold;">贴子已被删除</div>
-        <div style="font-size: 150%; margin-top: 15px; opacity: 0.5; margin-bottom: 84px;">请关闭页面</div>
+        <div style="font-size: 150%; font-weight: bold;">{{ loadError }}</div>
+        <RippleButton :disabled="isThreadsLoading" @click="loadData(currentPage, true)">重试</RippleButton>
       </div>
     </transition>
     <transition name="fade1">
       <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
     </transition>
   </Container>
+  <ThreadFloorIndex v-if="threadList.length && !isLoading" ref="floorIndexRef"
+    :entries="floorEntries" :current-id="activePostId" :reading-index="readingIndex" :reading-page="readingPage" :total-pages="totalPages"
+    :busy="isThreadsLoading || isFavouriteLoading || isFloorNavigating" :local="props.local"
+    :only-author="onlyThreadAuthor" :favourite="isFavourite"
+    :favourite-here="isFavourite && favouritePostId === activePostId"
+    @navigate="navigateToFloor" @jump="openJump" @only-author="toggleOnlyAuthor"
+    @bookmark="toggleFavourite()" @remove-bookmark="toggleFavourite(true)" />
+  <Transition name="fade1">
+    <div v-if="isJumpOpen" class="jump-overlay" @click.self="!isThreadsLoading && (isJumpOpen = false)">
+      <section class="jump-card" role="dialog" aria-modal="true" :aria-labelledby="'jump-title-' + props.key_">
+        <form @submit.prevent="jumpToPage">
+          <h3 :id="'jump-title-' + props.key_">跳转到指定页</h3>
+          <p>当前第 {{ readingPage }} 页<span v-if="totalPages">，共 {{ totalPages }} 页</span></p>
+          <label :for="'thread-page-input-' + props.key_">页码</label>
+          <input :id="'thread-page-input-' + props.key_" ref="pageInputRef" v-model="jumpInput" type="text"
+            inputmode="numeric" :disabled="isThreadsLoading" autocomplete="off"
+            :aria-invalid="Boolean(jumpError)" :aria-describedby="'jump-error-' + props.key_" />
+          <p :id="'jump-error-' + props.key_" class="jump-error" aria-live="polite">{{ jumpError }}</p>
+          <div class="jump-buttons">
+            <RippleButton type="button" :disabled="isThreadsLoading" @click="isJumpOpen = false">取消</RippleButton>
+            <RippleButton type="submit" :disabled="isThreadsLoading">{{ isThreadsLoading ? '加载中…' : '跳转' }}</RippleButton>
+          </div>
+        </form>
+      </section>
+    </div>
+  </Transition>
+  </div>
 </template>
 
 <style scoped>
+.thread-view {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.post-anchor { width: 100%; display: flex; justify-content: center; }
+
+.jump-card button:disabled { opacity: 0.45; cursor: default; }
+.jump-card button:focus-visible { outline: 2px solid rgb(var(--primary-color)); outline-offset: 3px; }
+
+.jump-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.jump-card {
+  width: min(360px, 100%);
+  padding: 24px;
+  border-radius: 16px;
+  background: rgb(var(--background-color));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+}
+
+.jump-card h3 { margin: 0 0 12px; }
+.jump-card p { font-size: 13px; opacity: 0.7; }
+.jump-card label { display: block; margin-bottom: 8px; }
+.jump-card input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--text-color), 0.25);
+  background: rgba(var(--text-color), 0.05);
+  color: rgb(var(--text-color));
+  font: inherit;
+}
+
+.jump-error { min-height: 18px; }
+.jump-buttons { display: flex; justify-content: flex-end; gap: 8px; }
+.jump-buttons button { padding: 10px 18px; }
+.jump-buttons button[type="submit"] { background: rgba(var(--primary-color), 0.3); }
+
 .subpost-overlay {
   position: fixed;
   inset: 0;
@@ -400,6 +663,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
 .thread-list {
   padding: 10px;
+  padding-bottom: 24px;
   border-radius: 5px;
   position: relative;
   display: flex;

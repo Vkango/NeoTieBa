@@ -40,6 +40,8 @@ export async function postText(url: string, body: string, options: RequestOption
         return await invoke<string>('fetch_data_post', {
             url,
             body,
+            headers: options.headers,
+            cookie: options.cookie,
             proxyUrl: normalizeProxyUrl(options.proxyUrl),
         });
     } catch (error) {

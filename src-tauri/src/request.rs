@@ -50,6 +50,78 @@ mod tests {
     use tokio::time::{timeout, Duration};
 
     #[tokio::test]
+    async fn form_posts_forward_headers_and_cookie_without_leaking_to_next_request() {
+        timeout(Duration::from_secs(5), async {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let proxy = format!("http://{}", listener.local_addr().unwrap());
+            let server = tokio::spawn(async move {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut requests = Vec::new();
+                for _ in 0..2 {
+                    let mut header = Vec::new();
+                    while !header.ends_with(b"\r\n\r\n") {
+                        header.push(socket.read_u8().await.unwrap());
+                    }
+                    let header = String::from_utf8(header).unwrap().to_ascii_lowercase();
+                    let length = header
+                        .lines()
+                        .find_map(|line| line.strip_prefix("content-length: "))
+                        .unwrap()
+                        .parse::<usize>()
+                        .unwrap();
+                    let mut body = vec![0; length];
+                    socket.read_exact(&mut body).await.unwrap();
+                    requests.push((header, body));
+                    socket
+                        .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK")
+                        .await
+                        .unwrap();
+                }
+                requests
+            });
+            let headers = HashMap::from([(
+                "Content-Type".to_string(),
+                "application/x-www-form-urlencoded".to_string(),
+            )]);
+            assert_eq!(
+                fetch_data_post(
+                    "http://neotieba.invalid/",
+                    "tid=123&sign=ABC".to_string(),
+                    Some(proxy.clone()),
+                    Some(headers),
+                    Some("session=test".to_string())
+                )
+                .await
+                .unwrap(),
+                "OK"
+            );
+            assert_eq!(
+                fetch_data_post(
+                    "http://neotieba.invalid/",
+                    "plain-body".to_string(),
+                    Some(proxy),
+                    None,
+                    None
+                )
+                .await
+                .unwrap(),
+                "OK"
+            );
+            let requests = server.await.unwrap();
+            assert!(requests[0]
+                .0
+                .contains("content-type: application/x-www-form-urlencoded\r\n"));
+            assert!(requests[0].0.contains("cookie: session=test\r\n"));
+            assert_eq!(requests[0].1, b"tid=123&sign=ABC");
+            assert!(!requests[1].0.contains("cookie:"));
+            assert!(!requests[1].0.contains("content-type:"));
+            assert_eq!(requests[1].1, b"plain-body");
+        })
+        .await
+        .expect("form requests did not complete on the shared connection");
+    }
+
+    #[tokio::test]
     async fn reuses_connection_without_retaining_cookie_headers() {
         timeout(Duration::from_secs(5), async {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -169,11 +241,25 @@ pub async fn fetch_data_post(
     url: &str,
     body: String,
     proxy_url: Option<String>,
+    headers: Option<HashMap<String, String>>,
+    cookie: Option<String>,
 ) -> Result<String, String> {
     let client = build_client(proxy_url.as_deref())?;
-    let response = client
-        .post(url)
-        .body(body)
+    let mut request = client.post(url).body(body);
+    if let Some(headers) = headers {
+        for (name, value) in headers {
+            let name = name
+                .parse::<reqwest::header::HeaderName>()
+                .map_err(|error| format!("Invalid header name: {}", error))?;
+            let value = HeaderValue::from_str(&value)
+                .map_err(|error| format!("Invalid header value: {}", error))?;
+            request = request.header(name, value);
+        }
+    }
+    if let Some(cookie) = cookie.filter(|value| !value.is_empty()) {
+        request = request.header(COOKIE, cookie);
+    }
+    let response = request
         .send()
         .await
         .map_err(|error| format!("Failed to send post request: {}", error))?;

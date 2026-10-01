@@ -39,7 +39,8 @@ export class tieBaAPI {
         onlyThreadAuthor = false,
         withComments = false,
         bduss = '',
-        commentRn = 10
+        commentRn = 10,
+        stoken = ''
     ): Promise<any> {
         return await get_post_proto(
             tid,
@@ -50,8 +51,47 @@ export class tieBaAPI {
             withComments,
             bduss,
             commentRn,
-            this.getRequestOptions()
+            { ...this.getRequestOptions(), bduss, stoken }
         );
+    }
+
+    async setThreadFavourite(bduss: string, stoken: string, tid: string, pid: string, cancel = false): Promise<void> {
+        // Mirrors TiebaDesktop's store_thread / cancel_store_thread form order and signing.
+        const fields: Record<string, string> = cancel ? {
+            _client_type: '2',
+            _client_version: '12.64.0',
+            subapp_type: 'newwise',
+            tid,
+            pid,
+        } : {
+            BDUSS: bduss,
+            _client_type: '2',
+            _client_version: '22.1.1.0',
+            data: JSON.stringify([{ tid, pid, status: 1 }]),
+            stoken,
+        };
+        const signInput = Object.entries(fields).map(([key, value]) => `${key}=${value}`).join('');
+        const form = new URLSearchParams(fields);
+        form.set('sign', CryptoJS.MD5(signInput + 'tiebaclient!!!').toString().toUpperCase());
+        const raw = await fetchDataPost(
+            cancel ? 'https://tieba.baidu.com/mo/q/post_rmstore' : 'https://tiebac.baidu.com/c/c/post/addstore',
+            form.toString(),
+            {
+                ...this.getRequestOptions(),
+                cookie: `BDUSS=${bduss}; STOKEN=${stoken};`,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/101.0 Mobile Safari/537.36 tieba/22.1.1.0',
+                    'x-requested-with': 'XMLHttpRequest',
+                    'Subapp-Type': 'hybrid',
+                },
+            }
+        );
+        const response = JSON.parse(raw);
+        const code = cancel ? response.no : response.error_code;
+        if (code === undefined || code === null || String(code) !== '0') {
+            throw new Error(String(response.error_msg || response.error || '收藏操作失败，请重试'));
+        }
     }
 
     calcSign(originalData: string): string {

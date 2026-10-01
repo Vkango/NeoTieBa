@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'yscroll', target: HTMLElement): void;
+  (event: 'positionchange', target: HTMLElement): void;
 }>();
 
 const tabStore = useTabStore();
@@ -45,6 +46,7 @@ function getSavedPosition(): number {
 function handleScroll(event: Event) {
   const target = event.target as HTMLElement;
   scrollPosition.value = target.scrollTop;
+  if (isActiveTab.value) emit('positionchange', target);
 
   if (isRestoring.value || !isActiveTab.value) {
     return;
@@ -116,6 +118,26 @@ watch(
 onBeforeUnmount(() => {
   clearRestoreTimer();
 });
+
+function scrollToTop() {
+  clearRestoreTimer();
+  scrollPosition.value = 0;
+  if (storageKey.value) sessionStorage.setItem(storageKey.value, '0');
+  scrollContainer.value?.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function scrollToElement(element: HTMLElement) {
+  const container = scrollContainer.value;
+  if (!container) return;
+  clearRestoreTimer();
+  isRestoring.value = false;
+  const top = Math.max(0, container.scrollTop + element.getBoundingClientRect().top - container.getBoundingClientRect().top - 12);
+  scrollPosition.value = top;
+  if (storageKey.value) sessionStorage.setItem(storageKey.value, String(top));
+  container.scrollTo({ top, behavior: 'instant' });
+}
+
+defineExpose({ scrollToTop, scrollToElement, getScrollElement: () => scrollContainer.value });
 </script>
 
 <template>
