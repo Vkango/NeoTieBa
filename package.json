@@ -5,10 +5,12 @@
   "packageManager": "pnpm@11.1.2",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "dev": "pnpm proto:generate && vite",
+    "build": "pnpm proto:generate && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "proto:generate": "node scripts/generate-proto.mjs",
+    "proto:check": "node --test tests/proto-descriptors.test.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",

@@ -2,6 +2,7 @@ use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE};
 use reqwest::{Client, Proxy};
 use serde::Serialize;
 use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
 use tauri::command;
 
 #[derive(Serialize)]
@@ -10,25 +11,94 @@ pub struct ResponseData {
     pub headers: HashMap<String, String>,
 }
 
-fn build_client(proxy_url: Option<&str>, headers: Option<HeaderMap>) -> Result<Client, String> {
+fn build_client(proxy_url: Option<&str>) -> Result<Client, String> {
+    static CLIENTS: OnceLock<Mutex<HashMap<Option<String>, Client>>> = OnceLock::new();
+    let key = proxy_url
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned);
+    let mut clients = CLIENTS
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .map_err(|_| "HTTP client cache lock poisoned".to_string())?;
+    if let Some(client) = clients.get(&key) {
+        return Ok(client.clone());
+    }
     let mut builder = Client::builder();
 
-    if let Some(proxy_url) = proxy_url.filter(|value| !value.trim().is_empty()) {
+    if let Some(proxy_url) = key.as_deref() {
         let proxy = Proxy::all(proxy_url).map_err(|error| format!("Invalid proxy: {}", error))?;
         builder = builder.proxy(proxy);
     }
 
-    if let Some(headers) = headers {
-        builder = builder.default_headers(headers);
-    }
-
-    builder
+    let client = builder
         .build()
-        .map_err(|error| format!("Failed to build HTTP client: {}", error))
+        .map_err(|error| format!("Failed to build HTTP client: {}", error))?;
+    // Bound retained pools when users switch between many proxy configurations.
+    if clients.len() >= 8 {
+        clients.clear();
+    }
+    clients.insert(key, client.clone());
+    Ok(client)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+    use tokio::time::{timeout, Duration};
+
+    #[tokio::test]
+    async fn reuses_connection_without_retaining_cookie_headers() {
+        timeout(Duration::from_secs(5), async {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let proxy = format!("http://{}", listener.local_addr().unwrap());
+            let server = tokio::spawn(async move {
+                // Both requests must arrive on this single accepted connection.
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut requests = Vec::new();
+                for _ in 0..2 {
+                    let mut request = Vec::new();
+                    while !request.ends_with(b"\r\n\r\n") {
+                        let byte = socket.read_u8().await.unwrap();
+                        request.push(byte);
+                    }
+                    requests.push(String::from_utf8(request).unwrap().to_ascii_lowercase());
+                    socket
+                        .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK")
+                        .await
+                        .unwrap();
+                }
+                requests
+            });
+            assert_eq!(
+                fetch_data_with_cookie(
+                    "http://neotieba.invalid/",
+                    "session=test",
+                    Some(proxy.clone())
+                )
+                .await
+                .unwrap(),
+                "OK"
+            );
+            assert_eq!(
+                fetch_data("http://neotieba.invalid/", Some(&format!(" {proxy} ")))
+                    .await
+                    .unwrap(),
+                "OK"
+            );
+            let requests = server.await.unwrap();
+            assert!(requests[0].contains("cookie: session=test\r\n"));
+            assert!(!requests[1].contains("cookie:"));
+        })
+        .await
+        .expect("client did not reuse its connection");
+    }
 }
 
 pub async fn fetch_data(url: &str, proxy_url: Option<&str>) -> Result<String, String> {
-    let client = build_client(proxy_url, None)?;
+    let client = build_client(proxy_url)?;
     let response = client
         .get(url)
         .send()
@@ -48,7 +118,7 @@ pub async fn fetch_data_buffer(
     file_name: &str,
     proxy_url: Option<String>,
 ) -> Result<Vec<u8>, String> {
-    let client = build_client(proxy_url.as_deref(), None)?;
+    let client = build_client(proxy_url.as_deref())?;
     let boundary = "-*_r1999";
 
     let mut body = Vec::new();
@@ -100,7 +170,7 @@ pub async fn fetch_data_post(
     body: String,
     proxy_url: Option<String>,
 ) -> Result<String, String> {
-    let client = build_client(proxy_url.as_deref(), None)?;
+    let client = build_client(proxy_url.as_deref())?;
     let response = client
         .post(url)
         .body(body)
@@ -119,7 +189,7 @@ pub async fn fetch_data_with_headers(
     headers: HeaderMap,
     proxy_url: Option<&str>,
 ) -> Result<ResponseData, String> {
-    let client = build_client(proxy_url, None)?;
+    let client = build_client(proxy_url)?;
     let response = client
         .get(url)
         .headers(headers)
@@ -156,9 +226,10 @@ pub async fn fetch_data_with_cookie(
         );
     }
 
-    let client = build_client(proxy_url.as_deref(), Some(headers))?;
+    let client = build_client(proxy_url.as_deref())?;
     let response = client
         .get(url)
+        .headers(headers)
         .send()
         .await
         .map_err(|error| format!("Failed to send cookie request: {}", error))?;

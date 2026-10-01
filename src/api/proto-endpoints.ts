@@ -1,3 +1,5 @@
+import protoMessages from './proto-messages.json';
+
 export type ProtoAuthPolicy = 'none' | 'cookie';
 
 export interface ProtoMessageConfig {
@@ -15,16 +17,7 @@ export interface ProtoEndpointConfig {
     auth: ProtoAuthPolicy;
 }
 
-export const PROTO_MESSAGES: Record<string, ProtoMessageConfig> = {
-    ProfileReqIdl: { path: 'Profile/ProfileReqIdl.proto', namespace: 'Profile' },
-    ProfileResIdl: { path: 'Profile/ProfileResIdl.proto', namespace: 'Profile' },
-    UserPostReqIdl: { path: 'UserPost/UserPostReqIdl.proto', namespace: 'UserPost' },
-    UserPostResIdl: { path: 'UserPost/UserPostResIdl.proto', namespace: 'UserPost' },
-    PbPageReqIdl: { path: 'PbPage/PbPageReqIdl.proto', namespace: 'PbPage' },
-    PbPageResIdl: { path: 'PbPage/PbPageResIdl.proto', namespace: 'PbPage' },
-    FrsPageReqIdl: { path: 'FrsPage/FrsPageReqIdl.proto', namespace: 'FrsPage' },
-    FrsPageResIdl: { path: 'FrsPage/FrsPageResIdl.proto', namespace: 'FrsPage' },
-};
+export const PROTO_MESSAGES: Record<string, ProtoMessageConfig> = protoMessages;
 
 export const PROTO_ENDPOINTS = {
     threadPage: {

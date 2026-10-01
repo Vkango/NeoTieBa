@@ -1,0 +1,34 @@
+{
+  "ProfileReqIdl": {
+    "path": "Profile/ProfileReqIdl.proto",
+    "namespace": "Profile"
+  },
+  "ProfileResIdl": {
+    "path": "Profile/ProfileResIdl.proto",
+    "namespace": "Profile"
+  },
+  "UserPostReqIdl": {
+    "path": "UserPost/UserPostReqIdl.proto",
+    "namespace": "UserPost"
+  },
+  "UserPostResIdl": {
+    "path": "UserPost/UserPostResIdl.proto",
+    "namespace": "UserPost"
+  },
+  "PbPageReqIdl": {
+    "path": "PbPage/PbPageReqIdl.proto",
+    "namespace": "PbPage"
+  },
+  "PbPageResIdl": {
+    "path": "PbPage/PbPageResIdl.proto",
+    "namespace": "PbPage"
+  },
+  "FrsPageReqIdl": {
+    "path": "FrsPage/FrsPageReqIdl.proto",
+    "namespace": "FrsPage"
+  },
+  "FrsPageResIdl": {
+    "path": "FrsPage/FrsPageResIdl.proto",
+    "namespace": "FrsPage"
+  }
+}

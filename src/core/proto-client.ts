@@ -30,16 +30,33 @@ export async function callProtoEndpoint<TRequest extends object, TResponse>(
     options: ProtoCallOptions = {}
 ): Promise<TResponse> {
     const endpoint = getProtoEndpoint(endpointId);
-    const { encode } = await load<TRequest>(endpoint.requestMessage);
-    const { decode } = await load<TResponse>(endpoint.responseMessage);
+    const started = performance.now();
+    const [{ encode }, { decode }] = await Promise.all([
+        load<TRequest>(endpoint.requestMessage),
+        load<TResponse>(endpoint.responseMessage),
+    ]);
+    const loaded = performance.now();
     const requestBuffer = encode(requestData);
+    const encoded = performance.now();
     const responseBase64 = await postProtobuf(endpoint.url, requestBuffer, {
         ...options,
         fileName: options.fileName ?? endpoint.fileName,
     });
-
+    const received = performance.now();
     const responseBuffer = base64ToBytes(responseBase64);
-    return decode(responseBuffer);
+    const converted = performance.now();
+    const response = decode(responseBuffer);
+    if (import.meta.env.DEV) {
+        console.debug(`[protobuf] ${endpointId}`, {
+            schemaMs: loaded - started,
+            encodeMs: encoded - loaded,
+            requestMs: received - encoded,
+            base64Ms: converted - received,
+            decodeAndObjectMs: performance.now() - converted,
+            responseBytes: responseBuffer.length,
+        });
+    }
+    return response;
 }
 
 function base64ToBytes(value: string): Uint8Array {
