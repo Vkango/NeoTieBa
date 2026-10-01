@@ -20,6 +20,7 @@ import { URLParser } from '@/services/url-parser';
 import { useApiStore, useHistoryStore, useSettingsStore } from '@/stores';
 import { useTabStore } from '@/stores/tabs';
 import { useTabNavigation } from '@/composables/useTabNavigation';
+import ExternalLinkDialog from '@/components/common/ExternalLinkDialog.vue';
 
 interface NavItem {
   id: number;
@@ -598,6 +599,7 @@ onMounted(async (): Promise<void> => {
     <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
     </ImageViewer>
     <Toast ref="ToastComponent" />
+    <ExternalLinkDialog @openThread="openThread" />
   </div>
 </template>
 
