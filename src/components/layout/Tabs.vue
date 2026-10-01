@@ -12,7 +12,8 @@
     }" :key="tab.id" :data-tab-id="tab.id" @click="handleClick(tab)" @mousedown.stop="startDrag($event, tab)"
       @mouseenter="showTabInfo = true; updateTabInfoPos(tab)" :style="getTabStyle(tab)">
       <div class="tab-content">
-        <img class="icon" :src="getIconPath(tab.icon)" referrerpolicy="no-referrer" />
+        <img class="icon" :class="{ 'invert': tab.icon_invert }" :src="getIconPath(tab.icon)"
+          referrerpolicy="no-referrer" />
         <div class="title">{{ tab.title }}</div>
         <span v-if="tab.closable !== false" class="material-symbols-outlined" id="close" style="font-size: 12px;"
           @click.stop @click="showTabInfo = false; handleDelete(tab)">close</span>
@@ -379,6 +380,9 @@ defineExpose({
   width: 16px;
   height: 16px;
   border-radius: 16px;
+}
+
+.icon.invert {
   filter: invert(var(--invert));
 }
 
@@ -522,6 +526,9 @@ defineExpose({
   width: 16px;
   height: 16px;
   border-radius: 16px;
+}
+
+.icon.invert {
   filter: invert(var(--invert));
 }
 

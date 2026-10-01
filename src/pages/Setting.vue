@@ -24,7 +24,7 @@ interface Emits {
 const emit = defineEmits<Emits>();
 
 // Inject
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 const settingsStore = useSettingsStore();
 const connectionTestDesc = ref('测试当前网络配置是否可用');
 const wallpaperDesc = ref('选择本地图片作为背景壁纸');
@@ -150,7 +150,7 @@ const loadUsers = async (): Promise<void> => {
 // 生命周期钩子
 onMounted(async (): Promise<void> => {
   await loadUsers();
-  updateTabMeta?.({ key: props.key_, title: "设置", icon: "/assets/settings.svg" });
+  updateTabMeta?.({ key: props.key_, title: "设置", icon: "/assets/settings.svg", icon_invert: true });
 });
 
 // 打开用户管理

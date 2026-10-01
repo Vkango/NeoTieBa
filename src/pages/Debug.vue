@@ -16,7 +16,7 @@ type ToastHandler = (message: string, duration: number) => void;
 
 const sendNotification = inject<NotificationHandler>('sendNotification');
 const sendToast = inject<ToastHandler>('sendToast');
-const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 const instance = getCurrentInstance();
 
 const emit = defineEmits<{
@@ -27,7 +27,7 @@ const props = defineProps<{
 }>();
 
 onMounted(() => {
-  updateTabMeta?.({ key: props.key_, title: "调试", icon: "/assets/bug.svg" });
+  updateTabMeta?.({ key: props.key_, title: "调试", icon: "/assets/bug.svg", icon_invert: true });
 });
 
 const isDrawerOpen = instance?.appContext.config.globalProperties.$IsDrawerOpen as { state: boolean } | undefined;

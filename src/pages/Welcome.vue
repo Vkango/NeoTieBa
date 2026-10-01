@@ -25,9 +25,9 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 onMounted(() => {
-  updateTabMeta?.({ key: props.key_, title: "欢迎", icon: "/assets/apps.svg" });
+  updateTabMeta?.({ key: props.key_, title: "欢迎", icon: "/assets/apps.svg", icon_invert: true });
 });
 </script>

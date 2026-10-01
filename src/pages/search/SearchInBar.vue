@@ -18,12 +18,12 @@ let has_more = false;
 const props = defineProps<Props>();
 const emit = defineEmits(['openThread', 'setTabInfo', 'openUser', 'openBar']);
 const sendToast = inject<(title: string, duration: number) => void>('sendToast');
-const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 const apiStore = useApiStore();
 const api = apiStore.getApi();
 
 onMounted(() => {
-  updateTabMeta?.({ key: props.key_, title: `吧内搜索 - ${props.barName}`, icon: props.barIcon });
+  updateTabMeta?.({ key: props.key_, title: `吧内搜索 - ${props.barName}`, icon: props.barIcon, icon_invert: false });
 });
 
 const loadData = async () => {

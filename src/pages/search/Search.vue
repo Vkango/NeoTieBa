@@ -15,10 +15,10 @@ const searchContent = ref('');
 const props = defineProps<Props>();
 const emit = defineEmits(['openThread', 'setTabInfo', 'openUser', 'openBar']);
 const sendToast = inject<(title: string, duration: number) => void>('sendToast');
-const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 onMounted(() => {
-  updateTabMeta?.({ key: props.key_, title: '搜索', icon: '/assets/search.svg' });
+  updateTabMeta?.({ key: props.key_, title: '搜索', icon: '/assets/search.svg', icon_invert: true });
 });
 
 async function handleEnter(pageSwitch = false) {

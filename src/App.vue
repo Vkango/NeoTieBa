@@ -32,6 +32,7 @@ interface TabInfo {
   key: string | number;
   title: string;
   icon: string;
+  icon_invert?: boolean;
 }
 
 interface ToastComponent {
@@ -275,8 +276,12 @@ const addHistoryFromTabMeta = (tab: TabItem, meta: TabInfo): void => {
 
 const setTabInfo = (info: TabInfo): void => {
   const keyStr = String(info.key);
-  tabStore.updateTabMeta(keyStr, { title: info.title, icon: info.icon });
   const tab = tabStore.tabs.find((t: TabItem) => t.key === keyStr);
+  tabStore.updateTabMeta(keyStr, {
+    title: info.title,
+    icon: info.icon,
+    icon_invert: info.icon_invert ?? tab?.icon_invert ?? false
+  });
   if (tab) {
     addHistoryFromTabMeta(tab, info);
   }
@@ -394,7 +399,8 @@ const addBar = async (id: number): Promise<void> => {
         icon: '/assets/search.svg',
         title: '搜索',
         component: Search,
-        props: { key_: key }
+        props: { key_: key },
+        icon_invert: true
       });
       break;
     case 1:
@@ -404,7 +410,8 @@ const addBar = async (id: number): Promise<void> => {
         icon: '/assets/home.svg',
         title: '首页',
         component: Home,
-        props: { key_: key }
+        props: { key_: key },
+        icon_invert: true
       });
       break;
     case 2:
@@ -414,7 +421,8 @@ const addBar = async (id: number): Promise<void> => {
         icon: '/assets/apps.svg',
         title: '进吧',
         component: FollowBar,
-        props: { key_: key }
+        props: { key_: key },
+        icon_invert: true
       });
       break;
     case 3:
@@ -424,7 +432,8 @@ const addBar = async (id: number): Promise<void> => {
         icon: '/assets/user.svg',
         title: '我的',
         component: My,
-        props: { key_: key }
+        props: { key_: key },
+        icon_invert: true
       });
       break;
     case 4:
@@ -434,7 +443,8 @@ const addBar = async (id: number): Promise<void> => {
         icon: '/assets/settings.svg',
         title: '设置',
         component: Setting,
-        props: { key_: key }
+        props: { key_: key },
+        icon_invert: true
       });
       break;
     case 5:
@@ -444,7 +454,8 @@ const addBar = async (id: number): Promise<void> => {
         icon: '/assets/bug.svg',
         title: '调试',
         component: Debug,
-        props: { key_: key }
+        props: { key_: key },
+        icon_invert: true
       });
       break;
     default:
@@ -546,6 +557,7 @@ onMounted(async (): Promise<void> => {
     props: { key_: key },
     show: false,
     closable: false,
+    icon_invert: true,
     origin: ({ icon: '/assets/apps.svg', title: '欢迎' } as unknown) as import('@/types/common').TabItem
   });
 });

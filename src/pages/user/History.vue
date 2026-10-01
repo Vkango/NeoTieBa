@@ -12,12 +12,12 @@ const emit = defineEmits<{
   (event: 'openUser', uid: string): void;
 }>();
 
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 const historyStore = useHistoryStore();
 const historyItems = computed(() => historyStore.items);
 
 onMounted(() => {
-  updateTabMeta?.({ key: props.key_, title: '浏览历史', icon: '/assets/schedule.svg' });
+  updateTabMeta?.({ key: props.key_, title: '浏览历史', icon: '/assets/schedule.svg', icon_invert: true });
 });
 
 function openItem(item: HistoryItem): void {

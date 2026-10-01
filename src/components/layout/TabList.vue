@@ -9,7 +9,8 @@
           :class="{ 'selected': tab.selected, 'invert': tab.icon_invert, 'show': !tab.show }" :key="tab.id"
           @click="tabStore.switchTab(tab.key)">
           <div class="tab-content">
-            <img class="icon" :src="getIconPath(tab.icon)" referrerpolicy="no-referrer" />
+            <img class="icon" :class="{ 'invert': tab.icon_invert }" :src="getIconPath(tab.icon)"
+              referrerpolicy="no-referrer" />
             <div class="title">{{ tab.title }}</div>
             <span v-if="tab.closable !== false" class="material-symbols-outlined" id="close" style="font-size: 12px;" @click.stop
               @click="tabStore.removeTab(tab.id)">close</span>
@@ -71,6 +72,9 @@ const getIconPath = (icon: string | undefined): string => {
   width: 16px;
   height: 16px;
   border-radius: 16px;
+}
+
+.icon.invert {
   filter: invert(var(--invert));
 }
 

@@ -32,7 +32,7 @@ interface ThreadItem {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 const isLoading = ref<boolean>(true);
 const isThreadsLoading = ref<boolean>(true);
@@ -60,7 +60,7 @@ onMounted(async (): Promise<void> => {
   const bdussValue = await getCurrentUserBduss();
   bduss = `BDUSS=${bdussValue}`;
   await loadData();
-  updateTabMeta?.({ key: props.key_, title: '我的收藏', icon: '/assets/favourite.svg' });
+  updateTabMeta?.({ key: props.key_, title: '我的收藏', icon: '/assets/favourite.svg', icon_invert: true });
 });
 
 const onScroll = (target: HTMLElement): void => {

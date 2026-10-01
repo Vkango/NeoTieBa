@@ -93,7 +93,7 @@ export const useTabStore = defineStore('tabs', () => {
     }, 300);
   }
 
-  function updateTabMeta(key: string | number, meta: Partial<Pick<TabItem, 'title' | 'icon' | 'renderKey'>>) {
+  function updateTabMeta(key: string | number, meta: Partial<Pick<TabItem, 'title' | 'icon' | 'icon_invert' | 'renderKey'>>) {
     const tab = tabs.value.find(t => t.key === String(key));
     if (tab) {
       Object.assign(tab, meta);

@@ -93,7 +93,7 @@ const emit = defineEmits<Emits>();
 
 // Injects
 const openImageViewer = inject<(url: string) => void>('openImageViewer');
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 const sendToast = inject<(title: string, duration: number) => void>('sendToast');
 
 // State
@@ -292,7 +292,8 @@ const loadData = async (): Promise<void> => {
       updateTabMeta?.({
         key: props.key_,
         title: `${returnData.value.forum.name}吧`,
-        icon: returnData.value.forum.avatar
+        icon: returnData.value.forum.avatar,
+        icon_invert: false
       });
 
       // 提取置顶帖

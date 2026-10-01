@@ -64,7 +64,7 @@ interface RecommendData {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 const returnData: Ref<RecommendData> = ref({ thread_list: [] });
 const isLoading = ref<boolean>(true);
@@ -99,7 +99,7 @@ const loadData = async (): Promise<void> => {
 };
 
 onMounted(async (): Promise<void> => {
-  updateTabMeta?.({ key: props.key_, title: '首页', icon: '/assets/home.svg' });
+  updateTabMeta?.({ key: props.key_, title: '首页', icon: '/assets/home.svg', icon_invert: true });
   isLoading.value = true;
   await loadData();
   isLoading.value = false;

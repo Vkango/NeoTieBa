@@ -49,7 +49,7 @@ const emit = defineEmits<Emits>();
 
 // Injects
 const openImageViewer = inject<(url: string) => void>('openImageViewer');
-const updateTabMeta = inject<(info: { key: number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 // State
 const returnData: Ref<UserData> = ref({ user: { nameShow: '', portrait: '' } });
@@ -126,7 +126,8 @@ onMounted(async (): Promise<void> => {
     updateTabMeta?.({
       key: props.key_,
       title: `${returnData.value.user.nameShow}的贴吧`,
-      icon: portraitUrl
+      icon: portraitUrl,
+      icon_invert: !returnData.value.user.portrait
     });
 
     // 处理关注吧列表

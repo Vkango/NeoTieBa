@@ -78,7 +78,7 @@ const emit = defineEmits<Emits>();
 // Injects
 const deleteTab = inject<(key: string | number) => void>('deleteTab');
 const sendToast = inject<(title: string, duration: number) => void>('sendToast');
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 // State
 const returnData: Ref<ThreadData> = ref({});
@@ -161,7 +161,8 @@ const loadData = async (): Promise<void> => {
       updateTabMeta?.({
         key: props.key_,
         title: thread.title,
-        icon: forum.avatar
+        icon: forum.avatar,
+        icon_invert: false
       });
 
 
@@ -180,7 +181,7 @@ const loadData = async (): Promise<void> => {
       threadList.value = [...threadList.value, ...enrichedPosts];
     } else {
       isDeleted.value = true;
-      updateTabMeta?.({ key: props.key_, title: '贴子已被删除', icon: '/assets/apps.svg' });
+      updateTabMeta?.({ key: props.key_, title: '贴子已被删除', icon: '/assets/apps.svg', icon_invert: true });
       sendToast?.('贴子已被删除', 3000);
       deleteTab?.(props.key_);
     }

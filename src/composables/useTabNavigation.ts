@@ -81,6 +81,7 @@ export function useTabNavigation() {
       title: '吧内搜索',
       component: SearchInBar,
       props: { key_: key, barName, barIcon },
+      icon_invert: true,
       origin: loadingOrigin('/assets/search.svg', '吧内搜索')
     });
   };
@@ -93,6 +94,7 @@ export function useTabNavigation() {
       title: '我的收藏',
       component: Favourite,
       props: { key_: key },
+      icon_invert: true,
       origin: loadingOrigin('/assets/favourite.svg', '我的收藏')
     });
   };
@@ -105,6 +107,7 @@ export function useTabNavigation() {
       title: '浏览历史',
       component: History,
       props: { key_: key },
+      icon_invert: true,
       origin: loadingOrigin('/assets/schedule.svg', '浏览历史')
     });
   };

@@ -23,7 +23,7 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 const naviListItem = ref<ForumInfo[]>([]);
 const isLoading = ref(true);
@@ -43,7 +43,7 @@ onMounted(async () => {
   }
 
   isLoading.value = false;
-  updateTabMeta?.({ key: props.key_, title: '进吧', icon: '/assets/apps.svg' });
+  updateTabMeta?.({ key: props.key_, title: '进吧', icon: '/assets/apps.svg', icon_invert: true });
 });
 </script>
 

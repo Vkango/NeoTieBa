@@ -43,7 +43,7 @@ const api = apiStore.getApi();
 
 // Inject 定义
 const openImageViewer = inject<(url: string) => void>('openImageViewer');
-const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string }) => void>('updateTabMeta');
+const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 // 初始化加载
 onMounted(async (): Promise<void> => {
@@ -59,7 +59,7 @@ onMounted(async (): Promise<void> => {
     returnData2.value = (await api.get_reply_me(bduss, 1)).reply_list || [];
     hasMore.value = returnData2.value.length !== 0;
 
-    updateTabMeta?.({ key: props.key_, title: '我的', icon: '/assets/user.svg' });
+    updateTabMeta?.({ key: props.key_, title: '我的', icon: '/assets/user.svg', icon_invert: true });
   } catch (error) {
     console.error('加载用户信息失败:', error);
   } finally {
