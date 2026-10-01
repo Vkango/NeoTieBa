@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, getCurrentInstance, inject, type Ref } from 'vue';
+import { ref, onMounted, inject, type Ref } from 'vue';
 import { useApiStore } from '@/stores';
 import { read_file } from '@/core/file-io';
 import Reply from '@/components/thread/Reply.vue';
@@ -89,6 +89,7 @@ const threadList: Ref<Post[]> = ref([]);
 const currentPage = ref<number>(1);
 const threadTitle = ref<string>("");
 const isDeleted = ref<boolean>(false);
+const isSubPostCardOpen = ref(false);
 const currentSubPostInfo: Ref<SubPostInfo> = ref({
   like: 0,
   user_name: '',
@@ -137,10 +138,6 @@ const handleShare = async () => {
 // API实例
 const apiStore = useApiStore();
 const api = apiStore.getApi();
-
-// 全局属性
-const instance = getCurrentInstance();
-const isDrawerOpen = instance?.appContext.config.globalProperties.$IsDrawerOpen;
 
 // 加载数据
 const loadData = async (): Promise<void> => {
@@ -231,9 +228,7 @@ const nextPage = async (): Promise<void> => {
 // 查看所有回复
 const ViewAllReplie = (data: SubPostInfo): void => {
   currentSubPostInfo.value = data;
-  if (isDrawerOpen) {
-    isDrawerOpen.state = true;
-  }
+  isSubPostCardOpen.value = true;
 };
 </script>
 
@@ -272,9 +267,25 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
       </div>
     </transition>
-    <Drawer ctitle="查看楼中楼" width="450px" :top_position="false">
-      <ReplyView v-if="isDrawerOpen.state" v-bind="currentSubPostInfo" @openUser="onUserNameClicked"></ReplyView>
-    </Drawer>
+    <Transition name="subpost-modal">
+      <div v-if="isSubPostCardOpen" class="subpost-overlay" @click.self="isSubPostCardOpen = false">
+        <Transition name="subpost-card" appear>
+          <section v-if="isSubPostCardOpen" class="subpost-card" role="dialog" aria-modal="true"
+            aria-label="查看楼中楼" @click.stop>
+            <div class="subpost-card-header">
+              <span>查看楼中楼</span>
+              <RippleButton class="subpost-card-close" @click="isSubPostCardOpen = false" aria-label="关闭楼中楼">
+                <img src="/assets/close.svg" alt="" />
+              </RippleButton>
+            </div>
+            <div class="subpost-card-content">
+              <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
+                @openUser="onUserNameClicked"></ReplyView>
+            </div>
+          </section>
+        </Transition>
+      </div>
+    </Transition>
     <transition name="fade1">
       <div v-if="isDeleted" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
           justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center;
@@ -291,6 +302,86 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 </template>
 
 <style scoped>
+.subpost-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.subpost-card {
+  width: 600px;
+  max-width: 100%;
+  height: 88vh;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(var(--background-color), 1);
+  border: 1px solid rgba(var(--text-color), 0.1);
+  border-radius: 12px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.subpost-card-header {
+  flex-shrink: 0;
+  height: 50px;
+  padding-left: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: rgba(var(--text-color), 1);
+}
+
+.subpost-card-close {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.subpost-card-close img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  filter: invert(var(--invert));
+}
+
+.subpost-card-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.subpost-modal-enter-active,
+.subpost-modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.subpost-modal-enter-from,
+.subpost-modal-leave-to {
+  opacity: 0;
+}
+
+.subpost-card-enter-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.subpost-card-enter-from {
+  opacity: 0;
+  transform: scale(0.9) translateY(20px);
+}
+
 .thread-title {
   width: 80%;
   height: fit-content;

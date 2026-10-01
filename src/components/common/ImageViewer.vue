@@ -403,7 +403,7 @@ function setZoom(preset: number) {
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.94);
     backdrop-filter: blur(5px);
-    z-index: 9999;
+    z-index: 20000;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -451,7 +451,7 @@ function setZoom(preset: number) {
     align-items: center;
     gap: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    z-index: 10000;
+    z-index: 20001;
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.12);
 }
@@ -540,7 +540,7 @@ function setZoom(preset: number) {
     padding: 8px;
     min-width: 220px;
     box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
-    z-index: 10001;
+    z-index: 20002;
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.15);
     animation: menu-pop 0.15s cubic-bezier(0, 0, 0.2, 1);
@@ -591,7 +591,7 @@ function setZoom(preset: number) {
     padding: 6px;
     min-width: 100px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    z-index: 10001;
+    z-index: 20002;
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
