@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "corepack pnpm proto:generate && vite",
-    "build": "corepack pnpm proto:generate && vue-tsc --noEmit && vite build",
+    "build": "node scripts/generate-proto.mjs && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "proto:generate": "node scripts/generate-proto.mjs",
