@@ -126,12 +126,12 @@ function scrollToTop() {
   scrollContainer.value?.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-function scrollToElement(element: HTMLElement) {
+function scrollToElement(element: HTMLElement, offset = 12) {
   const container = scrollContainer.value;
   if (!container) return;
   clearRestoreTimer();
   isRestoring.value = false;
-  const top = Math.max(0, container.scrollTop + element.getBoundingClientRect().top - container.getBoundingClientRect().top - 12);
+  const top = Math.max(0, container.scrollTop + element.getBoundingClientRect().top - container.getBoundingClientRect().top - offset);
   scrollPosition.value = top;
   if (storageKey.value) sessionStorage.setItem(storageKey.value, String(top));
   container.scrollTo({ top, behavior: 'instant' });
@@ -150,7 +150,7 @@ defineExpose({ scrollToTop, scrollToElement, getScrollElement: () => scrollConta
 .component-container {
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(var(--text-color), 0.02);
   overflow-y: auto;
   overflow-x: hidden;
   border-radius: 5px;

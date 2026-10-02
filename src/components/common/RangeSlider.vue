@@ -89,7 +89,7 @@ defineExpose({ focus })
     width: 100%;
     height: 4px;
     border-radius: 99px;
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(var(--text-color), 0.22);
 }
 
 .range-fill {
@@ -115,8 +115,18 @@ defineExpose({ focus })
     width: 100%;
     height: 100%;
     margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
     opacity: 0;
     outline: none;
     cursor: inherit;
 }
+/* Native input only handles pointer/keyboard interaction; all visible parts are drawn above. */
+.range-input::-webkit-slider-runnable-track { background: transparent; border: 0; }
+.range-input::-webkit-slider-thumb { -webkit-appearance: none; width: 11px; height: 11px; background: transparent; border: 0; }
+.range-input::-moz-range-track, .range-input::-moz-range-progress { background: transparent; border: 0; }
+.range-input::-moz-range-thumb { width: 11px; height: 11px; background: transparent; border: 0; }
 </style>
