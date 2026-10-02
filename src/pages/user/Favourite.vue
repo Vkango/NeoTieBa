@@ -103,7 +103,7 @@ const handleClick = (id: string | number): void => {
 .bgr {
   width: 80%;
   padding: 0 10px;
-  justify-self: center;
+  margin: 0 auto;
 }
 
 .thread {

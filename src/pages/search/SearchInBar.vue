@@ -197,7 +197,7 @@ const onScroll = (target: HTMLElement) => {
 
 .container1 {
   width: 80%;
-  justify-self: center;
+  margin: 0 auto;
 }
 
 input {

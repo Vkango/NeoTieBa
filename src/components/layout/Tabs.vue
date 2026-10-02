@@ -1,8 +1,7 @@
 <template>
   <transition-group ref="tabsRef" name="tab-list" :move-class="isDragging || isSettling ? 'tab-drag-move' : 'tab-list-move'"
     tag="div" class="tabs" data-tauri-drag-region @wheel="onTabScroll" @scroll="updateDragPreview"
-    @before-leave="(el: Element) => setItemPosition(el as HTMLElement)"
-    @leave="(el: Element, done: () => void) => handleLeave(el as HTMLElement, done)">
+    @before-leave="(el: Element) => pinLeavingTab(el as HTMLElement)">
     <RippleButton class="tab-ripplebutton" v-for="tab in displayedTabs" :class="{
       'selected': tab.selected,
       'invert': tab.icon_invert,
@@ -55,7 +54,6 @@ watch(
   },
   { immediate: true }
 );
-const itemPositions = ref(new Map<HTMLElement, DOMRect>());
 const tabsRef = ref<{ $el: HTMLElement } | null>(null);
 const isDragging = ref(false);
 const isSettling = ref(false);
@@ -89,7 +87,7 @@ function getTabStyle(tab: TabItem): Record<string, string> {
     zIndex: isTabDragging ? '200' : (tab.isClosing ? '-1' : 'auto'),
     transition: isSettling.value
       ? (!isDragging.value && settlingTabId.value === tab.id ? 'transform 0.3s ease' : 'none')
-      : (isTabDragging ? 'none' : 'all 0.3s ease'),
+      : (isTabDragging ? 'none' : 'transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease'),
     pointerEvents: tab.isClosing ? 'none' : 'auto',
     cursor: isTabDragging ? 'grabbing' : 'pointer'
   };
@@ -223,33 +221,19 @@ onBeforeUnmount(() => {
   tabStore.endDrag();
 });
 
-function setItemPosition(el: HTMLElement): void {
-  const rect = el.getBoundingClientRect();
-  itemPositions.value.set(el, rect);
-}
-
-function handleLeave(el: HTMLElement, done: () => void): void {
-  const rect = el.getBoundingClientRect();
-  const prevPos = itemPositions.value.get(el);
-  if (prevPos) {
-    const dx = prevPos.left - rect.left;
-
-    el.style.transform = `translate(${dx}px, 0px)`;
-    el.style.opacity = '0';
-    el.style.height = '0';
-    el.style.width = '0';
-    el.style.margin = '0';
-    el.style.padding = '0';
-
-    requestAnimationFrame(() => {
-      el.style.transition = 'all 300ms ease';
-      el.style.transform = 'translate(0, 0)';
-
-      setTimeout(done, 300);
-    });
-  } else {
-    done();
-  }
+function pinLeavingTab(el: HTMLElement): void {
+  // Freeze the outgoing tab in scroll-content coordinates before removing it
+  // from flex layout. Vue can then animate the remaining tabs independently.
+  const left = el.offsetLeft;
+  const top = el.offsetTop;
+  const width = el.getBoundingClientRect().width;
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+  el.style.width = `${width}px`;
+  el.style.minWidth = `${width}px`;
+  el.style.boxSizing = 'border-box';
+  el.style.position = 'absolute';
+  el.style.pointerEvents = 'none';
 }
 
 const handleDelete = (tab: TabItem): void => {
@@ -360,13 +344,12 @@ defineExpose({
 
 .tab-list-enter-active,
 .tab-list-leave-active {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .tab-list-enter-from,
 .tab-list-leave-to {
   opacity: 0;
-  width: 0;
   transform: translateX(-30px);
 }
 
@@ -416,7 +399,7 @@ defineExpose({
   width: 180px;
   margin-right: 5px;
   min-width: 100px;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
   touch-action: none;
   position: relative;
 }

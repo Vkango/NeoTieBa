@@ -7,13 +7,12 @@ let tabIdCounter = 0;
 export const useTabStore = defineStore('tabs', () => {
   const tabs = ref<TabItem[]>([]);
   const activeKey = ref<string | null>(null);
-  const closingTabs = ref<TabItem[]>([]);
 
   const draggingTabId = ref<number | null>(null);
   const dragOffsetX = ref(0);
 
   const visibleTabs = computed(() => {
-    return [...tabs.value, ...closingTabs.value].sort((a, b) => a.position - b.position);
+    return [...tabs.value].sort((a, b) => a.position - b.position);
   });
 
   const currentTab = computed(() => {
@@ -70,13 +69,6 @@ export const useTabStore = defineStore('tabs', () => {
 
     tabs.value = tabs.value.filter(t => t.id !== tab.id);
 
-    const closingTab: TabItem = {
-      ...tab,
-      isClosing: true,
-      id: `closing-${tab.id}-${Date.now()}` as unknown as number
-    };
-    closingTabs.value.push(closingTab);
-
     tabs.value.forEach((t, index) => {
       t.position = index;
     });
@@ -88,9 +80,6 @@ export const useTabStore = defineStore('tabs', () => {
       activeKey.value = null;
     }
 
-    setTimeout(() => {
-      closingTabs.value = closingTabs.value.filter(t => !String(t.id).startsWith('closing-'));
-    }, 300);
   }
 
   function updateTabMeta(key: string | number, meta: Partial<Pick<TabItem, 'title' | 'icon' | 'icon_invert' | 'renderKey'>>) {
@@ -145,7 +134,6 @@ export const useTabStore = defineStore('tabs', () => {
 
   return {
     tabs,
-    closingTabs,
     visibleTabs,
     activeKey,
     currentTab,

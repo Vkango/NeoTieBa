@@ -87,6 +87,18 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
 }
 input::placeholder, textarea::placeholder { color: rgba(var(--text-color), .5); }
 
+input:not([type="range"]):not([type="color"]),
+textarea,
+select {
+    color: rgb(var(--text-color));
+    background-color: rgba(var(--background-color), 0.55);
+}
+
+input:not([type="range"]):not([type="color"])::placeholder,
+textarea::placeholder {
+    color: rgba(var(--text-color), 0.5);
+}
+
 button {
     border-radius: 8px;
     border: 1px solid transparent;
@@ -479,13 +491,13 @@ html.macos #container .navi {
 
 html.macos #container .container {
     top: 73px;
-    left: 86px;
-    width: calc(100% - 86px);
+    left: 70px;
+    width: calc(100% - 70px);
     height: calc(100% - 73px);
 }
 
 html.macos .tabs {
     top: 33px;
-    left: 86px;
-    width: calc(100% - 416px);
+    left: 70px;
+    width: calc(100% - 400px);
 }

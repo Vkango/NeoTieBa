@@ -201,7 +201,7 @@ const history = (): void => {
           </RippleButton>
 
         </div>
-        <div style="width: 80%; justify-self: center;">
+        <div style="width: 80%; margin: 0 auto;">
 
           <div style="display: flex; gap: 20px; margin-bottom: 10px; margin-top: 40px; align-items: center;">
             <div style="font-size: 18px; font-weight: bold;">消息</div>
@@ -270,6 +270,7 @@ const history = (): void => {
 
 .thread-filter {
   width: 80%;
+  margin: 0 auto;
 }
 
 .thread-list {

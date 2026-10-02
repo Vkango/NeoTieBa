@@ -13,6 +13,7 @@ import { browse_bar_protobuf, type BrowseBarProtoOptions } from "@/api/frs-page"
 import { useSettingsStore } from '@/stores/settings';
 import { normalizeThreadPage, normalizeUserPostPage, normalizeUserProfile } from '@/api/adapters';
 import type { ThreadPage, UserPostPage, UserProfile } from '@/types/client';
+import { createFollowedForumsForm, normalizeFollowedForums, type FollowedForum } from '@/api/followed-forums';
 
 export class tieBaAPI {
     constructor() {
@@ -321,14 +322,16 @@ export class tieBaAPI {
         return JSON.parse(responseData);
     }
 
-    async followbar_list(bduss: string, stoken: string): Promise<any> {
-        const data = `BDUSS=${bduss}&stoken=${stoken}`;
+    async followbar_list(bduss: string, stoken: string): Promise<{ forum_info: FollowedForum[] }> {
         const responseData = await fetchDataPost(
             'https://c.tieba.baidu.com/c/f/forum/getforumlist',
-            this.calcSign(data),
-            this.getRequestOptions()
+            createFollowedForumsForm(bduss, stoken),
+            {
+                ...this.getRequestOptions(),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            }
         );
-        return JSON.parse(responseData);
+        return { forum_info: normalizeFollowedForums(JSON.parse(responseData)) };
     }
 
     async myProfile(cookie: string): Promise<any> {

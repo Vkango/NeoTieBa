@@ -455,8 +455,8 @@ function handleContextMenu(e: MouseEvent) {
     const menuWidth = 220;
     const menuHeight = 180;
     const bounds = overlayRef.value?.getBoundingClientRect();
-    let x = e.clientX - (props.embedded ? bounds?.left ?? 0 : 0);
-    let y = e.clientY - (props.embedded ? bounds?.top ?? 0 : 0);
+    let x = e.clientX - (bounds?.left ?? 0);
+    let y = e.clientY - (bounds?.top ?? 0);
 
     if (x + menuWidth > (overlayRef.value?.clientWidth || window.innerWidth)) x -= menuWidth;
     if (y + menuHeight > (overlayRef.value?.clientHeight || window.innerHeight)) y -= menuHeight;
@@ -475,7 +475,7 @@ function handleZoomMenu(e: MouseEvent | KeyboardEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     zoomMenu.value = {
         visible: !zoomMenu.value.visible,
-        x: Math.max(0, rect.left - (props.embedded ? overlayRef.value?.getBoundingClientRect().left ?? 0 : 0) + rect.width / 2 - 50) // Center roughly
+        x: Math.max(0, rect.left - (overlayRef.value?.getBoundingClientRect().left ?? 0) + rect.width / 2 - 50) // Center roughly
     };
     contextMenu.value.visible = false;
 }
@@ -514,6 +514,13 @@ function setZoom(preset: number) {
     z-index: 0;
     backdrop-filter: none;
     background: transparent;
+}
+
+/* Native macOS window controls sit over the WebView. Keep all image panning
+   and its grab cursor below the 45px titlebar, even while the image is zoomed. */
+html.macos .image-viewer-overlay:not(.embedded) {
+    top: 45px;
+    height: calc(100vh - 45px);
 }
 
 .image-error {

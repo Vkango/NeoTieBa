@@ -491,6 +491,7 @@ onMounted(async (): Promise<void> => {
 <style scoped>
 .thread-filter {
   width: 80%;
+  margin: 0 auto;
   display: flex;
 }
 

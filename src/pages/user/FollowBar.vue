@@ -4,14 +4,8 @@ import { useApiStore } from '@/stores';
 import { ref, onMounted, inject } from 'vue';
 import Container from '@/components/common/Container.vue';
 import RemoteImage from '@/components/common/RemoteImage.vue';
-
-interface ForumInfo {
-  forum_name: string;
-  avatar: string;
-  user_level: number;
-  user_level_name: string;
-  is_sign_in: boolean;
-}
+import PageState from '@/components/common/PageState.vue';
+import type { FollowedForum } from '@/api/followed-forums';
 
 interface Props {
   key_: string | number;
@@ -26,25 +20,32 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
-const naviListItem = ref<ForumInfo[]>([]);
+const naviListItem = ref<FollowedForum[]>([]);
 const isLoading = ref(true);
+const loadError = ref('');
+const api = useApiStore().getApi();
 
-onMounted(async () => {
-  const cookie = await getCurrentUser();
-  const apiStore = useApiStore();
-  const api = apiStore.getApi();
-  const result = (await api.followbar_list(cookie.bduss, cookie.stoken)).forum_info.sort(
-    (a: ForumInfo, b: ForumInfo) => b.user_level - a.user_level
-  );
-
-  if (window.pluginManager) {
-    naviListItem.value = await window.pluginManager.dispatchEvent('followBarUpdated', result);
-  } else {
-    naviListItem.value = result;
+async function loadFollowedForums(): Promise<void> {
+  isLoading.value = true;
+  loadError.value = '';
+  try {
+    const user = await getCurrentUser();
+    const result = (await api.followbar_list(user.bduss, user.stoken)).forum_info.sort(
+      (a, b) => b.user_level - a.user_level
+    );
+    naviListItem.value = window.pluginManager
+      ? await window.pluginManager.dispatchEvent('followBarUpdated', result)
+      : result;
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    isLoading.value = false;
   }
+}
 
-  isLoading.value = false;
+onMounted(() => {
   updateTabMeta?.({ key: props.key_, title: '进吧', icon: '/assets/apps.svg', icon_invert: true });
+  void loadFollowedForums();
 });
 </script>
 
@@ -52,9 +53,10 @@ onMounted(async () => {
   <Container :tab-key="props.key_" :scroll-key="`follow-bar-${props.key_}`">
     <div class="bgr">
       <div class="list-title">关注的吧</div>
+      <PageState v-if="loadError && !isLoading" :error="loadError" :retry="loadFollowedForums" />
       <transition name="fade1">
-        <div class="list-view" v-if="!isLoading">
-          <button class="bar-button" v-if="naviListItem.length > 0" v-for="item in naviListItem"
+        <div class="list-view" v-if="!isLoading && !loadError">
+          <button class="bar-button" v-for="item in naviListItem" :key="item.forum_id || item.forum_name"
             @click="emit('openBar', item.forum_name)">
             <RemoteImage class="avatar" :src="item.avatar" />
             <div style="margin-left: 5px;">
@@ -89,7 +91,7 @@ onMounted(async () => {
 
 .bgr {
   width: 80%;
-  justify-self: center;
+  margin: 0 auto;
   margin-bottom: 10px;
 }
 

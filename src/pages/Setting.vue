@@ -251,7 +251,7 @@ const onScroll = (_target: HTMLElement): void => {
 
 <template>
   <Container class="page" :tab-key="props.key_" :scroll-key="`setting-${props.key_}`" @yscroll="onScroll">
-    <div style="width: 80%; justify-self: center; padding-top: 20px;">
+    <div style="width: 80%; margin: 0 auto; padding-top: 20px;">
 
       <div style="display: flex; gap: 15px; margin-top: 10px;">
 
