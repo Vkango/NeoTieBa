@@ -2,7 +2,7 @@
   <div class="thread" @click.stop>
     <div class="user-info" @click="openUser(props.uid as string | number)">
       <div class="avatar"><img class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"
+          :src="avatarUrl || 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"
           referrerpolicy="no-referrer"></div>
       <div>
         <div class="user-name">{{ user_name }}<span class="level"
@@ -52,6 +52,8 @@ import type { ContentElement } from '@/types/common';
 interface Props {
   ipAddress?: string;
   avatar: string;
+  avatarUrl?: string;
+  embeddedImages?: boolean;
   uid: string | number;
   user_name: string;
   thread_content: unknown[];
@@ -72,6 +74,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'openUser', uid: string | number): void;
+  (e: 'selectImage', url: string): void;
   (e: 'viewAllReplies', data: Props): void;
 }>();
 
@@ -84,7 +87,11 @@ const openUser = (uid: string | number) => {
 }
 
 const handleClick = (event: any) => {
-  if (event.target.classList.contains('thread-reply-img')) {
+  if (event.target instanceof HTMLImageElement && event.target.classList.contains('thread-reply-img')) {
+    if (props.embeddedImages) {
+      emit('selectImage', event.target.src);
+      return;
+    }
     if (openImageViewer) {
       openImageViewer(event.target.src);
     }
