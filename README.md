@@ -10,7 +10,7 @@
 
 <span></span>
 
-![Version](https://img.shields.io/badge/🐢-龟速更新-red.svg) ![STARS](https://img.shields.io/github/stars/Vkango/NeoTieBa?style=round-square&logo=github&color=yellow) ![FORKS](https://img.shields.io/github/forks/Vkango/NeoTieBa?style=round-square) ![Build](https://github.com/Vkango/NeoTieBa/actions/workflows/test-build.yml/badge.svg?branch=main)
+![Version](https://img.shields.io/badge/🐢-龟速更新-red.svg) ![STARS](https://img.shields.io/github/stars/Vkango/NeoTieBa?style=round-square&logo=github&color=yellow) ![FORKS](https://img.shields.io/github/forks/Vkango/NeoTieBa?style=round-square) ![Build](https://github.com/Vkango/NeoTieBa/actions/workflows/prerelease.yml/badge.svg?branch=main)
 
 基于 `Tauri2.0` + `Vue3` + `TypeScript` 构建的 **非官方** 贴吧客户端, 适用于桌面端应用, 缓速更新中……
 
@@ -34,7 +34,7 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 
 可以从 Releases 中下载构建版.
 
-本项目依托 GitHub Actions 编译. 可前往 `Actions` → 最新一条成功的 `Test Build` → `Artifacts` 下载最新对应平台应用. 每次构建后30天自动删除.
+本项目依托 GitHub Actions 编译. 如需查看最新提交, 可前往 `Actions` → 最新一条成功的 `Test Build` → `Artifacts` 下载最新对应平台应用. 每次构建后30天自动删除.
 
 > [!note]
 >

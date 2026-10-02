@@ -1,4 +1,4 @@
-name: Build Pre-release
+name: Prerelease
 
 on:
   workflow_dispatch:
@@ -37,7 +37,7 @@ jobs:
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             arch: x64
-            
+
           # Linux ARM64 (native Ubuntu 22.04 runner)
           - os: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
@@ -124,7 +124,7 @@ jobs:
       - name: Publish pre-release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: prerelease-${{ github.run_number }}.${{ github.run_attempt }}
+          tag_name: prerelease-${{ github.run_id }}.${{ github.run_attempt }}
           name: NeoTieBa Pre-release ${{ github.run_number }}.${{ github.run_attempt }}
           body: |
             Automated pre-release build from `${{ github.sha }}`.
