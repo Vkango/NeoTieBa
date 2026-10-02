@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, onMounted, onBeforeUnmount, onActivated, watch, inject, type Ref } from 'vue';
+import { useTabStore } from '@/stores/tabs';
 import { useApiStore, useSettingsStore, useUserStore } from '@/stores';
 import Container from '@/components/common/Container.vue';
 import { getCurrentUser } from '@/services/user-manage';
@@ -10,7 +11,6 @@ import Reply from '@/components/thread/Reply.vue';
 import ThreadFloorIndex from '@/components/thread/ThreadFloorIndex.vue';
 import { findReadingFloor, floorPreview } from '@/utils/thread-index';
 import ReplyView from '@/components/thread/SubPostView.vue';
-import RemoteImage from '@/components/common/RemoteImage.vue';
 import domToImage from 'dom-to-image';
 
 interface GalleryImage {
@@ -98,6 +98,7 @@ interface SubPostInfo {
 
 // Props & Emits
 const props = defineProps<Props>();
+const tabStore = useTabStore();
 const emit = defineEmits<Emits>();
 
 // Injects
@@ -173,12 +174,13 @@ function resizeWithKeyboard(event: KeyboardEvent) {
 }
 const galleryOnlyAuthor = ref(false);
 const selectedImageId = ref('');
+const galleryAutoFollow = ref(false);
+let galleryFollowVersion = 0;
 const visibleThreadList = computed(() => (galleryOpen.value ? galleryOnlyAuthor.value : Boolean(props.mockData) && onlyThreadAuthor.value)
   ? threadList.value.filter(post => String(post.authorId) === threadAuthorId.value) : threadList.value);
 const galleryImages = computed<GalleryImage[]>(() => visibleThreadList.value.flatMap(post =>
   (Array.isArray(post.content) ? post.content : []).flatMap((content: Record<string, unknown>, index: number) => {
-    const src = content.bigCdnSrc || content.big_cdn_src || content.bigSrc || content.big_src
-      || content.originSrc || content.origin_src;
+    const src = content.bigCdnSrc || content.big_cdn_src || content.bigSrc || content.big_src || content.originSrc || content.origin_src;
     return Number(content.type) === 3 && typeof src === 'string' && src ? [{
       id: `${post.id}-${index}`, postId: String(post.id), authorId: String(post.authorId),
       floor: Number(post.floor), src, alt: `第 ${post.floor} 楼图片`
@@ -206,16 +208,26 @@ async function toggleGallery() {
   clearTimeout(layoutTimer);
   layoutTimer = setTimeout(() => { restoreLayoutAnchor(); layoutAnchor = undefined; scheduleReadingPosition(); }, 260);
 }
-async function selectGalleryImage(id: string) {
+function selectGalleryImage(id: string) {
   selectedImageId.value = id;
-  layoutAnchor = undefined;
+}
+async function followGalleryFloor(version: number) {
+  const id = selectedImage.value?.postId;
+  if (!id) return;
+  if (contextCollapsed.value) {
+    toggleContext();
+    layoutAnchor = undefined;
+    await new Promise<void>(resolve => setTimeout(resolve, 260));
+  }
   await nextTick();
-  const image = selectedImage.value;
-  const element = image && postElements.get(image.postId);
-  if (image && element) {
+  if (version !== galleryFollowVersion || !galleryAutoFollow.value || !galleryOpen.value) return;
+  layoutAnchor = undefined;
+  const element = postElements.get(id);
+  if (element) {
     containerRef.value?.scrollToElement(element);
-    activePostId.value = image.postId;
-    floorIndexRef.value?.reveal(image.postId);
+    activePostId.value = id;
+    floorIndexRef.value?.reveal(id);
+    scheduleReadingPosition();
   }
 }
 function stepGallery(direction: number) {
@@ -223,14 +235,7 @@ function stepGallery(direction: number) {
   if (image) void selectGalleryImage(image.id);
 }
 function selectReplyImage(url: string, postId: string) {
-  const normalizeImageUrl = (value: string): string => {
-    if (value.startsWith('//')) return `https:${value}`;
-    if (value.startsWith('http://')) return `https://${value.slice('http://'.length)}`;
-    return value;
-  };
-  const target = normalizeImageUrl(url);
-  const image = galleryImages.value.find(image => image.postId === postId
-    && normalizeImageUrl(image.src) === target);
+  const image = galleryImages.value.find(image => image.postId === postId && new URL(image.src, window.location.href).href === new URL(url, window.location.href).href);
   if (image) void selectGalleryImage(image.id);
 }
 async function toggleGalleryAuthor() {
@@ -529,6 +534,12 @@ const navigateToFloor = async (id: string, edge?: 'start' | 'end') => {
 };
 
 defineExpose({ navigateToFloor });
+watch(() => [galleryAutoFollow.value, galleryOpen.value, selectedImage.value?.id, galleryOnlyAuthor.value, isLoading.value, isThreadsLoading.value], () => {
+  const version = ++galleryFollowVersion;
+  if (galleryAutoFollow.value && galleryOpen.value && !isLoading.value && !isThreadsLoading.value) {
+    void followGalleryFloor(version);
+  }
+}, { flush: 'post' });
 watch(galleryImages, images => {
   if (images.some(image => image.id === selectedImageId.value)) return;
   selectedImageId.value = images[0]?.id ?? '';
@@ -613,10 +624,15 @@ const ViewAllReplie = (data: SubPostInfo): void => {
             <span class="material-symbols-outlined">chevron_left</span>
           </button>
           <span class="image-position" aria-live="polite">{{ selectedImageIndex + 1 }} / {{ galleryImages.length
-          }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
+            }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
           <button type="button" class="gallery-button" :disabled="selectedImageIndex >= galleryImages.length - 1"
             @click="stepGallery(1)" title="下一张" aria-label="下一张">
             <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+          <button type="button" class="gallery-button follow-toggle" @click="galleryAutoFollow = !galleryAutoFollow"
+            :aria-pressed="galleryAutoFollow" :title="galleryAutoFollow ? '停止自动跟随' : '开始自动跟随'"
+            :aria-label="galleryAutoFollow ? '停止自动跟随' : '开始自动跟随'">
+            <span class="material-symbols-outlined">my_location</span>
           </button>
           <button type="button" class="gallery-button author-filter" :aria-pressed="galleryOnlyAuthor"
             @click="toggleGalleryAuthor()">只看楼主</button>
@@ -686,25 +702,28 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
           </div>
         </transition>
-        <Transition name="subpost-modal">
-          <div v-if="isSubPostCardOpen" class="subpost-overlay" @click.self="isSubPostCardOpen = false">
-            <Transition name="subpost-card" appear>
-              <section v-if="isSubPostCardOpen" class="subpost-card" role="dialog" aria-modal="true" aria-label="查看楼中楼"
-                @click.stop>
-                <div class="subpost-card-header">
-                  <span>查看楼中楼</span>
-                  <RippleButton class="subpost-card-close" @click="isSubPostCardOpen = false" aria-label="关闭楼中楼">
-                    <img src="/assets/close.svg" alt="" />
-                  </RippleButton>
-                </div>
-                <div class="subpost-card-content">
-                  <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
-                    @openUser="props.mockData ? undefined : onUserNameClicked($event)"></ReplyView>
-                </div>
-              </section>
-            </Transition>
-          </div>
-        </Transition>
+        <Teleport to="body">
+          <Transition name="subpost-modal">
+            <div v-if="isSubPostCardOpen && tabStore.activeKey === String(props.key_)" class="subpost-overlay"
+              @click.self="isSubPostCardOpen = false">
+              <Transition name="subpost-card" appear>
+                <section v-if="isSubPostCardOpen" class="subpost-card" role="dialog" aria-modal="true"
+                  aria-label="查看楼中楼" @click.stop>
+                  <div class="subpost-card-header">
+                    <span>查看楼中楼</span>
+                    <RippleButton class="subpost-card-close" @click="isSubPostCardOpen = false" aria-label="关闭楼中楼">
+                      <img src="/assets/close.svg" alt="" />
+                    </RippleButton>
+                  </div>
+                  <div class="subpost-card-content">
+                    <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
+                      @openUser="props.mockData ? undefined : onUserNameClicked($event)"></ReplyView>
+                  </div>
+                </section>
+              </Transition>
+            </div>
+          </Transition>
+        </Teleport>
         <transition name="fade1">
           <div v-if="loadError && !threadList.length" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
           justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center;
@@ -815,7 +834,22 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   box-shadow: 0 16px 22px rgba(0, 0, 0, 0.25);
 }
 
+/* Keep glass on a sibling layer so the index can sample the replies above it. */
+.gallery-open .thread-context::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(var(--background-color), .38);
+  backdrop-filter: blur(32px) saturate(1.15);
+  -webkit-backdrop-filter: blur(32px) saturate(1.15);
+}
+
 .gallery-open .thread-context :deep(.component-container) {
+  position: relative;
+  z-index: 1;
   box-sizing: border-box;
   padding-right: 48px;
 }
@@ -940,6 +974,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   outline-offset: 2px;
 }
 
+.follow-toggle[aria-pressed="true"],
 .author-filter[aria-pressed="true"] {
   background: rgba(var(--primary-color), .3);
 }
@@ -1012,8 +1047,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
 .gallery-selected {
   border-radius: 8px;
-  background: rgba(var(--primary-color), 0.12);
-  box-shadow: inset 3px 0 rgba(var(--primary-color), 0.7);
+  background: rgba(var(--primary-color), 0.05);
 }
 
 .post-anchor {
@@ -1097,7 +1131,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   position: fixed;
   inset: 0;
   /* Keep the comment dialog above the app tabs and custom titlebar. */
-  z-index: 1200;
+  z-index: 3200;
   display: flex;
   align-items: center;
   justify-content: center;

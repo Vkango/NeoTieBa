@@ -1,4 +1,5 @@
 <template>
+    <Teleport to="body">
     <Transition name="modal" appear>
         <div v-if="visible" class="modal-overlay" @click="handleOverlayClick">
             <Transition name="card" appear>
@@ -186,6 +187,7 @@
         </div>
 
     </Transition>
+    </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -482,7 +484,7 @@ watch(() => props.visible, (newVal) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 3200;
     padding: 20px;
 }
 

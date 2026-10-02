@@ -234,13 +234,15 @@ async function handleImageError(): Promise<void> {
         return;
     }
     proxyAttempted.value = true;
+    const source = props.imageSrc;
     try {
-        resolvedImageSrc.value = await invoke<string>('fetch_image_base64', {
-            url: normalizeImageUrl(props.imageSrc),
+        const result = await invoke<string>('fetch_image_base64', {
+            url: normalizeImageUrl(source),
         });
+        if (props.imageSrc === source) resolvedImageSrc.value = result;
     } catch (error) {
-        imageFailed.value = true;
-        console.warn('图片查看器加载失败:', props.imageSrc, error);
+        if (props.imageSrc === source) imageFailed.value = true;
+        console.warn('原图加载失败:', source, error);
     }
 }
 
