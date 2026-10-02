@@ -92,7 +92,7 @@ const openUser = (uid: string | number) => {
 const handleClick = (event: any) => {
   if (event.target instanceof HTMLImageElement && event.target.classList.contains('thread-reply-img')) {
     if (props.embeddedImages) {
-      emit('selectImage', event.target.src);
+      emit('selectImage', event.target.getAttribute('data-full-src') || event.target.src);
       return;
     }
     if (openImageViewer) {

@@ -8,7 +8,7 @@
                 @touchstart="handleTouchStart" @touchmove.prevent="handleTouchMove" @touchend="handleTouchEnd">
                 <p v-if="imageFailed" class="image-error" role="status">图片加载失败</p>
                 <img v-show="!imageFailed" ref="imageRef" :src="resolvedImageSrc" :style="fittedImageStyle" class="viewer-image" alt="Preview"
-                    draggable="false" referrerpolicy="no-referrer" @load="onImageLoad" @error="imageFailed = true" />
+                    draggable="false" referrerpolicy="no-referrer" @load="onImageLoad" @error="loadThroughProxy" />
             </div>
 
             <!-- Controls Bar -->
@@ -229,14 +229,20 @@ function normalizeImageUrl(value: string): string {
 }
 
 async function loadThroughProxy(): Promise<void> {
-    if (proxyAttempted.value || !props.imageSrc || props.imageSrc.startsWith('data:')) return;
+    if (proxyAttempted.value || !props.imageSrc || props.imageSrc.startsWith('data:')) {
+        imageFailed.value = true;
+        return;
+    }
     proxyAttempted.value = true;
+    const source = props.imageSrc;
     try {
-        resolvedImageSrc.value = await invoke<string>('fetch_image_base64', {
-            url: normalizeImageUrl(props.imageSrc),
+        const result = await invoke<string>('fetch_image_base64', {
+            url: normalizeImageUrl(source),
         });
+        if (props.imageSrc === source) resolvedImageSrc.value = result;
     } catch (error) {
-        console.warn('原图加载失败:', props.imageSrc, error);
+        if (props.imageSrc === source) imageFailed.value = true;
+        console.warn('原图加载失败:', source, error);
     }
 }
 
