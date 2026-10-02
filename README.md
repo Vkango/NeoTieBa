@@ -34,7 +34,7 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 
 可以从 Releases 中下载构建版.
 
-可以从 GitHub Actions 中下载最新尝鲜版. 请前往 `Actions` → 最新一条成功的 `Test Build` → `Artifacts` 下载对应平台应用. 
+本项目依托 GitHub Actions 编译. 可前往 `Actions` → 最新一条成功的 `Test Build` → `Artifacts` 下载最新对应平台应用. 每次构建后30天自动删除.
 
 > [!note]
 >
@@ -43,12 +43,6 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 > macOS 构建仍在测试中, 无法保证稳定性.
 >
 > macOS 构建仅在 Apple Silicon 设备上进行过测试, 无法保证 Intel 设备能正常使用.
-
-> [!warning]
->
-> 每次构建后30天自动删除.
->
-> 目前尝鲜版问题较多, 因学业原因无法及时修复, 请谅解.
 
 ### 登录方法
 
@@ -170,3 +164,5 @@ TiebaDesktop, 优秀的第三方贴吧桌面客户端: [clb-128258/TiebaDesktop:
 ![3](./assets/3.png)
 
 ![4](./assets/4.png)
+
+![5](./assets/5.png)
