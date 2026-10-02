@@ -671,7 +671,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                     @click="openBar(returnData.data.forum.name)">
                     <div
                       style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
-                      <img :src="returnData.data.forum.avatar" class="avatar" referrerpolicy="no-referrer">
+                      <RemoteImage :src="returnData.data.forum.avatar" class="avatar" />
                       <span style="font-size: 14px; margin-right: 5px;">{{ returnData.data.forum.name }}吧</span>
                     </div>
                   </RippleButton>
@@ -824,6 +824,9 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
 .gallery-open .thread-context {
   z-index: 1;
+  background: rgba(var(--background-color), .82);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px) saturate(1.15);
   overflow: hidden;
   margin: 10px 0;
   margin-right: 10px;
