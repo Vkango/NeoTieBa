@@ -28,6 +28,12 @@ const updateTabMeta = inject<(info: { key: string | number; title: string; icon:
 const settingsStore = useSettingsStore();
 const connectionTestDesc = ref('测试当前网络配置是否可用');
 const wallpaperDesc = ref('选择本地图片作为背景壁纸');
+const isMacOS = document.documentElement.classList.contains('macos');
+const wallpaperEffectOptions = isMacOS
+  ? WALLPAPER_EFFECT_OPTIONS
+    .filter(({ value }) => value !== 'mica')
+    .map((option) => option.value === 'acrylic' ? { ...option, label: '透明' } : option)
+  : WALLPAPER_EFFECT_OPTIONS;
 
 // State 定义
 const user: Ref<User[]> = ref([]);
@@ -101,9 +107,9 @@ const displaySettings: ComputedRef<SettingItem[]> = computed(() => [
     icon: 'blur_on',
     title: '背景选项',
     type: 'select',
-    desc: '图片 / Acrylic / Mica / 纯色，切换即时生效',
-    value: settingsStore.wallpaperEffect,
-    options: WALLPAPER_EFFECT_OPTIONS,
+    desc: isMacOS ? '图片 / 透明 / 纯色，切换即时生效' : '图片 / Acrylic / Mica / 纯色，切换即时生效',
+    value: isMacOS && settingsStore.wallpaperEffect === 'mica' ? 'image' : settingsStore.wallpaperEffect,
+    options: wallpaperEffectOptions,
   },
 
   ...(settingsStore.wallpaperEffect === 'image'

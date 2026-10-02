@@ -16,20 +16,18 @@
       <div class="thread-content" v-html="content">
       </div>
       <div class="thread-media">
-        <img class="thread-img" v-for="i in media?.filter(item => item.type == 3)" :src="i.big_pic"
-          referrerpolicy="no-referrer">
+        <RemoteImage class="thread-img" v-for="i in media?.filter(item => item.type == 3)" :key="i.big_pic"
+          :src="i.big_pic || ''" />
         <span v-for="i in media?.filter(item => item.type == 5)">
-          <img class="thread-img" :src="i.vpic" referrerpolicy="no-referrer">
+          <RemoteImage class="thread-img" :src="i.vpic || ''" />
           <span class="material-symbols-outlined"
             style="position: relative; font-size: 28px; top: 0%; left: 0%; opacity: 0.7; transform: translate(-110%, -10%);">play_circle</span>
         </span>
-
-        </img>
       </div>
       <div class="thread-info">
-        <span v-if="fromBar != ''" style="display: flex; align-items: center;"><img :src="fromBarAvatar"
+        <span v-if="fromBar != ''" style="display: flex; align-items: center;"><RemoteImage v-if="fromBarAvatar" :src="fromBarAvatar"
             style="width: 16px; height: 16px; border-radius: 16px; margin-right: 5px;"
-            referrerpolicy="no-referrer"><span style="margin-right: 5px;">{{ fromBar }}吧</span></span>
+            :loading="'eager'" /><span style="margin-right: 5px;">{{ fromBar }}吧</span></span>
 
         <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">forum</span> {{ reply_num }}
@@ -42,6 +40,7 @@
 import { onMounted, ref } from 'vue';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
 import type { ContentElement, MediaItem } from '@/types/common';
+import RemoteImage from '@/components/common/RemoteImage.vue';
 
 const props = withDefaults(defineProps<{
   fromBarAvatar?: string;

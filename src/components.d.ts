@@ -26,6 +26,7 @@ declare module 'vue' {
     PinnedThread: typeof import('./components/thread/PinnedThread.vue')['default']
     QRLoginPanel: typeof import('./components/user/QRLoginPanel.vue')['default']
     RangeSlider: typeof import('./components/common/RangeSlider.vue')['default']
+    RemoteImage: typeof import('./components/common/RemoteImage.vue')['default']
     Reply: typeof import('./components/thread/Reply.vue')['default']
     RippleButton: typeof import('./components/common/RippleButton.vue')['default']
     RippleButtonWithIcon: typeof import('./components/common/RippleButtonWithIcon.vue')['default']

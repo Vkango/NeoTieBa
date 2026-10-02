@@ -24,6 +24,9 @@ export const WALLPAPER_EFFECT_OPTIONS: Array<{ label: string; value: WallpaperEf
     { label: '纯色', value: 'solid' },
 ];
 
+const isMacOS = typeof navigator !== 'undefined'
+    && (/Macintosh|Mac OS X/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform));
+
 export const useSettingsStore = defineStore('settings', () => {
     const showUserId = ref(false);
     const onlyAuthor = ref(false);
@@ -81,6 +84,9 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     function setWallpaperEffect(effect: WallpaperEffect): void {
+        if (isMacOS && effect === 'mica') {
+            effect = 'image';
+        }
         if (wallpaperEffect.value === effect) {
             return;
         }
@@ -190,6 +196,12 @@ export const useSettingsStore = defineStore('settings', () => {
 
     watch(theme, (value) => {
         applyTheme(value);
+    }, { flush: 'sync' });
+
+    watch(wallpaperEffect, (value) => {
+        if (isMacOS && value === 'mica') {
+            wallpaperEffect.value = 'image';
+        }
     }, { flush: 'sync' });
 
     function addToBlockList(item: string) {

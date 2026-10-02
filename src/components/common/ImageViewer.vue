@@ -7,7 +7,7 @@
             <div class="image-wrapper" :style="wrapperStyle" @mousedown="handleMouseDown" @wheel.prevent="handleWheel"
                 @touchstart="handleTouchStart" @touchmove.prevent="handleTouchMove" @touchend="handleTouchEnd">
                 <p v-if="imageFailed" class="image-error" role="status">图片加载失败</p>
-                <img v-show="!imageFailed" ref="imageRef" :src="props.imageSrc" :style="fittedImageStyle" class="viewer-image" alt="Preview"
+                <img v-show="!imageFailed" ref="imageRef" :src="resolvedImageSrc" :style="fittedImageStyle" class="viewer-image" alt="Preview"
                     draggable="false" referrerpolicy="no-referrer" @load="onImageLoad" @error="imageFailed = true" />
             </div>
 
@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
 import RangeSlider from './RangeSlider.vue';
 
 const props = defineProps<{
@@ -138,6 +139,8 @@ const lastMouseX = ref(0);
 const lastMouseY = ref(0);
 const overlayRef = ref<HTMLElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
+const resolvedImageSrc = ref(props.imageSrc);
+const proxyAttempted = ref(false);
 
 // Context Menu State
 const contextMenu = ref({
@@ -213,6 +216,29 @@ watch(() => props.visible, (newVal) => {
         });
     }
 });
+
+watch(() => props.imageSrc, (value) => {
+    resolvedImageSrc.value = value;
+    proxyAttempted.value = false;
+});
+
+function normalizeImageUrl(value: string): string {
+    if (value.startsWith('//')) return `https:${value}`;
+    if (value.startsWith('http://')) return `https://${value.slice('http://'.length)}`;
+    return value;
+}
+
+async function loadThroughProxy(): Promise<void> {
+    if (proxyAttempted.value || !props.imageSrc || props.imageSrc.startsWith('data:')) return;
+    proxyAttempted.value = true;
+    try {
+        resolvedImageSrc.value = await invoke<string>('fetch_image_base64', {
+            url: normalizeImageUrl(props.imageSrc),
+        });
+    } catch (error) {
+        console.warn('原图加载失败:', props.imageSrc, error);
+    }
+}
 
 
 watch(() => props.imageSrc, () => {

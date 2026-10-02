@@ -143,12 +143,13 @@ function normalizeContent(raw: AnyRecord = {}): AnyRecord {
 function normalizeMedia(raw: AnyRecord = {}): AnyRecord {
     const bigPic = stringValue(raw.bigPic ?? raw.big_pic ?? raw.bigCdnSrc ?? raw.big_cdn_src);
     const originPic = stringValue(raw.originPic ?? raw.origin_pic ?? raw.originSrc ?? raw.origin_src);
+    const smallPic = stringValue(raw.smallPic ?? raw.small_pic ?? raw.src ?? raw.cdnSrc ?? raw.cdn_src);
 
     return {
         ...raw,
         type: numberValue(raw.type),
-        small_pic: stringValue(raw.smallPic ?? raw.small_pic ?? raw.src ?? raw.cdnSrc ?? raw.cdn_src),
-        big_pic: bigPic || originPic,
+        small_pic: smallPic,
+        big_pic: bigPic || originPic || smallPic,
         water_pic: stringValue(raw.waterPic ?? raw.water_pic),
         vpic: stringValue(raw.vpic),
         vsrc: stringValue(raw.vsrc),

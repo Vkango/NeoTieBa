@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE};
+use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE, REFERER, USER_AGENT};
 use reqwest::{Client, Proxy};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -181,6 +181,35 @@ pub async fn fetch_data(url: &str, proxy_url: Option<&str>) -> Result<String, St
         .text()
         .await
         .map_err(|error| format!("Failed to read response body: {}", error))
+}
+
+pub async fn fetch_image(url: &str, proxy_url: Option<&str>) -> Result<(String, Vec<u8>), String> {
+    let client = build_client(proxy_url)?;
+    let response = client
+        .get(url)
+        .header(USER_AGENT, "Mozilla/5.0 (NeoTieBa)")
+        .header(REFERER, "https://tieba.baidu.com/")
+        .send()
+        .await
+        .map_err(|error| format!("Failed to fetch image: {}", error))?
+        .error_for_status()
+        .map_err(|error| format!("Image request failed: {}", error))?;
+
+    let mime = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(';').next())
+        .filter(|value| value.starts_with("image/"))
+        .unwrap_or("image/jpeg")
+        .to_string();
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("Failed to read image: {}", error))?
+        .to_vec();
+
+    Ok((mime, bytes))
 }
 
 #[command]

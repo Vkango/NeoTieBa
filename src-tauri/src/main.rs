@@ -3,6 +3,9 @@
 mod cookie_manager;
 mod file_io;
 mod request;
+
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use cookie_manager::{
     clear_cookies, delete_cookie, get_baidu_auth_cookies, get_cookie, get_cookies,
     get_cookies_string, set_cookie,
@@ -10,10 +13,12 @@ use cookie_manager::{
 use file_io::{copy_file_to_install_dir, read_file, read_file_bytes, write_file};
 use request::{
     fetch_data, fetch_data_buffer, fetch_data_post, fetch_data_with_cookie, fetch_data_with_headers,
+    fetch_image,
 };
 use tauri::Manager;
+#[cfg(not(target_os = "macos"))]
 use tauri_plugin_decorum::WebviewWindowExt;
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 use window_vibrancy::*;
 // use api::{ get_user_info };
 use base64::{engine::general_purpose, Engine as _};
@@ -24,63 +29,88 @@ use tauri::command;
 // src-tauri/src/main.rs
 use tauri::{AppHandle, Emitter, Runtime, WebviewUrl, WebviewWindowBuilder};
 use url::Url;
+#[cfg(target_os = "macos")]
+use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
 #[tauri::command]
 async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    // 创建登录窗口
+    if let Some(window) = app.get_webview_window("login_window") {
+        return window.set_focus().map_err(|e| e.to_string());
+    }
+
     let url = Url::parse("https://passport.baidu.com/v2/?login&u=https%3A%2F%2Ftieba.baidu.com")
         .map_err(|e| format!("无效的URL: {}", e))?;
 
-    let _window = WebviewWindowBuilder::new(&app, "login_window", WebviewUrl::External(url))
+    // Clear the native cookie store before any login requests can recreate cookies.
+    let window = WebviewWindowBuilder::new(
+        &app,
+        "login_window",
+        WebviewUrl::External(Url::parse("about:blank").unwrap()),
+    )
         .title("登录百度账号")
         .inner_size(800.0, 600.0)
         .center()
-        .initialization_script(include_str!("login_bridge.js"))
         .build()
         .map_err(|e| format!("创建窗口失败: {}", e))?;
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-
-    let urls = vec![
-        "https://passport.baidu.com",
-        "https://tieba.baidu.com",
-        "https://www.baidu.com",
-    ];
-
-    for url in urls {
-        let _ = clear_cookies(app.clone(), "login_window".to_string(), url.to_string()).await;
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let destroyed = cancelled.clone();
+    window.on_window_event(move |event| {
+        if matches!(event, tauri::WindowEvent::Destroyed) {
+            destroyed.store(true, Ordering::Relaxed);
+        }
+    });
+    if let Err(error) = cookie_manager::clear_baidu_cookies(window.clone()).await {
+        let _ = window.close();
+        return Err(error);
     }
-
+    if let Err(error) = window.navigate(url) {
+        let _ = window.close();
+        return Err(format!("打开登录页失败: {}", error));
+    }
+    tauri::async_runtime::spawn(async move {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(300);
+        let result = async {
+            loop {
+                if cancelled.load(Ordering::Relaxed) {
+                    return Ok(());
+                }
+                if let Some((bduss, stoken)) =
+                    cookie_manager::read_baidu_auth(window.clone()).await?
+                {
+                    if cancelled.load(Ordering::Relaxed) {
+                        return Ok(());
+                    }
+                    let main = app
+                        .get_webview_window("main")
+                        .ok_or_else(|| "无法找到主窗口".to_string())?;
+                    main.emit(
+                        "browser-login-cookies",
+                        serde_json::json!({
+                            "bduss": bduss, "stoken": stoken,
+                        }),
+                    )
+                        .map_err(|e| e.to_string())?;
+                    let _ = window.close();
+                    return Ok::<(), String>(());
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("登录超时，请重新打开登录窗口".to_string());
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        }
+            .await;
+        if let Err(error) = result {
+            if !cancelled.load(Ordering::Relaxed) {
+                if let Some(main) = app.get_webview_window("main") {
+                    let _ = main.emit("browser-login-error", error);
+                }
+                let _ = window.close();
+            }
+        }
+    });
     Ok(())
-}
-
-#[tauri::command]
-async fn handle_browser_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    let auth_result = get_baidu_auth_cookies(app.clone(), "login_window".to_string()).await?;
-
-    if let Some((bduss, stoken)) = auth_result {
-        let cookie_data = serde_json::json!({
-            "bduss": bduss,
-            "stoken": stoken
-        });
-
-        if let Some(main_window) = app.get_webview_window("main") {
-            main_window
-                .emit("browser-login-cookies", cookie_data)
-                .map_err(|e| format!("发送事件失败: {}", e))?;
-        } else {
-            return Err("无法找到主窗口".to_string());
-        }
-
-        if let Some(login_window) = app.get_webview_window("login_window") {
-            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-            let _ = login_window.close();
-        }
-
-        Ok(())
-    } else {
-        Err("未找到有效的登录凭证".to_string())
-    }
 }
 
 #[tauri::command]
@@ -178,14 +208,33 @@ async fn fetch_data_buffer_base64(
         Err(e) => Err(format!("Failed to fetch data: {}", e)),
     }
 }
+
+#[command]
+async fn fetch_image_base64(url: &str, proxy_url: Option<String>) -> Result<String, String> {
+    let (mime, bytes) = fetch_image(url, proxy_url.as_deref()).await?;
+    Ok(format!(
+        "data:{};base64,{}",
+        mime,
+        general_purpose::STANDARD.encode(bytes)
+    ))
+}
+
 fn main() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_clipboard_x::init())
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_decorum::init())
+        .plugin(tauri_plugin_opener::init());
+
+    // decorum's macOS traffic-light positioning currently dereferences a
+    // null NSView on recent macOS versions during window creation.
+    #[cfg(not(target_os = "macos"))]
+    {
+        builder = builder.plugin(tauri_plugin_decorum::init());
+    }
+
+    builder
         .invoke_handler(tauri::generate_handler![
             toggle_devtools,
             set_wallpaper_effect,
@@ -200,8 +249,8 @@ fn main() {
             fetch_data_post,
             fetch_data_buffer,
             fetch_data_buffer_base64,
+            fetch_image_base64,
             open_login,
-            handle_browser_login,
             get_cookies,
             get_cookie,
             set_cookie,
@@ -213,7 +262,7 @@ fn main() {
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
 
-            // decorum 内置标题栏：注入最小化/最大化/关闭按钮（含 Win11 分屏 Snap Layouts）
+            #[cfg(not(target_os = "macos"))]
             window
                 .create_overlay_titlebar()
                 .expect("failed to create overlay titlebar");

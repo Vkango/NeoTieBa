@@ -10,6 +10,7 @@ import Reply from '@/components/thread/Reply.vue';
 import ThreadFloorIndex from '@/components/thread/ThreadFloorIndex.vue';
 import { findReadingFloor, floorPreview } from '@/utils/thread-index';
 import ReplyView from '@/components/thread/SubPostView.vue';
+import RemoteImage from '@/components/common/RemoteImage.vue';
 import domToImage from 'dom-to-image';
 
 interface GalleryImage {
@@ -1087,7 +1088,8 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 .subpost-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  /* Keep the comment dialog above the app tabs and custom titlebar. */
+  z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: center;

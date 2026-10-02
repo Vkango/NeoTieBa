@@ -5,8 +5,8 @@
   "packageManager": "pnpm@11.1.2",
   "type": "module",
   "scripts": {
-    "dev": "pnpm proto:generate && vite",
-    "build": "pnpm proto:generate && vue-tsc --noEmit && vite build",
+    "dev": "corepack pnpm proto:generate && vite",
+    "build": "corepack pnpm proto:generate && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "proto:generate": "node scripts/generate-proto.mjs",

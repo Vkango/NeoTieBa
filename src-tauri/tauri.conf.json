@@ -4,13 +4,14 @@
   "version": "0.1.0",
   "identifier": "com.vkango.neotieba",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "corepack pnpm dev",
     "devUrl": "http://localhost:1143",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "corepack pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "NeoTieBa",
@@ -19,7 +20,7 @@
         "transparent": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "decorations": false
+        "decorations": true
       }
     ],
     "security": {
