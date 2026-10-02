@@ -4,6 +4,8 @@ import { useApiStore, useSettingsStore, useUserStore } from '@/stores';
 import Container from '@/components/common/Container.vue';
 import { getCurrentUser } from '@/services/user-manage';
 import { read_file } from '@/core/file-io';
+import ImageViewer from '@/components/common/ImageViewer.vue';
+
 import Reply from '@/components/thread/Reply.vue';
 import ThreadFloorIndex from '@/components/thread/ThreadFloorIndex.vue';
 import { findReadingFloor, floorPreview } from '@/utils/thread-index';
@@ -11,12 +13,23 @@ import ReplyView from '@/components/thread/SubPostView.vue';
 import RemoteImage from '@/components/common/RemoteImage.vue';
 import domToImage from 'dom-to-image';
 
+interface GalleryImage {
+  id: string;
+  postId: string;
+  authorId: string;
+  floor: number;
+  src: string;
+  alt: string;
+}
+
 // 类型定义
 interface Props {
   tid: string | number;
   key_: string | number;
   local?: boolean;
   local_dir?: string;
+  compact?: boolean;
+  mockData?: ThreadData;
 }
 
 interface Emits {
@@ -98,6 +111,129 @@ const isLoading = ref<boolean>(true);
 const isThreadsLoading = ref<boolean>(true);
 const threadList: Ref<Post[]> = ref([]);
 const currentPage = ref<number>(1);
+const galleryOpen = ref(false);
+const viewElement = ref<HTMLElement>();
+const viewWidth = ref(1000);
+const contextCollapsed = ref(false);
+const preferredContextWidth = ref<number>();
+const resizing = ref(false);
+let viewObserver: ResizeObserver | undefined;
+const minimumPanelWidth = computed(() => Math.min(240, viewWidth.value * .4));
+const maximumPanelWidth = computed(() => Math.max(minimumPanelWidth.value, viewWidth.value - minimumPanelWidth.value - 10));
+const contextWidth = computed(() => contextCollapsed.value ? 0 : Math.max(minimumPanelWidth.value,
+  Math.min(maximumPanelWidth.value, preferredContextWidth.value ?? Math.min(420, viewWidth.value * .44))));
+
+function captureLayoutAnchor() {
+  updateReadingPosition();
+  const container = containerRef.value?.getScrollElement();
+  const element = postElements.get(activePostId.value);
+  layoutAnchor = container && element ? {
+    id: activePostId.value,
+    offset: element.getBoundingClientRect().top - container.getBoundingClientRect().top
+  } : undefined;
+}
+function settleLayout() {
+  clearTimeout(layoutTimer);
+  void nextTick(restoreLayoutAnchor);
+  layoutTimer = setTimeout(() => { restoreLayoutAnchor(); layoutAnchor = undefined; scheduleReadingPosition(); }, 260);
+}
+function toggleContext() {
+  captureLayoutAnchor();
+  contextCollapsed.value = !contextCollapsed.value;
+  settleLayout();
+}
+function startResize(event: PointerEvent) {
+  if (event.button !== 0 || (event.target as HTMLElement).closest('button')) return;
+  captureLayoutAnchor();
+  resizing.value = true;
+  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  event.preventDefault();
+}
+function moveResize(event: PointerEvent) {
+  if (!resizing.value || !viewElement.value) return;
+  contextCollapsed.value = false;
+  preferredContextWidth.value = Math.max(minimumPanelWidth.value,
+    Math.min(maximumPanelWidth.value, viewElement.value.getBoundingClientRect().right - event.clientX - 5));
+  void nextTick(restoreLayoutAnchor);
+}
+function endResize() {
+  if (!resizing.value) return;
+  resizing.value = false;
+  settleLayout();
+}
+function resizeWithKeyboard(event: KeyboardEvent) {
+  if (event.target !== event.currentTarget || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  captureLayoutAnchor();
+  const width = event.key === 'Home' ? minimumPanelWidth.value : event.key === 'End' ? maximumPanelWidth.value
+    : contextWidth.value + (event.key === 'ArrowLeft' ? 24 : -24);
+  contextCollapsed.value = false;
+  preferredContextWidth.value = Math.max(minimumPanelWidth.value, Math.min(maximumPanelWidth.value, width));
+  settleLayout();
+}
+const galleryOnlyAuthor = ref(false);
+const selectedImageId = ref('');
+const visibleThreadList = computed(() => (galleryOpen.value ? galleryOnlyAuthor.value : Boolean(props.mockData) && onlyThreadAuthor.value)
+  ? threadList.value.filter(post => String(post.authorId) === threadAuthorId.value) : threadList.value);
+const galleryImages = computed<GalleryImage[]>(() => visibleThreadList.value.flatMap(post =>
+  (Array.isArray(post.content) ? post.content : []).flatMap((content: Record<string, unknown>, index: number) => {
+    const src = content.bigCdnSrc || content.originSrc || content.big_cdn_src || content.origin_src;
+    return Number(content.type) === 3 && typeof src === 'string' && src ? [{
+      id: `${post.id}-${index}`, postId: String(post.id), authorId: String(post.authorId),
+      floor: Number(post.floor), src, alt: `第 ${post.floor} 楼图片`
+    }] : [];
+  })));
+const selectedImageIndex = computed(() => galleryImages.value.findIndex(image => image.id === selectedImageId.value));
+const selectedImage = computed(() => galleryImages.value[selectedImageIndex.value]);
+let layoutTimer: ReturnType<typeof setTimeout> | undefined;
+let layoutAnchor: { id: string; offset: number } | undefined;
+
+function restoreLayoutAnchor() {
+  if (!layoutAnchor) return;
+  const element = postElements.get(layoutAnchor.id);
+  if (element) containerRef.value?.scrollToElement(element, layoutAnchor.offset);
+}
+async function toggleGallery() {
+  captureLayoutAnchor();
+  galleryOpen.value = !galleryOpen.value;
+  if (galleryOpen.value) contextCollapsed.value = false;
+  if (galleryOpen.value && !selectedImage.value) {
+    selectedImageId.value = (galleryImages.value.find(image => image.postId === activePostId.value) ?? galleryImages.value[0])?.id ?? '';
+  }
+  await nextTick();
+  restoreLayoutAnchor();
+  clearTimeout(layoutTimer);
+  layoutTimer = setTimeout(() => { restoreLayoutAnchor(); layoutAnchor = undefined; scheduleReadingPosition(); }, 260);
+}
+async function selectGalleryImage(id: string) {
+  selectedImageId.value = id;
+  layoutAnchor = undefined;
+  await nextTick();
+  const image = selectedImage.value;
+  const element = image && postElements.get(image.postId);
+  if (image && element) {
+    containerRef.value?.scrollToElement(element);
+    activePostId.value = image.postId;
+    floorIndexRef.value?.reveal(image.postId);
+  }
+}
+function stepGallery(direction: number) {
+  const image = galleryImages.value[selectedImageIndex.value + direction];
+  if (image) void selectGalleryImage(image.id);
+}
+function selectReplyImage(url: string, postId: string) {
+  const image = galleryImages.value.find(image => image.postId === postId && new URL(image.src, window.location.href).href === url);
+  if (image) void selectGalleryImage(image.id);
+}
+async function toggleGalleryAuthor() {
+  galleryOnlyAuthor.value = !galleryOnlyAuthor.value;
+  await nextTick();
+  const image = selectedImage.value ?? galleryImages.value[0];
+  if (image) await selectGalleryImage(image.id);
+  else selectedImageId.value = '';
+}
+
+
 const userStore = useUserStore();
 const onlyThreadAuthor = ref(!props.local && useSettingsStore().onlyAuthor);
 const threadAuthorId = ref<string>('');
@@ -111,12 +247,12 @@ const postPages = new Map<string, number>();
 const postElements = new Map<string, HTMLElement>();
 let readingFrame = 0;
 let contentObserver: ResizeObserver | undefined;
-const activePost = computed(() => threadList.value.find(post => String(post.id) === activePostId.value) ?? threadList.value[0]);
+const activePost = computed(() => visibleThreadList.value.find(post => String(post.id) === activePostId.value) ?? visibleThreadList.value[0]);
 const readingPage = computed(() => postPages.get(activePostId.value) ?? currentPage.value);
-const floorEntries = computed(() => threadList.value.map(post => ({
+const floorEntries = computed(() => visibleThreadList.value.map(post => ({
   id: String(post.id),
   floor: Number(post.floor),
-  avatar: 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + (post.author?.portrait || 'default'),
+  avatar: props.mockData ? '/assets/gallery-mock/morning.svg' : 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + (post.author?.portrait || 'default'),
   preview: floorPreview(post.content, threadTitle.value),
 })));
 const isJumpOpen = ref(false);
@@ -191,7 +327,9 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
   try {
     let response: ThreadData;
     const user = userStore.currentUser;
-    if (!props.local) {
+    if (props.mockData) {
+      response = props.mockData;
+    } else if (!props.local) {
       response = await api.get_post(String(props.tid), page, 30, 0, onlyAuthor, false, user?.bduss ?? '', 10, user?.stoken ?? '');
     } else if (props.local_dir) {
       response = JSON.parse(await read_file(props.local_dir + '/page' + page + '.json'));
@@ -238,7 +376,7 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
       else threadList.value.push(...added);
     }
     threadTitle.value = thread.title;
-    updateTabMeta?.({ key: props.key_, title: thread.title, icon: forum.avatar, icon_invert: false });
+    if (!props.mockData) updateTabMeta?.({ key: props.key_, title: thread.title, icon: forum.avatar, icon_invert: false });
     if (replace) {
       await nextTick();
       containerRef.value?.scrollToTop();
@@ -275,13 +413,19 @@ const jumpToPage = async () => {
 };
 
 const toggleOnlyAuthor = async () => {
+  if (galleryOpen.value) { await toggleGalleryAuthor(); return; }
+  if (props.mockData) {
+    onlyThreadAuthor.value = !onlyThreadAuthor.value;
+    galleryOnlyAuthor.value = onlyThreadAuthor.value;
+    return;
+  }
   if (await loadData(1, true, !onlyThreadAuthor.value)) {
     sendToast?.(onlyThreadAuthor.value ? '已切换为只看楼主' : '已显示全部回复', 2000);
   }
 };
 
 const toggleFavourite = async (cancelOnly = false) => {
-  if (isFavouriteLoading.value || isThreadsLoading.value || props.local) return;
+  if (isFavouriteLoading.value || isThreadsLoading.value || props.local || props.mockData) return;
   const positionPost = activePost.value;
   isFavouriteLoading.value = true;
   try {
@@ -315,14 +459,14 @@ function setPostElement(id: string | number, element: unknown) {
 
 function updateReadingPosition() {
   const container = containerRef.value?.getScrollElement();
-  if (!container || !threadList.value.length) return;
+  if (!container || !visibleThreadList.value.length) return;
   const anchor = container.getBoundingClientRect().top + Math.min(100, container.clientHeight * 0.2);
-  const index = findReadingFloor(threadList.value.length, index =>
-    postElements.get(String(threadList.value[index].id))?.getBoundingClientRect().bottom ?? Infinity, anchor);
+  const index = findReadingFloor(visibleThreadList.value.length, index =>
+    postElements.get(String(visibleThreadList.value[index].id))?.getBoundingClientRect().bottom ?? Infinity, anchor);
   if (index >= 0) {
-    activePostId.value = String(threadList.value[index].id);
+    activePostId.value = String(visibleThreadList.value[index].id);
     const element = postElements.get(activePostId.value);
-    const next = postElements.get(String(threadList.value[index + 1]?.id));
+    const next = postElements.get(String(visibleThreadList.value[index + 1]?.id));
     if (element) {
       const top = element.getBoundingClientRect().top;
       const bottom = next?.getBoundingClientRect().top ?? element.getBoundingClientRect().bottom;
@@ -340,6 +484,19 @@ function scheduleReadingPosition() {
 }
 
 const navigateToFloor = async (id: string, edge?: 'start' | 'end') => {
+  if (props.mockData) {
+    // Mock rendering and controlled filters settle before resolving the anchor.
+    await nextTick();
+    await nextTick();
+    const element = postElements.get(id);
+    if (element) {
+      containerRef.value?.scrollToElement(element);
+      activePostId.value = id;
+      floorIndexRef.value?.reveal(id, edge);
+      scheduleReadingPosition();
+    }
+    return;
+  }
   if (isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value) return;
   isFloorNavigating.value = true;
   try {
@@ -363,11 +520,17 @@ const navigateToFloor = async (id: string, edge?: 'start' | 'end') => {
   }
 };
 
+defineExpose({ navigateToFloor });
+watch(galleryImages, images => {
+  if (images.some(image => image.id === selectedImageId.value)) return;
+  selectedImageId.value = images[0]?.id ?? '';
+});
+
 // Layout changes (including late-loading images) can change which floor is being read.
 watch(captureRef, element => {
   contentObserver?.disconnect();
   if (!element) return;
-  contentObserver = new ResizeObserver(scheduleReadingPosition);
+  contentObserver = new ResizeObserver(() => { restoreLayoutAnchor(); scheduleReadingPosition(); });
   contentObserver.observe(element);
   const container = containerRef.value?.getScrollElement();
   if (container) contentObserver.observe(container);
@@ -377,6 +540,14 @@ watch(() => [threadList.value.length, isLoading.value], async () => {
   scheduleReadingPosition();
 });
 onMounted(async () => {
+  if (viewElement.value) {
+    viewWidth.value = viewElement.value.clientWidth;
+    viewObserver = new ResizeObserver(() => {
+      viewWidth.value = viewElement.value?.clientWidth ?? viewWidth.value;
+      restoreLayoutAnchor();
+    });
+    viewObserver.observe(viewElement.value);
+  }
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
@@ -384,11 +555,14 @@ onMounted(async () => {
 onActivated(scheduleReadingPosition);
 onBeforeUnmount(() => {
   contentObserver?.disconnect();
+  clearTimeout(layoutTimer);
+  viewObserver?.disconnect();
   cancelAnimationFrame(readingFrame);
 });
 
 // 滚动处理
 const onScroll = (target: HTMLElement): void => {
+  if (props.mockData) return;
   const { scrollTop, clientHeight, scrollHeight } = target;
   if (scrollTop + clientHeight + 20 >= scrollHeight) {
     if (isLoading.value || isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value || isJumpOpen.value || !returnData.value.data?.page?.hasMore) return;
@@ -419,115 +593,436 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 </script>
 
 <template>
-  <div class="thread-view" @keydown.esc="isJumpOpen = false">
-  <Container ref="containerRef" :tab-key="props.key_" :scroll-key="`thread-${props.key_}`" @yscroll="onScroll" @positionchange="scheduleReadingPosition">
-    <transition name="fade1">
-      <div v-if="!isLoading">
-        <div class="thread-list" v-if="threadList.length" ref="captureRef">
-          <h3 class="thread-title">
-            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-              <RippleButton v-if="returnData.data"
-                style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;"
-                @click="openBar(returnData.data.forum.name)">
-                <div
-                  style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
-                  <RemoteImage :src="returnData.data.forum.avatar" class="avatar" />
-                  <span style="font-size: 14px; margin-right: 5px;">{{ returnData.data.forum.name }}吧</span>
+  <div ref="viewElement" class="thread-view"
+    :class="{ compact: props.compact || galleryOpen, 'gallery-open': galleryOpen, 'context-collapsed': contextCollapsed, resizing }"
+    :style="{ '--context-width': contextWidth + 'px' }" @keydown.esc="isJumpOpen = false">
+    <section class="gallery-stage" aria-label="帖子图片" :aria-hidden="!galleryOpen" :inert="!galleryOpen || undefined">
+      <ImageViewer v-if="galleryOpen && selectedImage" :image-src="selectedImage.src"
+        :content-width="Math.max(1, viewWidth - contextWidth - 10)" visible embedded>
+        <template #gallery-controls>
+          <button type="button" class="gallery-button" :disabled="selectedImageIndex <= 0" @click="stepGallery(-1)"
+            title="上一张" aria-label="上一张">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <span class="image-position" aria-live="polite">{{ selectedImageIndex + 1 }} / {{ galleryImages.length
+          }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
+          <button type="button" class="gallery-button" :disabled="selectedImageIndex >= galleryImages.length - 1"
+            @click="stepGallery(1)" title="下一张" aria-label="下一张">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+          <button type="button" class="gallery-button author-filter" :aria-pressed="galleryOnlyAuthor"
+            @click="toggleGalleryAuthor()">只看楼主</button>
+          <button type="button" class="gallery-button" @click="toggleGallery" title="退出看图模式" aria-label="退出看图模式">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          <span class="gallery-divider" aria-hidden="true"></span>
+        </template>
+      </ImageViewer>
+      <div v-else-if="galleryOpen" class="empty-gallery" role="status">
+        <p>{{ galleryOnlyAuthor ? '楼主还没有发布图片' : '暂无图片' }}</p>
+        <button v-if="galleryOnlyAuthor" type="button" @click="toggleGalleryAuthor()">查看全部图片</button>
+      </div>
+    </section>
+    <div class="gallery-spacer" aria-hidden="true"></div>
+    <div v-if="galleryOpen" class="gallery-splitter" role="separator" aria-label="调整图片与回复区域宽度"
+      aria-orientation="vertical" tabindex="0" :aria-valuenow="Math.round(contextWidth)" :aria-valuemin="0"
+      :aria-valuemax="Math.round(maximumPanelWidth)" @pointerdown="startResize" @pointermove="moveResize"
+      @pointerup="endResize" @pointercancel="endResize" @lostpointercapture="endResize" @keydown="resizeWithKeyboard">
+      <button type="button" class="context-toggle" :aria-label="contextCollapsed ? '展开回复区域' : '收起回复区域'"
+        :title="contextCollapsed ? '展开回复区域' : '收起回复区域'" :aria-expanded="!contextCollapsed" @click.stop="toggleContext">
+        <span class="material-symbols-outlined">{{ contextCollapsed ? 'chevron_left' : 'chevron_right' }}</span>
+      </button>
+    </div>
+    <section class="thread-context" :aria-hidden="galleryOpen && contextCollapsed"
+      :inert="galleryOpen && contextCollapsed || undefined">
+      <Container ref="containerRef" :tab-key="props.key_" :scroll-key="`thread-${props.key_}`" @yscroll="onScroll"
+        @positionchange="scheduleReadingPosition">
+        <transition name="fade1">
+          <div v-if="!isLoading">
+            <div class="thread-list" v-if="threadList.length" ref="captureRef">
+              <h3 class="thread-title">
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                  <RippleButton v-if="returnData.data"
+                    style="background-color: transparent; box-shadow: none; padding: 0; border-radius: 100px;"
+                    @click="openBar(returnData.data.forum.name)">
+                    <div
+                      style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
+                      <img :src="returnData.data.forum.avatar" class="avatar" referrerpolicy="no-referrer">
+                      <span style="font-size: 14px; margin-right: 5px;">{{ returnData.data.forum.name }}吧</span>
+                    </div>
+                  </RippleButton>
+                  {{ threadTitle }}
+                  <RippleButton style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none;"
+                    @click="handleShare" title="生成长截图">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">share</span>
+                  </RippleButton>
                 </div>
-              </RippleButton>
-              {{ threadTitle }}
-              <RippleButton style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none;"
-                @click="handleShare" title="生成长截图">
-                <span class="material-symbols-outlined" style="font-size: 20px;">share</span>
-              </RippleButton>
+              </h3>
+              <div v-for="item in visibleThreadList" :key="item.id" :ref="element => setPostElement(item.id, element)"
+                class="post-anchor"
+                :class="{ 'gallery-selected': galleryOpen && String(item.id) === selectedImage?.postId }">
+                <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))"
+                  :like="item.agree.agreeNum - item.agree.disagreeNum"
+                  :user_name="item.author?.nameShow || item.author?.name || '匿名用户'" :uid="item.authorId"
+                  @openUser="props.mockData ? undefined : onUserNameClicked($event)"
+                  :avatar="item.author?.portrait || 'default'"
+                  :avatar-url="props.mockData ? '/assets/gallery-mock/morning.svg' : undefined"
+                  :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
+                  :create_time="item.time" :reply_num="props.mockData ? 0 : item.subPostNumber" :tid="String(tid)"
+                  :pid="String(item.id)" :floor="item.floor" :is_lz="String(item.authorId) === threadAuthorId"
+                  :level="item.author?.levelId || 0" :ipAddress="item.author?.ipAddress || ''"
+                  @viewAllReplies="ViewAllReplie">
+                </Reply>
+              </div>
             </div>
-          </h3>
-          <div v-for="item in threadList" :key="item.id" :ref="element => setPostElement(item.id, element)" class="post-anchor">
-          <Reply :like="item.agree.agreeNum - item.agree.disagreeNum"
-            :user_name="item.author?.nameShow || item.author?.name || '匿名用户'" :uid="item.authorId"
-            @openUser="onUserNameClicked" :avatar="item.author?.portrait || 'default'"
-            :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
-            :create_time="item.time" :reply_num="item.subPostNumber" :tid="String(tid)" :pid="String(item.id)"
-            :floor="item.floor" :is_lz="String(item.authorId) === threadAuthorId" :level="item.author?.levelId || 0"
-            :ipAddress="item.author?.ipAddress || ''" @viewAllReplies="ViewAllReplie">
-          </Reply>
-          </div>
-        </div>
 
-      </div>
-    </transition>
-    <Transition name="subpost-modal">
-      <div v-if="isSubPostCardOpen" class="subpost-overlay" @click.self="isSubPostCardOpen = false">
-        <Transition name="subpost-card" appear>
-          <section v-if="isSubPostCardOpen" class="subpost-card" role="dialog" aria-modal="true"
-            aria-label="查看楼中楼" @click.stop>
-            <div class="subpost-card-header">
-              <span>查看楼中楼</span>
-              <RippleButton class="subpost-card-close" @click="isSubPostCardOpen = false" aria-label="关闭楼中楼">
-                <img src="/assets/close.svg" alt="" />
-              </RippleButton>
-            </div>
-            <div class="subpost-card-content">
-              <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
-                @openUser="onUserNameClicked"></ReplyView>
-            </div>
-          </section>
+          </div>
+        </transition>
+        <Transition name="subpost-modal">
+          <div v-if="isSubPostCardOpen" class="subpost-overlay" @click.self="isSubPostCardOpen = false">
+            <Transition name="subpost-card" appear>
+              <section v-if="isSubPostCardOpen" class="subpost-card" role="dialog" aria-modal="true" aria-label="查看楼中楼"
+                @click.stop>
+                <div class="subpost-card-header">
+                  <span>查看楼中楼</span>
+                  <RippleButton class="subpost-card-close" @click="isSubPostCardOpen = false" aria-label="关闭楼中楼">
+                    <img src="/assets/close.svg" alt="" />
+                  </RippleButton>
+                </div>
+                <div class="subpost-card-content">
+                  <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
+                    @openUser="props.mockData ? undefined : onUserNameClicked($event)"></ReplyView>
+                </div>
+              </section>
+            </Transition>
+          </div>
         </Transition>
-      </div>
-    </Transition>
-    <transition name="fade1">
-      <div v-if="loadError && !threadList.length" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
+        <transition name="fade1">
+          <div v-if="loadError && !threadList.length" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
           justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center;
           opacity: 0.5; gap: 10px;">
-        <div style="font-size: 150%; font-weight: bold;">{{ loadError }}</div>
-        <RippleButton :disabled="isThreadsLoading" @click="loadData(currentPage, true)">重试</RippleButton>
-      </div>
-    </transition>
-    <transition name="fade1">
-      <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
-    </transition>
-  </Container>
-  <ThreadFloorIndex v-if="threadList.length && !isLoading" ref="floorIndexRef"
-    :entries="floorEntries" :current-id="activePostId" :reading-index="readingIndex" :reading-page="readingPage" :total-pages="totalPages"
-    :busy="isThreadsLoading || isFavouriteLoading || isFloorNavigating" :local="props.local"
-    :only-author="onlyThreadAuthor" :favourite="isFavourite"
-    :favourite-here="isFavourite && favouritePostId === activePostId"
-    @navigate="navigateToFloor" @jump="openJump" @only-author="toggleOnlyAuthor"
-    @bookmark="toggleFavourite()" @remove-bookmark="toggleFavourite(true)" />
-  <Transition name="fade1">
-    <div v-if="isJumpOpen" class="jump-overlay" @click.self="!isThreadsLoading && (isJumpOpen = false)">
-      <section class="jump-card" role="dialog" aria-modal="true" :aria-labelledby="'jump-title-' + props.key_">
-        <form @submit.prevent="jumpToPage">
-          <h3 :id="'jump-title-' + props.key_">跳转到指定页</h3>
-          <p>当前第 {{ readingPage }} 页<span v-if="totalPages">，共 {{ totalPages }} 页</span></p>
-          <label :for="'thread-page-input-' + props.key_">页码</label>
-          <input :id="'thread-page-input-' + props.key_" ref="pageInputRef" v-model="jumpInput" type="text"
-            inputmode="numeric" :disabled="isThreadsLoading" autocomplete="off"
-            :aria-invalid="Boolean(jumpError)" :aria-describedby="'jump-error-' + props.key_" />
-          <p :id="'jump-error-' + props.key_" class="jump-error" aria-live="polite">{{ jumpError }}</p>
-          <div class="jump-buttons">
-            <RippleButton type="button" :disabled="isThreadsLoading" @click="isJumpOpen = false">取消</RippleButton>
-            <RippleButton type="submit" :disabled="isThreadsLoading">{{ isThreadsLoading ? '加载中…' : '跳转' }}</RippleButton>
+            <div style="font-size: 150%; font-weight: bold;">{{ loadError }}</div>
+            <RippleButton :disabled="isThreadsLoading" @click="loadData(currentPage, true)">重试</RippleButton>
           </div>
-        </form>
-      </section>
-    </div>
-  </Transition>
+        </transition>
+        <transition name="fade1">
+          <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
+        </transition>
+      </Container>
+      <ThreadFloorIndex v-if="threadList.length && !isLoading" ref="floorIndexRef" :entries="floorEntries"
+        :current-id="activePostId" :reading-index="readingIndex" :reading-page="readingPage" :total-pages="totalPages"
+        :busy="isThreadsLoading || isFavouriteLoading || isFloorNavigating" :local="props.local"
+        :read-only="Boolean(props.mockData)" :gallery-active="galleryOpen"
+        :only-author="galleryOpen ? galleryOnlyAuthor : onlyThreadAuthor" :favourite="isFavourite"
+        :favourite-here="isFavourite && favouritePostId === activePostId" @gallery="toggleGallery"
+        @navigate="navigateToFloor" @jump="openJump" @only-author="toggleOnlyAuthor" @bookmark="toggleFavourite()"
+        @remove-bookmark="toggleFavourite(true)" />
+      <Transition name="fade1">
+        <div v-if="isJumpOpen" class="jump-overlay" @click.self="!isThreadsLoading && (isJumpOpen = false)">
+          <section class="jump-card" role="dialog" aria-modal="true" :aria-labelledby="'jump-title-' + props.key_">
+            <form @submit.prevent="jumpToPage">
+              <h3 :id="'jump-title-' + props.key_">跳转到指定页</h3>
+              <p>当前第 {{ readingPage }} 页<span v-if="totalPages">，共 {{ totalPages }} 页</span></p>
+              <label :for="'thread-page-input-' + props.key_">页码</label>
+              <input :id="'thread-page-input-' + props.key_" ref="pageInputRef" v-model="jumpInput" type="text"
+                inputmode="numeric" :disabled="isThreadsLoading" autocomplete="off" :aria-invalid="Boolean(jumpError)"
+                :aria-describedby="'jump-error-' + props.key_" />
+              <p :id="'jump-error-' + props.key_" class="jump-error" aria-live="polite">{{ jumpError }}</p>
+              <div class="jump-buttons">
+                <RippleButton type="button" :disabled="isThreadsLoading" @click="isJumpOpen = false">取消</RippleButton>
+                <RippleButton type="submit" :disabled="isThreadsLoading">{{ isThreadsLoading ? '加载中…' : '跳转' }}
+                </RippleButton>
+              </div>
+            </form>
+          </section>
+        </div>
+      </Transition>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .thread-view {
+  display: flex;
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
-.post-anchor { width: 100%; display: flex; justify-content: center; }
+.thread-context {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
 
-.jump-card button:disabled { opacity: 0.45; cursor: default; }
-.jump-card button:focus-visible { outline: 2px solid rgb(var(--primary-color)); outline-offset: 3px; }
+.gallery-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  border-radius: 5px 0 0 0;
+  transform: translateX(-24px);
+  transition: opacity .24s ease, transform .24s ease;
+  z-index: 0;
+}
+
+.gallery-open .gallery-stage {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.gallery-spacer {
+  flex: 0 0 0;
+  min-width: 0;
+  pointer-events: none;
+  transition: flex-basis .24s ease;
+}
+
+.gallery-open .gallery-spacer {
+  flex-basis: calc(100% - var(--context-width) - 10px);
+}
+
+.resizing .gallery-spacer {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-spacer {
+    transition: none;
+  }
+}
+
+.gallery-open .thread-context {
+  z-index: 1;
+  background: rgba(var(--background-color), .38);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px) saturate(1.15);
+  overflow: hidden;
+  margin: 10px 0;
+  margin-right: 10px;
+  border-radius: 5px;
+  box-shadow: 0 16px 22px rgba(0, 0, 0, 0.25);
+}
+
+.gallery-open .thread-context :deep(.component-container) {
+  box-sizing: border-box;
+  padding-right: 48px;
+}
+
+.context-collapsed.gallery-open .thread-context {
+  visibility: hidden;
+}
+
+.resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+.resizing .gallery-stage {
+  transition: none;
+}
+
+.gallery-splitter {
+  flex: 0 0 10px;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 25;
+}
+
+.gallery-splitter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+}
+
+.gallery-splitter:hover::before,
+.gallery-splitter:focus-visible::before {
+  background: rgb(var(--primary-color));
+}
+
+.context-toggle {
+  position: absolute;
+  top: 16px;
+  left: -10px;
+  width: 30px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(var(--text-color), .15);
+  border-radius: 8px;
+  background: rgb(var(--background-color));
+  color: rgb(var(--text-color));
+  box-shadow: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+
+.gallery-splitter:hover .context-toggle,
+.gallery-splitter:focus-within .context-toggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .context-toggle {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .context-toggle {
+    transition: none;
+  }
+}
+
+.context-collapsed .context-toggle {
+  left: -20px;
+}
+
+.context-toggle:focus-visible {
+  outline: 2px solid rgb(var(--primary-color));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-stage {
+    transition: none;
+  }
+}
+
+.gallery-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgb(var(--text-color));
+  cursor: pointer;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.gallery-button:hover {
+  background: rgba(var(--text-color), .12);
+}
+
+.gallery-button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.gallery-button:focus-visible {
+  outline: 2px solid rgb(var(--primary-color));
+  outline-offset: 2px;
+}
+
+.author-filter[aria-pressed="true"] {
+  background: rgba(var(--primary-color), .3);
+}
+
+.image-position {
+  text-align: center;
+  min-width: 60px;
+  font-size: 11px;
+}
+
+.image-position small {
+  display: block;
+  margin-top: 0;
+  line-height: 12px;
+  font-size: 9px;
+  opacity: .6;
+}
+
+.gallery-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: rgba(var(--text-color), .2);
+}
+
+.gallery-button .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.empty-gallery {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: .65;
+}
+
+.compact .thread-title {
+  width: 100%;
+  font-size: 16px;
+}
+
+.compact .thread-title>div {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.compact .thread-list {
+  padding: 6px 12px;
+}
+
+.compact :deep(.thread) {
+  width: 100%;
+  min-width: 0;
+}
+
+.compact :deep(.thread-content) {
+  overflow-wrap: anywhere;
+}
+
+.compact :deep(.thread-reply-img) {
+  max-width: 100% !important;
+  height: auto;
+}
+
+.compact :deep(.thread-info) {
+  flex-wrap: wrap;
+}
+
+.gallery-selected {
+  border-radius: 8px;
+  background: rgba(var(--primary-color), 0.12);
+  box-shadow: inset 3px 0 rgba(var(--primary-color), 0.7);
+}
+
+.post-anchor {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.jump-card button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.jump-card button:focus-visible {
+  outline: 2px solid rgb(var(--primary-color));
+  outline-offset: 3px;
+}
 
 .jump-overlay {
   position: absolute;
@@ -547,9 +1042,20 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
 }
 
-.jump-card h3 { margin: 0 0 12px; }
-.jump-card p { font-size: 13px; opacity: 0.7; }
-.jump-card label { display: block; margin-bottom: 8px; }
+.jump-card h3 {
+  margin: 0 0 12px;
+}
+
+.jump-card p {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.jump-card label {
+  display: block;
+  margin-bottom: 8px;
+}
+
 .jump-card input {
   box-sizing: border-box;
   width: 100%;
@@ -561,10 +1067,23 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   font: inherit;
 }
 
-.jump-error { min-height: 18px; }
-.jump-buttons { display: flex; justify-content: flex-end; gap: 8px; }
-.jump-buttons button { padding: 10px 18px; }
-.jump-buttons button[type="submit"] { background: rgba(var(--primary-color), 0.3); }
+.jump-error {
+  min-height: 18px;
+}
+
+.jump-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.jump-buttons button {
+  padding: 10px 18px;
+}
+
+.jump-buttons button[type="submit"] {
+  background: rgba(var(--primary-color), 0.3);
+}
 
 .subpost-overlay {
   position: fixed;

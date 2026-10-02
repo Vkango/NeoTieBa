@@ -11,13 +11,15 @@ const props = defineProps<{
   totalPages?: number;
   busy: boolean;
   local?: boolean;
+  readOnly?: boolean;
+  galleryActive?: boolean;
   favourite: boolean;
   favouriteHere: boolean;
   onlyAuthor: boolean;
 }>();
 const emit = defineEmits<{
   (event: 'navigate', id: string, edge?: 'start' | 'end'): void;
-  (event: 'jump' | 'onlyAuthor' | 'bookmark' | 'removeBookmark'): void;
+  (event: 'jump' | 'onlyAuthor' | 'bookmark' | 'removeBookmark' | 'gallery'): void;
 }>();
 const isOpen = ref(false);
 const windowStart = ref(0);
@@ -115,6 +117,9 @@ defineExpose({ reveal });
     <div class="index-tools" :aria-hidden="!isOpen" :inert="!isOpen || undefined">
       <span class="reading-position">{{ current?.floor }}楼 · {{ readingPage }}{{ totalPages ? '/' + totalPages : ''
         }}页</span>
+      <button type="button" :aria-label="galleryActive ? '退出看图模式' : '看图模式'" :title="galleryActive ? '退出看图模式' : '看图模式'" :aria-pressed="Boolean(galleryActive)" :disabled="busy" @click="emit('gallery')">
+        <span class="material-symbols-outlined">photo_library</span>
+      </button>
       <button type="button" aria-label="跳页" title="跳页" :disabled="busy" @click="emit('jump')">
         <span class="material-symbols-outlined">find_in_page</span>
       </button>
@@ -124,11 +129,11 @@ defineExpose({ reveal });
         <span class="material-symbols-outlined">{{ onlyAuthor ? 'group' : 'person' }}</span>
       </button>
       <button type="button" :aria-label="favouriteHere ? '取消收藏' : '收藏到当前楼层'"
-        :title="favouriteHere ? '取消收藏' : '收藏到第 ' + current?.floor + ' 楼'" :disabled="busy || local"
+        :title="favouriteHere ? '取消收藏' : '收藏到第 ' + current?.floor + ' 楼'" :disabled="busy || local || readOnly"
         @click="emit('bookmark')">
         <span class="material-symbols-outlined">{{ favouriteHere ? 'bookmark_added' : 'bookmark' }}</span>
       </button>
-      <button v-if="favourite && !favouriteHere" type="button" aria-label="取消收藏" title="取消收藏" :disabled="busy || local"
+      <button v-if="favourite && !favouriteHere" type="button" aria-label="取消收藏" title="取消收藏" :disabled="busy || local || readOnly"
         @click="emit('removeBookmark')">
         <span class="material-symbols-outlined">bookmark_remove</span>
       </button>
