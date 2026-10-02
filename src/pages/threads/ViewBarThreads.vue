@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTabStore } from '@/stores/tabs';
 import { computed, ref, onMounted, inject, type Ref } from 'vue';
 import { useApiStore } from '@/stores';
 import PinnedThread from '@/components/thread/PinnedThread.vue';
@@ -472,7 +473,7 @@ onMounted(async (): Promise<void> => {
       <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
     </transition>
 
-    <BarInfoCard :visible="barDetailVisible" :forumData="{
+    <BarInfoCard :visible="barDetailVisible && useTabStore().activeKey === String(props.key_)" :forumData="{
       id: String(returnData.forum.id || ''),
       name: returnData.forum.name || props.barName,
       avatar: returnData.forum.avatar || '',

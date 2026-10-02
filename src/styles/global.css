@@ -1,4 +1,5 @@
 :root {
+    color-scheme: light;
     font-family: 'Microsoft YaHei';
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 16px;
@@ -19,6 +20,7 @@
 }
 
 :root.dark {
+    color-scheme: dark;
     color: #f6f6f6;
     background-color: transparent;
     --text-color: 255, 255, 255;
@@ -78,6 +80,12 @@ input {
     padding: 10px 15px;
     box-sizing: border-box;
 }
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), textarea {
+    color: rgb(var(--text-color));
+    background-color: rgba(var(--background-color), .9);
+}
+input::placeholder, textarea::placeholder { color: rgba(var(--text-color), .5); }
 
 button {
     border-radius: 8px;

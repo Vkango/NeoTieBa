@@ -1,4 +1,5 @@
 <template>
+  <Teleport to="body">
   <Transition name="drawer" mode="out-in">
     <div id="drawer-mask" v-if="isDrawerOpen.state">
     </div>
@@ -22,6 +23,7 @@
 
     </div>
   </Transition>
+  </Teleport>
 </template>
 <script setup lang="ts">
 import RippleButton from '#components/common/RippleButton.vue';
@@ -112,7 +114,7 @@ const props = defineProps({
   height: 100%;
   display: flex;
   justify-content: flex-end;
-  z-index: 3;
+  z-index: 3101;
 }
 
 #drawer-mask {
@@ -124,6 +126,6 @@ const props = defineProps({
   background-color: rgba(0, 0, 0, 0.2);
   display: flex;
   justify-content: flex-end;
-  z-index: 2;
+  z-index: 3100;
 }
 </style>

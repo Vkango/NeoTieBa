@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, onMounted, onBeforeUnmount, onActivated, watch, inject, type Ref } from 'vue';
+import { useTabStore } from '@/stores/tabs';
 import { useApiStore, useSettingsStore, useUserStore } from '@/stores';
 import Container from '@/components/common/Container.vue';
 import { getCurrentUser } from '@/services/user-manage';
@@ -97,6 +98,7 @@ interface SubPostInfo {
 
 // Props & Emits
 const props = defineProps<Props>();
+const tabStore = useTabStore();
 const emit = defineEmits<Emits>();
 
 // Injects
@@ -622,7 +624,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
             <span class="material-symbols-outlined">chevron_left</span>
           </button>
           <span class="image-position" aria-live="polite">{{ selectedImageIndex + 1 }} / {{ galleryImages.length
-          }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
+            }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
           <button type="button" class="gallery-button" :disabled="selectedImageIndex >= galleryImages.length - 1"
             @click="stepGallery(1)" title="下一张" aria-label="下一张">
             <span class="material-symbols-outlined">chevron_right</span>
@@ -700,25 +702,28 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
           </div>
         </transition>
-        <Transition name="subpost-modal">
-          <div v-if="isSubPostCardOpen" class="subpost-overlay" @click.self="isSubPostCardOpen = false">
-            <Transition name="subpost-card" appear>
-              <section v-if="isSubPostCardOpen" class="subpost-card" role="dialog" aria-modal="true" aria-label="查看楼中楼"
-                @click.stop>
-                <div class="subpost-card-header">
-                  <span>查看楼中楼</span>
-                  <RippleButton class="subpost-card-close" @click="isSubPostCardOpen = false" aria-label="关闭楼中楼">
-                    <img src="/assets/close.svg" alt="" />
-                  </RippleButton>
-                </div>
-                <div class="subpost-card-content">
-                  <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
-                    @openUser="props.mockData ? undefined : onUserNameClicked($event)"></ReplyView>
-                </div>
-              </section>
-            </Transition>
-          </div>
-        </Transition>
+        <Teleport to="body">
+          <Transition name="subpost-modal">
+            <div v-if="isSubPostCardOpen && tabStore.activeKey === String(props.key_)" class="subpost-overlay"
+              @click.self="isSubPostCardOpen = false">
+              <Transition name="subpost-card" appear>
+                <section v-if="isSubPostCardOpen" class="subpost-card" role="dialog" aria-modal="true"
+                  aria-label="查看楼中楼" @click.stop>
+                  <div class="subpost-card-header">
+                    <span>查看楼中楼</span>
+                    <RippleButton class="subpost-card-close" @click="isSubPostCardOpen = false" aria-label="关闭楼中楼">
+                      <img src="/assets/close.svg" alt="" />
+                    </RippleButton>
+                  </div>
+                  <div class="subpost-card-content">
+                    <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
+                      @openUser="props.mockData ? undefined : onUserNameClicked($event)"></ReplyView>
+                  </div>
+                </section>
+              </Transition>
+            </div>
+          </Transition>
+        </Teleport>
         <transition name="fade1">
           <div v-if="loadError && !threadList.length" style="width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; border-radius: 5px;
           justify-content: center; text-align: center; display: flex; flex-direction: column; align-items: center;
@@ -819,9 +824,6 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
 .gallery-open .thread-context {
   z-index: 1;
-  background: rgba(var(--background-color), .38);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px) saturate(1.15);
   overflow: hidden;
   margin: 10px 0;
   margin-right: 10px;
@@ -829,7 +831,22 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   box-shadow: 0 16px 22px rgba(0, 0, 0, 0.25);
 }
 
+/* Keep glass on a sibling layer so the index can sample the replies above it. */
+.gallery-open .thread-context::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(var(--background-color), .38);
+  backdrop-filter: blur(32px) saturate(1.15);
+  -webkit-backdrop-filter: blur(32px) saturate(1.15);
+}
+
 .gallery-open .thread-context :deep(.component-container) {
+  position: relative;
+  z-index: 1;
   box-sizing: border-box;
   padding-right: 48px;
 }
@@ -1027,8 +1044,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 
 .gallery-selected {
   border-radius: 8px;
-  background: rgba(var(--primary-color), 0.12);
-  box-shadow: inset 3px 0 rgba(var(--primary-color), 0.7);
+  background: rgba(var(--primary-color), 0.05);
 }
 
 .post-anchor {
@@ -1112,7 +1128,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   position: fixed;
   inset: 0;
   /* Keep the comment dialog above the app tabs and custom titlebar. */
-  z-index: 1200;
+  z-index: 3200;
   display: flex;
   align-items: center;
   justify-content: center;
