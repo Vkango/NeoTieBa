@@ -8,7 +8,7 @@
                 @touchstart="handleTouchStart" @touchmove.prevent="handleTouchMove" @touchend="handleTouchEnd">
                 <p v-if="imageFailed" class="image-error" role="status">图片加载失败</p>
                 <img v-show="!imageFailed" ref="imageRef" :src="resolvedImageSrc" :style="fittedImageStyle" class="viewer-image" alt="Preview"
-                    draggable="false" referrerpolicy="no-referrer" @load="onImageLoad" @error="loadThroughProxy" />
+                    draggable="false" referrerpolicy="no-referrer" @load="onImageLoad" @error="handleImageError" />
             </div>
 
             <!-- Controls Bar -->
@@ -228,7 +228,7 @@ function normalizeImageUrl(value: string): string {
     return value;
 }
 
-async function loadThroughProxy(): Promise<void> {
+async function handleImageError(): Promise<void> {
     if (proxyAttempted.value || !props.imageSrc || props.imageSrc.startsWith('data:')) {
         imageFailed.value = true;
         return;
