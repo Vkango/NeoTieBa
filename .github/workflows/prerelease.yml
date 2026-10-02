@@ -1,4 +1,4 @@
-name: Test Build
+name: Build Pre-release
 
 on:
   workflow_dispatch:
@@ -104,3 +104,31 @@ jobs:
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
           if-no-files-found: error
+
+  release:
+    name: Publish pre-release
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: write
+    steps:
+      - name: Download bundles
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: prerelease-${{ github.run_number }}.${{ github.run_attempt }}
+          name: NeoTieBa Pre-release ${{ github.run_number }}.${{ github.run_attempt }}
+          body: |
+            Automated pre-release build from `${{ github.sha }}`.
+          prerelease: true
+          make_latest: false
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/**/*.msi
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+            artifacts/**/*.deb
