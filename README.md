@@ -1,5 +1,5 @@
 <p align="center">
-<img height="200" width="200" src="./app-icon-new.svg" alt="NeoTieBa 应用图标"/>
+<img height="200" width="200" src="./app-icon.png" alt="NeoTieBa 应用图标"/>
 </p>
 <div align="center">
 
