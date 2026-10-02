@@ -15,7 +15,8 @@
 
     </div>
     <div class="thread-preview">
-      <div class="thread-content" v-html="content" style="user-select: text;" @click="handleClick">
+      <div ref="contentElement" class="thread-content" v-html="content" style="user-select: text;" @click="handleClick"
+        @error.capture="handleImageError">
       </div>
       <div class="thread-info">
         <!-- <button @click="dom2img">申必</button> -->
@@ -42,8 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, inject } from 'vue';
+import { onMounted, ref, inject, nextTick } from 'vue';
 import { useApiStore } from '@/stores';
+import { invoke } from '@tauri-apps/api/core';
 import SubPost from './SubPost.vue';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
 import type { ContentElement } from '@/types/common';
@@ -77,6 +79,7 @@ const emit = defineEmits<{
 
 const openImageViewer = inject<((url: string) => void) | undefined>('openImageViewer');
 const content = ref('')
+const contentElement = ref<HTMLElement | null>(null);
 const subpost_list = ref<any[]>([])
 
 const openUser = (uid: string | number) => {
@@ -86,7 +89,7 @@ const openUser = (uid: string | number) => {
 const handleClick = (event: any) => {
   if (event.target.classList.contains('thread-reply-img')) {
     if (openImageViewer) {
-      openImageViewer(event.target.src);
+      openImageViewer(event.target.getAttribute('data-full-src') || event.target.src);
     }
   }
   if (event.target.classList.contains('at-button')) {
@@ -94,8 +97,39 @@ const handleClick = (event: any) => {
   }
 }
 
-onMounted(() => {
+const handleImageError = async (event: Event): Promise<void> => {
+  const image = event.target as HTMLImageElement;
+  if (!image.classList.contains('thread-reply-img') || image.dataset.proxyAttempted) return;
+  image.dataset.proxyAttempted = 'true';
+  const source = image.getAttribute('data-full-src') || image.src;
+  const url = source.startsWith('//') ? `https:${source}`
+    : source.startsWith('http://') ? `https://${source.slice('http://'.length)}` : source;
+  try {
+    image.src = await invoke<string>('fetch_image_base64', { url });
+  } catch (error) {
+    console.warn('高清图片加载失败:', source, error);
+  }
+};
+
+async function preloadBigCdnImages(): Promise<void> {
+  await nextTick();
+  const images = contentElement.value?.querySelectorAll<HTMLImageElement>('.thread-reply-img[data-full-src]') || [];
+  await Promise.all(Array.from(images).map(async (image) => {
+    const source = image.getAttribute('data-full-src');
+    if (!source || source.startsWith('data:')) return;
+    const url = source.startsWith('//') ? `https:${source}`
+      : source.startsWith('http://') ? `https://${source.slice('http://'.length)}` : source;
+    try {
+      image.src = await invoke<string>('fetch_image_base64', { url });
+    } catch (error) {
+      console.warn('big_cdn_src 加载失败:', source, error);
+    }
+  }));
+}
+
+onMounted(async () => {
   content.value = processContentElements(props.thread_content as ContentElement[]);
+  await preloadBigCdnImages();
   if (props.reply_num > 0) {
     const apiStore = useApiStore();
     const Api = apiStore.getApi();

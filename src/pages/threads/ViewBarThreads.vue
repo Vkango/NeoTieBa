@@ -4,6 +4,7 @@ import { useApiStore } from '@/stores';
 import PinnedThread from '@/components/thread/PinnedThread.vue';
 import Thread from '@/components/thread/Thread.vue';
 import BarInfoCard from '@/components/user/BarInfoCard.vue';
+import RemoteImage from '@/components/common/RemoteImage.vue';
 import { getCurrentUser, type User as ManagedUser } from '@/services/user-manage';
 import domToImage from 'dom-to-image';
 
@@ -383,12 +384,12 @@ onMounted(async (): Promise<void> => {
       <div v-if="!isLoading" ref="captureRef">
         <div class="bar-banner">
           <div class="image-container">
-            <img class="background-image" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
+            <RemoteImage class="background-image" :src="returnData.forum.avatar" />
           </div>
           <div class="banner-content">
-            <img v-if="openImageViewer" class="avatar" :src="returnData.forum.avatar" referrerpolicy="no-referrer"
-              @click="openImageViewer(returnData.forum.avatar)">
-            <img v-else class="avatar" :src="returnData.forum.avatar" referrerpolicy="no-referrer">
+            <RemoteImage v-if="openImageViewer" class="avatar" :src="returnData.forum.avatar"
+              @click="openImageViewer(returnData.forum.avatar)" />
+            <RemoteImage v-else class="avatar" :src="returnData.forum.avatar" />
             <div>
               <div class="title">
                 {{ returnData.forum.name }}吧

@@ -30,8 +30,7 @@
                             <div v-if="activeTab === 'info'" class="tab-content">
                                 <div class="bar-header-section">
                                     <div class="bar-avatar-wrapper">
-                                        <img :src="barInfo.avatar" :alt="barInfo.name" class="bar-avatar"
-                                            referrerpolicy="no-referrer" />
+                                        <RemoteImage :src="barInfo.avatar" :alt="barInfo.name" class="bar-avatar" />
                                     </div>
                                     <div class="bar-main-info">
                                         <h2 class="bar-name">{{ barInfo.name }}吧</h2>
@@ -164,7 +163,7 @@
                                         <h3 class="bawu-type">{{ group.type }}</h3>
                                         <div class="bawu-members">
                                             <div v-for="bawu in group.members" :key="bawu.id" class="bawu-item">
-                                                <img :src="bawu.portrait" :alt="bawu.name" class="bawu-avatar" />
+                                                <RemoteImage :src="bawu.portrait" :alt="bawu.name" class="bawu-avatar" />
                                                 <div class="bawu-info">
                                                     <div class="bawu-name">{{ bawu.name }}</div>
                                                     <div class="bawu-level">Lv.{{ bawu.level }}</div>
@@ -190,6 +189,7 @@
 </template>
 
 <script setup lang="ts">
+import RemoteImage from '@/components/common/RemoteImage.vue';
 import { ref, computed, watch } from 'vue'
 import { useApiStore } from '@/stores'
 import { getCurrentUser } from '@/services/user-manage'

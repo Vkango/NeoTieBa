@@ -4,6 +4,8 @@ export interface ContentElement {
     link?: string;
     c?: string;
     bigCdnSrc?: string;
+    bigSrc?: string;
+    big_src?: string;
     originSrc?: string;
     big_cdn_src?: string;
     origin_src?: string;

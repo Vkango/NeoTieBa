@@ -55,9 +55,12 @@ export function processContentElements(elements: ContentElement[], dismissMedia 
             case 3: // image
                 if (!dismissMedia) {
                     // console.log(ele);
-                    const imgSrc = ele.bigCdnSrc || ele.originSrc || ele.big_cdn_src || ele.origin_src;
+                    // Tieba's big CDN source is the high-resolution display URL.
+                    const imgSrc = ele.bigCdnSrc || ele.big_cdn_src || ele.bigSrc || ele.big_src
+                        || ele.originSrc || ele.origin_src;
+                    const fullSrc = imgSrc;
                     content += (index !== 0 ? '<br>' : '') +
-                        `<img class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${imgSrc}" referrerpolicy="no-referrer">`;
+                        `<img class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${imgSrc}" data-full-src="${fullSrc}" referrerpolicy="no-referrer">`;
                 }
                 break;
             case 4: // at

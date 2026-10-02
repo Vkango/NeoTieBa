@@ -139,7 +139,7 @@ const nextPage = async (): Promise<void> => {
 const handleClick = (event: MouseEvent): void => {
   const target = event.target as HTMLElement;
   if (target.classList.contains('thread-reply-img')) {
-    const src = (target as HTMLImageElement).src;
+    const src = target.getAttribute('data-full-src') || (target as HTMLImageElement).src;
     if (src) {
       openImageViewer(src);
     }

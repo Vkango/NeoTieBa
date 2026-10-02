@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/services/user-manage';
 import { useApiStore } from '@/stores';
 import { ref, onMounted, inject } from 'vue';
 import Container from '@/components/common/Container.vue';
+import RemoteImage from '@/components/common/RemoteImage.vue';
 
 interface ForumInfo {
   forum_name: string;
@@ -55,7 +56,7 @@ onMounted(async () => {
         <div class="list-view" v-if="!isLoading">
           <button class="bar-button" v-if="naviListItem.length > 0" v-for="item in naviListItem"
             @click="emit('openBar', item.forum_name)">
-            <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
+            <RemoteImage class="avatar" :src="item.avatar" />
             <div style="margin-left: 5px;">
               <div class="bar-name">{{ item.forum_name }} </div>
               <div class="desc"><span class="level"

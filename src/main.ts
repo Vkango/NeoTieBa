@@ -12,6 +12,12 @@ import { applyTheme, getStoredTheme } from "@/styles/theme";
 
 applyTheme(getStoredTheme());
 
+// Native macOS traffic lights occupy the upper-left titlebar area.
+// Mark the document so the app chrome can reserve that space without
+// changing the layout on other platforms.
+const isMacOS = /Macintosh|Mac OS X/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform);
+document.documentElement.classList.toggle('macos', isMacOS);
+
 const appWindow = getCurrentWindow();
 appWindow.onFocusChanged(async ({ payload: focused }) => {
     if (focused) {

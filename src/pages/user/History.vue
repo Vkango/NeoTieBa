@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, onMounted } from 'vue';
 import { useHistoryStore, type HistoryItem } from '@/stores/history';
+import RemoteImage from '@/components/common/RemoteImage.vue';
 
 const props = defineProps<{
   key_: string | number;
@@ -68,7 +69,7 @@ function formatTime(timestamp: number): string {
       <div v-else class="history-list">
         <RippleButton v-for="item in historyItems" :key="item.id" class="history-item" @click="openItem(item)">
           <div style="display: flex; gap: 10px; align-items: center;">
-            <img class="item-icon-img" :src="item.icon" referrerpolicy="no-referrer">
+            <RemoteImage v-if="item.icon" class="item-icon-img" :src="item.icon" />
             <div class="item-main">
               <div class="item-title">{{ item.title }}</div>
               <div class="item-meta">{{ formatTime(item.timestamp) }}</div>

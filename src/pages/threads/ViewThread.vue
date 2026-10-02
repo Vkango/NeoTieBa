@@ -8,6 +8,7 @@ import Reply from '@/components/thread/Reply.vue';
 import ThreadFloorIndex from '@/components/thread/ThreadFloorIndex.vue';
 import { findReadingFloor, floorPreview } from '@/utils/thread-index';
 import ReplyView from '@/components/thread/SubPostView.vue';
+import RemoteImage from '@/components/common/RemoteImage.vue';
 import domToImage from 'dom-to-image';
 
 // 类型定义
@@ -430,7 +431,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                 @click="openBar(returnData.data.forum.name)">
                 <div
                   style="display: flex; align-items: center; gap: 10px; background-color: rgba(var(--text-color), 0.1); padding: 5px 8px;">
-                  <img :src="returnData.data.forum.avatar" class="avatar" referrerpolicy="no-referrer">
+                  <RemoteImage :src="returnData.data.forum.avatar" class="avatar" />
                   <span style="font-size: 14px; margin-right: 5px;">{{ returnData.data.forum.name }}吧</span>
                 </div>
               </RippleButton>
@@ -568,7 +569,8 @@ const ViewAllReplie = (data: SubPostInfo): void => {
 .subpost-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  /* Keep the comment dialog above the app tabs and custom titlebar. */
+  z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: center;

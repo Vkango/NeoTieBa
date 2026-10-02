@@ -463,3 +463,21 @@ button:active {
     left: 30px;
     bottom: 20px;
 }
+
+/* Leave room for the native macOS traffic lights in the overlay titlebar. */
+html.macos #container .navi {
+    top: 28px;
+}
+
+html.macos #container .container {
+    top: 73px;
+    left: 86px;
+    width: calc(100% - 86px);
+    height: calc(100% - 73px);
+}
+
+html.macos .tabs {
+    top: 33px;
+    left: 86px;
+    width: calc(100% - 416px);
+}

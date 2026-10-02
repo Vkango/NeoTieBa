@@ -2,6 +2,7 @@
 import { ref, onMounted, inject } from 'vue';
 import { useApiStore } from '@/stores';
 import Thread from '@/components/thread/Thread.vue';
+import RemoteImage from '@/components/common/RemoteImage.vue';
 import { sanitize } from '@/utils/sanitizer';
 
 interface Props {
@@ -85,7 +86,7 @@ const onScroll = () => {
             <div
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" @click="emit('openBar', searchResult.exactMatch.forum_name)">
-                <img class="avatar" :src="searchResult.exactMatch.avatar" referrerpolicy="no-referrer">
+                <RemoteImage class="avatar" :src="searchResult.exactMatch.avatar" />
                 <div style="margin-left: 5px;">
                   <div class="bar-name">{{ searchResult.exactMatch.forum_name }} </div>
                   <div class="desc"><span>帖子数 {{ searchResult.exactMatch.post_num }}</span></div>
@@ -100,7 +101,7 @@ const onScroll = () => {
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" v-for="item in searchResult?.fuzzyMatch"
                 @click="emit('openBar', item.forum_name)">
-                <img class="avatar" :src="item.avatar" referrerpolicy="no-referrer">
+                <RemoteImage class="avatar" :src="item.avatar" />
                 <div style="margin-left: 5px;">
                   <div class="bar-name">{{ item.forum_name }} </div>
                   <div class="desc"><span>帖子数 {{ item.post_num }}</span></div>
@@ -126,7 +127,7 @@ const onScroll = () => {
             <div
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" @click="emit('openUser', searchResult.exactMatch.id)">
-                <img class="avatar" :src="searchResult.exactMatch.portrait" referrerpolicy="no-referrer">
+                <RemoteImage class="avatar" :src="searchResult.exactMatch.portrait" />
                 <div style="margin-left: 5px;">
                   <div class="bar-name">{{ searchResult.exactMatch.name }} ({{ searchResult.exactMatch.show_nickname }})</div>
                   <div class="desc"><span v-html="sanitize(searchResult.exactMatch.intro)"></span></div>
@@ -140,7 +141,7 @@ const onScroll = () => {
               style="margin-top: 10px; display: grid; gap: 10px 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start;">
               <button class="bar-button" v-for="item in searchResult.fuzzyMatch"
                 @click="emit('openUser', item.id)">
-                <img class="avatar" :src="item.portrait" referrerpolicy="no-referrer">
+                <RemoteImage class="avatar" :src="item.portrait" />
                 <div style="margin-left: 5px;">
                   <div class="bar-name">{{ item.name }} ({{ item.show_nickname }})</div>
                   <div class="desc"><span>{{ item.intro }}</span></div>

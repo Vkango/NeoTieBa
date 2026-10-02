@@ -38,7 +38,11 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 
 > [!note]
 >
-> 目前暂时没有除 Windows 端以外其他端的移植计划.
+> 当前发布构建仍以 Windows 为主.
+>
+> MacOS 构建仍在测试中, 无法保证稳定性.
+>
+> MacOS 构建仅在 Apple Silicon 设备上进行过测试, 无法保证 Intel 设备能正常使用.
 
 > [!warning]
 >

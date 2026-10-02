@@ -25,6 +25,26 @@ function decrypt(ciphertext: string): string {
     return bytes.toString(CryptoJS.enc.Utf8);
 }
 
+export function decodeNickname(value: unknown): string {
+    const text = String(value ?? '');
+    if (!/%[0-9a-f]{2}/i.test(text)) {
+        return text;
+    }
+    try {
+        return decodeURIComponent(text.replace(/\+/g, ' '));
+    } catch {
+        return text;
+    }
+}
+
+function normalizeUserList(value: unknown): User[] {
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => ({
+        ...item,
+        user_name: decodeNickname(item.user_name || item.username),
+    }));
+}
+
 export async function getUserList(): Promise<User[]> {
     try {
         try {
@@ -35,14 +55,14 @@ export async function getUserList(): Promise<User[]> {
                 const decrypted = decrypt(content);
                 if (!decrypted) {
                     const parsed = JSON.parse(content);
-                    return Array.isArray(parsed) ? parsed : [];
+                    return normalizeUserList(parsed);
                 }
                 const parsed = JSON.parse(decrypted);
-                return Array.isArray(parsed) ? parsed : [];
+                return normalizeUserList(parsed);
             } catch (e) {
                 try {
                     const parsed = JSON.parse(content);
-                    return Array.isArray(parsed) ? parsed : [];
+                    return normalizeUserList(parsed);
                 } catch (jsonErr) {
                     console.error('Failed to parse user list:', jsonErr);
                     return [];
