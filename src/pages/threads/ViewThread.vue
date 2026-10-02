@@ -624,7 +624,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
             <span class="material-symbols-outlined">chevron_left</span>
           </button>
           <span class="image-position" aria-live="polite">{{ selectedImageIndex + 1 }} / {{ galleryImages.length
-          }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
+            }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
           <button type="button" class="gallery-button" :disabled="selectedImageIndex >= galleryImages.length - 1"
             @click="stepGallery(1)" title="下一张" aria-label="下一张">
             <span class="material-symbols-outlined">chevron_right</span>
@@ -830,7 +830,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   border-radius: 5px;
   box-shadow: 0 16px 22px rgba(0, 0, 0, 0.25);
   /* 不定义backdrop-filter反而能在chrome上正常显示，因此只对safari做单独兼容 */
-  -webkit-backdrop-filter: blur(32px) saturate(1.15);
+  /* -webkit-backdrop-filter: blur(32px) saturate(1.15); */
 }
 
 /* Keep glass on a sibling layer so the index can sample the replies above it. */

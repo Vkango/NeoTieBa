@@ -40,9 +40,17 @@ NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支
 >
 > 当前发布构建仍以 Windows 为主.
 >
-> macOS 构建仍在测试中, 无法保证稳定性.
+> Linux + macOS 构建仍在测试中, 无法保证稳定性.
+
+> [!note]
+> 
+> 在以下平台进行了使用测试:
+> 
+> Windows: Windows 11 x64、Windows 11 arm64
+> 
+> Linux: Ubuntu 26.04 LTS x64
 >
-> macOS 构建仅在 Apple Silicon 设备上进行过测试, 无法保证 Intel 设备能正常使用.
+> macOS: macOS 27 Golden Gate (arm64)
 
 ### 登录方法
 
