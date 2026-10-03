@@ -10,6 +10,8 @@ export interface ContentElement {
     big_cdn_src?: string;
     origin_src?: string;
     uid?: string;
+    voiceUrl?: string;
+    src?: string;
 }
 
 export interface UserInfo {

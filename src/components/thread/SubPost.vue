@@ -1,9 +1,9 @@
 <template>
   <div class="subpost-1">
     <div class="user-info" @click="emit('openUser', props.uid)">
-      <div class="avatar"><img class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
-      <div class="user-name">{{ user_name }}</div>
+      <div class="avatar"><RemoteImage kind="avatars" class="avatar"
+          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar" /></div>
+      <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small></div>
     </div>
     <div class="subpost-preview">
       <div class="thread-content" @click="handleClick" v-html="content">
@@ -13,19 +13,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed } from 'vue';
+import { useSettingsStore } from '@/stores/settings';
+const settings = useSettingsStore();
+const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), images: settings.isMediaBlocked('images'), videos: settings.isMediaBlocked('videos'), audio: settings.isMediaBlocked('audio') }));
+
 import { processContentElements } from '@/utils/helper';
 import type { ContentElement } from '@/types/common';
-const content = ref('')
+const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value));
 const emit = defineEmits(['openUser'])
 const handleClick = (event: any) => {
   if (event.target.classList.contains('at-button')) {
     emit('openUser', event.target.getAttribute('uid'));
   }
 }
-onMounted(() => {
-  content.value = processContentElements(props.thread_content as ContentElement[]);
-})
+
 const props = defineProps({
   avatar: {
     type: String,

@@ -1,10 +1,10 @@
 <template>
   <div class="thread" @click="emit('openThread')">
     <div class="user-info" @click.stop @click="openUser">
-      <div class="avatar"><img class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
+      <div class="avatar"><RemoteImage kind="avatars" class="avatar"
+          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar" /></div>
       <div>
-        <div class="user-name">{{ user_name }}</div>
+        <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small></div>
         <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>
       </div>
     </div>
@@ -15,17 +15,19 @@
       </div>
       <div class="thread-content" v-html="content">
       </div>
+      <span v-if="blocked.images && media?.some(item => item.type == 3)">[配图已禁用]</span>
+      <span v-if="blocked.videos && media?.some(item => item.type == 5)">[视频已禁用]</span>
       <div class="thread-media">
-        <RemoteImage class="thread-img" v-for="i in media?.filter(item => item.type == 3)" :key="i.big_pic"
+        <RemoteImage class="thread-img" v-for="i in media?.filter(item => item.type == 3 && !blocked.images)" :key="i.big_pic"
           :src="i.big_pic || ''" />
-        <span v-for="i in media?.filter(item => item.type == 5)">
-          <RemoteImage class="thread-img" :src="i.vpic || ''" />
+        <span v-for="i in media?.filter(item => item.type == 5 && !blocked.videos)">
+          <RemoteImage kind="videos" class="thread-img" :src="i.vpic || ''" />
           <span class="material-symbols-outlined"
             style="position: relative; font-size: 28px; top: 0%; left: 0%; opacity: 0.7; transform: translate(-110%, -10%);">play_circle</span>
         </span>
       </div>
       <div class="thread-info">
-        <span v-if="fromBar != ''" style="display: flex; align-items: center;"><RemoteImage v-if="fromBarAvatar" :src="fromBarAvatar"
+        <span v-if="fromBar != ''" style="display: flex; align-items: center;"><RemoteImage kind="avatars" v-if="fromBarAvatar" :src="fromBarAvatar"
             style="width: 16px; height: 16px; border-radius: 16px; margin-right: 5px;"
             :loading="'eager'" /><span style="margin-right: 5px;">{{ fromBar }}吧</span></span>
 
@@ -37,12 +39,17 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useSettingsStore } from '@/stores/settings';
+const settings = useSettingsStore();
+const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), images: settings.isMediaBlocked('images'), videos: settings.isMediaBlocked('videos'), audio: settings.isMediaBlocked('audio') }));
 import { onMounted, ref } from 'vue';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
 import type { ContentElement, MediaItem } from '@/types/common';
 import RemoteImage from '@/components/common/RemoteImage.vue';
 
 const props = withDefaults(defineProps<{
+  uid?: string | number;
   fromBarAvatar?: string;
   fromBar?: string;
   avatar: string;
@@ -68,7 +75,7 @@ const props = withDefaults(defineProps<{
   theme_color: 'var(--text-color)'
 })
 
-const content = ref<string>('')
+const content = computed(() => processContentElements(props.thread_content as ContentElement[], true, blocked.value));
 const create_time1 = ref<string>('')
 const emit = defineEmits<{
   (e: 'openUser'): void;
@@ -89,7 +96,6 @@ function formatDate(timestamp: number) {
 }
 onMounted(() => {
   create_time1.value = formatDate(props.create_time);
-  content.value = processContentElements(props.thread_content as ContentElement[], true);
 })
 </script>
 <style scoped>

@@ -10,7 +10,6 @@ import { user_info_protobuf } from "@/api/user-info";
 import { user_post_protobuf } from "@/api/user-post";
 import { get_post_proto } from "@/api/get-post";
 import { browse_bar_protobuf, type BrowseBarProtoOptions } from "@/api/frs-page";
-import { useSettingsStore } from '@/stores/settings';
 import { normalizeThreadPage, normalizeUserPostPage, normalizeUserProfile } from '@/api/adapters';
 import type { ThreadPage, UserPostPage, UserProfile } from '@/types/client';
 import { createFollowedForumsForm, normalizeFollowedForums, type FollowedForum } from '@/api/followed-forums';
@@ -21,14 +20,6 @@ export class tieBaAPI {
     }
 
     private getRequestOptions(): RequestOptions {
-        try {
-            const settings = useSettingsStore();
-            if (settings.useProxy && settings.proxyUrl.trim()) {
-                return { proxyUrl: settings.proxyUrl.trim() };
-            }
-        } catch {
-            // Pinia may not be active in tests or one-off utility calls.
-        }
         return {};
     }
 

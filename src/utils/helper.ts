@@ -1,3 +1,4 @@
+import type { MediaBlocks } from './settings-policy';
 import type { ContentElement } from '@/types';
 import { sanitize } from './sanitizer';
 
@@ -28,7 +29,7 @@ export function getTimeInterval(previousTimestamp: number): string {
     }
 }
 
-export function processContentElements(elements: ContentElement[], dismissMedia = false): string {
+export function processContentElements(elements: ContentElement[], dismissMedia = false, blocked: MediaBlocks = { avatars: false, images: false, videos: false, audio: false }): string {
     let content = '';
     elements.forEach((ele, index) => {
         switch (ele.type) {
@@ -52,7 +53,9 @@ export function processContentElements(elements: ContentElement[], dismissMedia 
             case 2: // emoticon
                 content += `<img class="emoticon" src="${'/assets/emoticons/' + ele.text + '.png'}" alt="${ele.c}" />`;
                 break;
-            case 3: // image
+            case 3:
+                if (blocked.images) { content += '<span class="media-placeholder">[配图已禁用]</span>'; break; }
+                // image
                 if (!dismissMedia) {
                     // console.log(ele);
                     // Tieba's big CDN source is the high-resolution display URL.
@@ -66,12 +69,17 @@ export function processContentElements(elements: ContentElement[], dismissMedia 
             case 4: // at
                 content += `<button class="at-button" uid="${ele.uid}">${ele.text}</button>`;
                 break;
-            case 5: // video
+            case 5:
+                if (blocked.videos) { content += '<span class="media-placeholder">[视频已禁用]</span>'; break; }
+                // video
                 if (!dismissMedia) {
                     const prefix = (index !== 0 && elements[index - 1]?.type !== 0 && elements[index - 1]?.text !== '\n') ? '<br>' : '';
                     content += prefix +
                         `<video class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.link}" referrerpolicy="no-referrer" controls></video>`;
                 }
+                break;
+            case 10: // voice
+                content += blocked.audio ? '<span class="media-placeholder">[语音已禁用]</span>' : dismissMedia ? '' : `<audio src="${ele.link || ele.voiceUrl || ele.src || ''}" controls preload="none"></audio>`;
                 break;
             case 18: // tag
             case 40: // search_words

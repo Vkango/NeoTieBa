@@ -88,7 +88,7 @@ const historyStore = useHistoryStore();
 const settingsStore = useSettingsStore();
 
 const containerStyle = computed(() => {
-  if (!settingsStore.wallpaperUrl) {
+  if (settingsStore.wallpaperEffect !== 'image' || !settingsStore.wallpaperUrl) {
     return {} as Record<string, string>;
   }
   return {
@@ -488,7 +488,8 @@ onMounted(async (): Promise<void> => {
   await nextTick();
   isNotificationReady.value = true;
   await flushQueuedNotifications();
-  settingsStore.applyWallpaperEffect(settingsStore.wallpaperEffect);
+  void settingsStore.setWallpaperEffect(settingsStore.wallpaperEffect);
+  settingsStore.applyTheme(settingsStore.theme);
   settingsStore.initWallpaper();
 
   errorService.addHandler(async (error: unknown, info: unknown): Promise<void> => {

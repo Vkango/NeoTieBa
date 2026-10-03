@@ -29,7 +29,6 @@ interface Props {
   local?: boolean;
   local_dir?: string;
   compact?: boolean;
-  mockData?: ThreadData;
 }
 
 interface Emits {
@@ -176,9 +175,9 @@ const galleryOnlyAuthor = ref(false);
 const selectedImageId = ref('');
 const galleryAutoFollow = ref(false);
 let galleryFollowVersion = 0;
-const visibleThreadList = computed(() => (galleryOpen.value ? galleryOnlyAuthor.value : Boolean(props.mockData) && onlyThreadAuthor.value)
+const visibleThreadList = computed(() => (galleryOpen.value ? galleryOnlyAuthor.value : props.local && onlyThreadAuthor.value)
   ? threadList.value.filter(post => String(post.authorId) === threadAuthorId.value) : threadList.value);
-const galleryImages = computed<GalleryImage[]>(() => visibleThreadList.value.flatMap(post =>
+const galleryImages = computed<GalleryImage[]>(() => settings.isMediaBlocked('images') ? [] : visibleThreadList.value.flatMap(post =>
   (Array.isArray(post.content) ? post.content : []).flatMap((content: Record<string, unknown>, index: number) => {
     const src = content.bigCdnSrc || content.big_cdn_src || content.bigSrc || content.big_src || content.originSrc || content.origin_src;
     return Number(content.type) === 3 && typeof src === 'string' && src ? [{
@@ -248,7 +247,9 @@ async function toggleGalleryAuthor() {
 
 
 const userStore = useUserStore();
-const onlyThreadAuthor = ref(!props.local && useSettingsStore().onlyAuthor);
+const settings = useSettingsStore();
+const onlyThreadAuthor = ref(settings.onlyAuthor);
+watch(() => settings.isMediaBlocked('images'), blocked => { if (blocked) galleryOpen.value = false; });
 const threadAuthorId = ref<string>('');
 const containerRef = ref<InstanceType<typeof Container> | null>(null);
 const floorIndexRef = ref<InstanceType<typeof ThreadFloorIndex> | null>(null);
@@ -265,7 +266,7 @@ const readingPage = computed(() => postPages.get(activePostId.value) ?? currentP
 const floorEntries = computed(() => visibleThreadList.value.map(post => ({
   id: String(post.id),
   floor: Number(post.floor),
-  avatar: props.mockData ? '/assets/gallery-mock/morning.svg' : 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + (post.author?.portrait || 'default'),
+  avatar: 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + (post.author?.portrait || 'default'),
   preview: floorPreview(post.content, threadTitle.value),
 })));
 const isJumpOpen = ref(false);
@@ -340,9 +341,7 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
   try {
     let response: ThreadData;
     const user = userStore.currentUser;
-    if (props.mockData) {
-      response = props.mockData;
-    } else if (!props.local) {
+    if (!props.local) {
       response = await api.get_post(String(props.tid), page, 30, 0, onlyAuthor, false, user?.bduss ?? '', 10, user?.stoken ?? '');
     } else if (props.local_dir) {
       response = JSON.parse(await read_file(props.local_dir + '/page' + page + '.json'));
@@ -389,7 +388,7 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
       else threadList.value.push(...added);
     }
     threadTitle.value = thread.title;
-    if (!props.mockData) updateTabMeta?.({ key: props.key_, title: thread.title, icon: forum.avatar, icon_invert: false });
+    updateTabMeta?.({ key: props.key_, title: thread.title, icon: forum.avatar, icon_invert: false });
     if (replace) {
       await nextTick();
       containerRef.value?.scrollToTop();
@@ -427,7 +426,7 @@ const jumpToPage = async () => {
 
 const toggleOnlyAuthor = async () => {
   if (galleryOpen.value) { await toggleGalleryAuthor(); return; }
-  if (props.mockData) {
+  if (props.local) {
     onlyThreadAuthor.value = !onlyThreadAuthor.value;
     galleryOnlyAuthor.value = onlyThreadAuthor.value;
     return;
@@ -438,7 +437,7 @@ const toggleOnlyAuthor = async () => {
 };
 
 const toggleFavourite = async (cancelOnly = false) => {
-  if (isFavouriteLoading.value || isThreadsLoading.value || props.local || props.mockData) return;
+  if (isFavouriteLoading.value || isThreadsLoading.value || props.local) return;
   const positionPost = activePost.value;
   isFavouriteLoading.value = true;
   try {
@@ -497,19 +496,6 @@ function scheduleReadingPosition() {
 }
 
 const navigateToFloor = async (id: string, edge?: 'start' | 'end') => {
-  if (props.mockData) {
-    // Mock rendering and controlled filters settle before resolving the anchor.
-    await nextTick();
-    await nextTick();
-    const element = postElements.get(id);
-    if (element) {
-      containerRef.value?.scrollToElement(element);
-      activePostId.value = id;
-      floorIndexRef.value?.reveal(id, edge);
-      scheduleReadingPosition();
-    }
-    return;
-  }
   if (isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value) return;
   isFloorNavigating.value = true;
   try {
@@ -581,7 +567,6 @@ onBeforeUnmount(() => {
 
 // 滚动处理
 const onScroll = (target: HTMLElement): void => {
-  if (props.mockData) return;
   const { scrollTop, clientHeight, scrollHeight } = target;
   if (scrollTop + clientHeight + 20 >= scrollHeight) {
     if (isLoading.value || isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value || isJumpOpen.value || !returnData.value.data?.page?.hasMore) return;
@@ -624,7 +609,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
             <span class="material-symbols-outlined">chevron_left</span>
           </button>
           <span class="image-position" aria-live="polite">{{ selectedImageIndex + 1 }} / {{ galleryImages.length
-            }}<small>第 {{ selectedImage.floor }} 楼{{ props.mockData ? ' · 示例数据' : '' }}</small></span>
+          }}<small>第 {{ selectedImage.floor }} 楼</small></span>
           <button type="button" class="gallery-button" :disabled="selectedImageIndex >= galleryImages.length - 1"
             @click="stepGallery(1)" title="下一张" aria-label="下一张">
             <span class="material-symbols-outlined">chevron_right</span>
@@ -688,11 +673,10 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                 <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))"
                   :like="item.agree.agreeNum - item.agree.disagreeNum"
                   :user_name="item.author?.nameShow || item.author?.name || '匿名用户'" :uid="item.authorId"
-                  @openUser="props.mockData ? undefined : onUserNameClicked($event)"
+                  @openUser="onUserNameClicked($event)"
                   :avatar="item.author?.portrait || 'default'"
-                  :avatar-url="props.mockData ? '/assets/gallery-mock/morning.svg' : undefined"
                   :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
-                  :create_time="item.time" :reply_num="props.mockData ? 0 : item.subPostNumber" :tid="String(tid)"
+                  :create_time="item.time" :reply_num="item.subPostNumber" :tid="String(tid)"
                   :pid="String(item.id)" :floor="item.floor" :is_lz="String(item.authorId) === threadAuthorId"
                   :level="item.author?.levelId || 0" :ipAddress="item.author?.ipAddress || ''"
                   @viewAllReplies="ViewAllReplie">
@@ -717,7 +701,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                   </div>
                   <div class="subpost-card-content">
                     <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
-                      @openUser="props.mockData ? undefined : onUserNameClicked($event)"></ReplyView>
+                      @openUser="onUserNameClicked($event)"></ReplyView>
                   </div>
                 </section>
               </Transition>
@@ -739,7 +723,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
       <ThreadFloorIndex v-if="threadList.length && !isLoading" ref="floorIndexRef" :entries="floorEntries"
         :current-id="activePostId" :reading-index="readingIndex" :reading-page="readingPage" :total-pages="totalPages"
         :busy="isThreadsLoading || isFavouriteLoading || isFloorNavigating" :local="props.local"
-        :read-only="Boolean(props.mockData)" :gallery-active="galleryOpen"
+        :gallery-active="galleryOpen"
         :only-author="galleryOpen ? galleryOnlyAuthor : onlyThreadAuthor" :favourite="isFavourite"
         :favourite-here="isFavourite && favouritePostId === activePostId" @gallery="toggleGallery"
         @navigate="navigateToFloor" @jump="openJump" @only-author="toggleOnlyAuthor" @bookmark="toggleFavourite()"

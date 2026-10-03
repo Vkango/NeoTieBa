@@ -1,11 +1,11 @@
 <template>
   <div class="thread" @click.stop>
     <div class="user-info" @click="openUser(props.uid as string | number)">
-      <div class="avatar"><img class="avatar"
-          :src="avatarUrl || 'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"
-          referrerpolicy="no-referrer"></div>
+      <div class="avatar"><RemoteImage kind="avatars" class="avatar"
+          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"
+          referrerpolicy="no-referrer" /></div>
       <div>
-        <div class="user-name">{{ user_name }}<span class="level"
+        <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small><span class="level"
             :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level >= 16 }">{{
               level }} {{ is_lz ? '楼主' : '' }}</span>
         </div>
@@ -43,9 +43,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useSettingsStore } from '@/stores/settings';
+const settings = useSettingsStore();
+const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), images: settings.isMediaBlocked('images'), videos: settings.isMediaBlocked('videos'), audio: settings.isMediaBlocked('audio') }));
 import { onMounted, ref, inject, nextTick } from 'vue';
 import { useApiStore } from '@/stores';
-import { invoke } from '@tauri-apps/api/core';
+import { fetchImage } from '@/core/request';
+import { normalizeMediaUrl } from '@/utils/settings-policy';
+import { watch } from 'vue';
 import SubPost from './SubPost.vue';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
 import type { ContentElement } from '@/types/common';
@@ -54,7 +60,6 @@ import type { ContentElement } from '@/types/common';
 interface Props {
   ipAddress?: string;
   avatar: string;
-  avatarUrl?: string;
   embeddedImages?: boolean;
   uid: string | number;
   user_name: string;
@@ -81,7 +86,7 @@ const emit = defineEmits<{
 }>();
 
 const openImageViewer = inject<((url: string) => void) | undefined>('openImageViewer');
-const content = ref('')
+const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value));
 const contentElement = ref<HTMLElement | null>(null);
 const subpost_list = ref<any[]>([])
 
@@ -106,13 +111,14 @@ const handleClick = (event: any) => {
 
 const handleImageError = async (event: Event): Promise<void> => {
   const image = event.target as HTMLImageElement;
+  if (blocked.value.images || !image.isConnected) return;
   if (!image.classList.contains('thread-reply-img') || image.dataset.proxyAttempted) return;
   image.dataset.proxyAttempted = 'true';
   const source = image.getAttribute('data-full-src') || image.src;
-  const url = source.startsWith('//') ? `https:${source}`
-    : source.startsWith('http://') ? `https://${source.slice('http://'.length)}` : source;
+  const url = normalizeMediaUrl(source);
   try {
-    image.src = await invoke<string>('fetch_image_base64', { url });
+    const result = await fetchImage(url);
+    if (!blocked.value.images && image.isConnected) image.src = result;
   } catch (error) {
     console.warn('高清图片加载失败:', source, error);
   }
@@ -120,22 +126,24 @@ const handleImageError = async (event: Event): Promise<void> => {
 
 async function preloadBigCdnImages(): Promise<void> {
   await nextTick();
+  if (blocked.value.images) return;
   const images = contentElement.value?.querySelectorAll<HTMLImageElement>('.thread-reply-img[data-full-src]') || [];
   await Promise.all(Array.from(images).map(async (image) => {
     const source = image.getAttribute('data-full-src');
     if (!source || source.startsWith('data:')) return;
-    const url = source.startsWith('//') ? `https:${source}`
-      : source.startsWith('http://') ? `https://${source.slice('http://'.length)}` : source;
+    const url = normalizeMediaUrl(source);
     try {
-      image.src = await invoke<string>('fetch_image_base64', { url });
+      const result = await fetchImage(url);
+    if (!blocked.value.images && image.isConnected) image.src = result;
     } catch (error) {
       console.warn('big_cdn_src 加载失败:', source, error);
     }
   }));
 }
 
+watch(content, () => { void preloadBigCdnImages(); });
+
 onMounted(async () => {
-  content.value = processContentElements(props.thread_content as ContentElement[]);
   await preloadBigCdnImages();
   if (props.reply_num > 0) {
     const apiStore = useApiStore();

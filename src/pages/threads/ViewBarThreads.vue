@@ -459,7 +459,7 @@ onMounted(async (): Promise<void> => {
         </div>
 
         <div class="thread-list">
-          <Thread @openUser="onUserNameClicked(item.author?.id || 0)" @openThread="handleClick(item.id)"
+          <Thread :uid="item.author?.id" @openUser="onUserNameClicked(item.author?.id || 0)" @openThread="handleClick(item.id)"
             v-for="item in threadList" :key="item.id" :thread_title="item.title" :media="(item.media || []) as any"
             :user_name="item.author?.name_show || item.author?.name || '匿名用户'" :avatar="item.author?.portrait || ''"
             :thread_content="(item.rich_abstract?.length === 0 || !Array.isArray(item.rich_abstract) ? [{ type: 0, text: item.title }] : item.rich_abstract) as any"

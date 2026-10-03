@@ -1,9 +1,9 @@
 <template>
   <div class="thread" @click="onThreadClicked">
     <div class="user-info">
-      <div class="avatar"><img class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
-      <div class="user-name">{{ user_name }}</div>
+      <div class="avatar"><RemoteImage kind="avatars" class="avatar"
+          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar" /></div>
+      <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small></div>
     </div>
     <div class="thread-preview">
       <div class="thread-title" v-html="thread_title"></div>
@@ -19,6 +19,8 @@
 </template>
 
 <script setup lang="ts">
+import { useSettingsStore } from "@/stores/settings";
+const settings = useSettingsStore();
 import { onMounted, ref, type PropType } from 'vue';
 import UserReplyContentDisplay from './UserReplyContentDisplay.vue';
 const create_time1 = ref<string>('')
@@ -37,6 +39,7 @@ function onThreadClicked() {
   emit('openThread', props.threadId);
 }
 const props = defineProps({
+  uid: { type: [String, Number], default: '' },
   msg: {
     type: String,
     required: false,

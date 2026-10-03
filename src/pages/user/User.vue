@@ -173,10 +173,10 @@ const onScroll = (target: any) => {
               referrerpolicy="no-referrer">
           </div>
           <div class="banner-content">
-            <img class="avatar"
+            <RemoteImage kind="avatars" class="avatar"
               :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait"
               referrerpolicy="no-referrer"
-              @click="() => openImageViewer && openImageViewer('https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait)">
+              @click="() => openImageViewer && openImageViewer('https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait)" />
             <div>
               <div class="title">{{ returnData.user.nameShow }} ({{ returnData.user.name }})</div>
               <div class="description" v-html="sanitize(returnData.user.intro == '' ? '没有签名喵' : returnData.user.intro)">
@@ -198,7 +198,7 @@ const onScroll = (target: any) => {
               <h3>回复</h3>
               <div class="reply-list">
                 <div v-if="returnData2 == undefined">还没有回复</div>
-                <UserReply @openThread="onThreadClicked(item.threadId)" v-for="item in returnData2" msg=""
+                <UserReply :uid="props.uid" @openThread="onThreadClicked(item.threadId)" v-for="item in returnData2" msg=""
                   :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title"
                   :avatar="item.userPortrait" :media="item.content" :create_time="0" :threadId="item.threadId">
                 </UserReply>

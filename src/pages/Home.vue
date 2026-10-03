@@ -4,7 +4,7 @@
       <div v-if="!isLoading" class="bgr">
         <div class="list-title">为你推荐</div>
         <div class="thread-list">
-          <Thread @openUser="emit('openUser', item.author.id)" @openThread="emit('openThread', item.id)"
+          <Thread :uid="item.author.id" @openUser="emit('openUser', item.author.id)" @openThread="emit('openThread', item.id)"
             v-for="item in threadList" :key="item.id" :thread_title="item.title"
             :media="(item.media || []) as MediaItem[]" :user_name="item.author.display_name || item.author.user_name"
             :avatar="item.author.portrait"

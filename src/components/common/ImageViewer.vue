@@ -7,7 +7,8 @@
             <div class="image-wrapper" :style="wrapperStyle" @mousedown="handleMouseDown" @wheel.prevent="handleWheel"
                 @touchstart="handleTouchStart" @touchmove.prevent="handleTouchMove" @touchend="handleTouchEnd">
                 <p v-if="imageFailed" class="image-error" role="status">图片加载失败</p>
-                <img v-show="!imageFailed" ref="imageRef" :src="resolvedImageSrc" :style="fittedImageStyle" class="viewer-image" alt="Preview"
+                <p v-if="imageBlocked" role="status">配图已禁用</p>
+                <img v-if="!imageBlocked" v-show="!imageFailed" ref="imageRef" :src="resolvedImageSrc" :style="fittedImageStyle" class="viewer-image" alt="Preview"
                     draggable="false" referrerpolicy="no-referrer" @load="onImageLoad" @error="handleImageError" />
             </div>
 
@@ -80,7 +81,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
+import { fetchImage } from '@/core/request';
+import { normalizeMediaUrl } from '@/utils/settings-policy';
+import { useSettingsStore } from '@/stores/settings';
+const settings = useSettingsStore();
 import RangeSlider from './RangeSlider.vue';
 
 const props = defineProps<{
@@ -139,7 +143,9 @@ const lastMouseX = ref(0);
 const lastMouseY = ref(0);
 const overlayRef = ref<HTMLElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
-const resolvedImageSrc = ref(props.imageSrc);
+const imageBlocked = computed(() => /^https?:|^\/\//.test(props.imageSrc) && settings.isMediaBlocked('images'));
+const resolvedImageSrc = ref(imageBlocked.value ? '' : props.imageSrc);
+let imageGeneration = 0;
 const proxyAttempted = ref(false);
 
 // Context Menu State
@@ -217,29 +223,26 @@ watch(() => props.visible, (newVal) => {
     }
 });
 
-watch(() => props.imageSrc, (value) => {
-    resolvedImageSrc.value = value;
+watch(() => [props.imageSrc, imageBlocked.value], () => {
+    imageGeneration++;
+    resolvedImageSrc.value = imageBlocked.value ? '' : props.imageSrc;
     proxyAttempted.value = false;
 });
 
-function normalizeImageUrl(value: string): string {
-    if (value.startsWith('//')) return `https:${value}`;
-    if (value.startsWith('http://')) return `https://${value.slice('http://'.length)}`;
-    return value;
-}
+const normalizeImageUrl = normalizeMediaUrl;
 
 async function handleImageError(): Promise<void> {
+    if (imageBlocked.value) return;
     if (proxyAttempted.value || !props.imageSrc || props.imageSrc.startsWith('data:')) {
         imageFailed.value = true;
         return;
     }
     proxyAttempted.value = true;
     const source = props.imageSrc;
+    const generation = imageGeneration;
     try {
-        const result = await invoke<string>('fetch_image_base64', {
-            url: normalizeImageUrl(source),
-        });
-        if (props.imageSrc === source) resolvedImageSrc.value = result;
+        const result = await fetchImage(normalizeImageUrl(source));
+        if (!imageBlocked.value && generation === imageGeneration && props.imageSrc === source) resolvedImageSrc.value = result;
     } catch (error) {
         if (props.imageSrc === source) imageFailed.value = true;
         console.warn('原图加载失败:', source, error);

@@ -28,7 +28,7 @@
                                         <div class="user-list" v-if="userList.length > 0">
                                             <div v-for="user in userList" :key="user.username" class="user-item"
                                                 :class="{ active: user.current }" @click="switchUser(user)">
-                                                <img :src="user.avatar" class="user-avatar"
+                                                <RemoteImage kind="avatars" :src="user.avatar" class="user-avatar"
                                                     referrerpolicy="no-referrer" />
                                                 <div class="user-info">
                                                     <div class="user-name">{{ user.user_name }}</div>

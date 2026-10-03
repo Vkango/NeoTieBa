@@ -14,6 +14,7 @@ interface Emits {
 }
 
 interface ThreadAuthor {
+  user_id?: string;
   name_show?: string;
   name: string;
   user_portrait: string;
@@ -84,7 +85,7 @@ const handleClick = (id: string | number): void => {
       <div class="bgr" v-if="!isLoading">
         <div class="list-title">我的收藏</div>
         <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
-          <ThreadLite @click="handleClick(item.thread_id)" v-for="item in threadList" :thread_title="item.title"
+          <ThreadLite :uid="item.author.user_id" @click="handleClick(item.thread_id)" v-for="item in threadList" :thread_title="item.title"
             :media="item.media" :user_name="item.author.name_show || item.author.name"
             :avatar="item.author.user_portrait" :create_time="item.last_time"
             :style="{ opacity: item.is_deleted ? 0.5 : 1 }"

@@ -1,3 +1,5 @@
+import { normalizeMediaBlocks, mediaBlocked, type MediaKind } from '@/utils/settings-policy';
+import { computed } from 'vue';
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
@@ -31,6 +33,11 @@ export const useSettingsStore = defineStore('settings', () => {
     const showUserId = ref(false);
     const onlyAuthor = ref(false);
     const noImage = ref(false);
+    const mediaBlocks = ref(normalizeMediaBlocks());
+    const settingsError = ref('');
+    const wallpaperBusy = ref(false);
+    const mediaPolicy = computed(() => normalizeMediaBlocks(mediaBlocks.value));
+    function isMediaBlocked(kind: MediaKind): boolean { return mediaBlocked(noImage.value, mediaPolicy.value, kind); }
     const theme = ref<'auto' | 'light' | 'dark'>('auto');
     const wallpaperPath = ref<string>('');
     const wallpaperUrl = ref<string>('');
@@ -74,30 +81,26 @@ export const useSettingsStore = defineStore('settings', () => {
         }
     }
 
-    function applyWallpaperEffect(effect: WallpaperEffect): void {
-        if (effect === 'solid' || effect === 'image') {
-            return;
+    async function applyWallpaperEffect(effect: WallpaperEffect): Promise<void> {
+        await invoke('set_wallpaper_effect', { effect, dark: document.documentElement.classList.contains('dark') });
+    }
+    async function setWallpaperEffect(effect: WallpaperEffect): Promise<void> {
+        if (wallpaperBusy.value) return;
+        if (isMacOS && effect === 'mica') effect = 'image';
+        wallpaperBusy.value = true;
+        settingsError.value = '';
+        try { await applyWallpaperEffect(effect); wallpaperEffect.value = effect; }
+        catch (error) {
+            try { await applyWallpaperEffect(wallpaperEffect.value); } catch { /* Preserve original failure. */ }
+            settingsError.value = `应用背景失败: ${String(error)}`;
         }
-        void invoke('set_wallpaper_effect', { effect }).catch((error) => {
-            console.error('应用窗口特效失败:', error);
-        });
+        finally { wallpaperBusy.value = false; }
     }
 
-    function setWallpaperEffect(effect: WallpaperEffect): void {
-        if (isMacOS && effect === 'mica') {
-            effect = 'image';
-        }
-        if (wallpaperEffect.value === effect) {
-            return;
-        }
-        wallpaperEffect.value = effect;
-        if (effect !== 'image' && wallpaperUrl.value) {
-            removeWallpaper();
-        }
-        applyWallpaperEffect(effect);
-    }
-
+    let wallpaperGeneration = 0;
     async function loadWallpaperUrl(): Promise<void> {
+        const generation = ++wallpaperGeneration;
+        const path = wallpaperPath.value;
         if (!wallpaperPath.value) {
             wallpaperUrl.value = '';
             return;
@@ -107,10 +110,13 @@ export const useSettingsStore = defineStore('settings', () => {
             URL.revokeObjectURL(wallpaperUrl.value);
         }
         try {
-            const bytes: number[] = await invoke('read_file_bytes', { path: wallpaperPath.value });
+            const bytes: number[] = await invoke('read_file_bytes', { path });
+            if (generation !== wallpaperGeneration || path !== wallpaperPath.value) return;
             const blob = new Blob([new Uint8Array(bytes)], { type: guessMime(wallpaperPath.value) });
             wallpaperUrl.value = URL.createObjectURL(blob);
         } catch (error) {
+            if (generation !== wallpaperGeneration) return;
+            settingsError.value = '壁纸文件无法读取，请重新选择图片';
             console.error('读取壁纸文件失败:', error);
             wallpaperUrl.value = '';
         }
@@ -147,7 +153,7 @@ export const useSettingsStore = defineStore('settings', () => {
         try {
             const realPath: string = await invoke('copy_file_to_install_dir', { src: filePath, fileName: destination });
             wallpaperPath.value = realPath;
-            setWallpaperEffect('image');
+            await setWallpaperEffect('image');
         } catch (error) {
             throw new Error(`复制壁纸文件失败: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -157,6 +163,7 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     function removeWallpaper(): void {
+        wallpaperGeneration++;
         wallpaperPath.value = '';
         if (wallpaperUrl.value.startsWith('blob:')) {
             URL.revokeObjectURL(wallpaperUrl.value);
@@ -180,6 +187,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
     function applyTheme(themeValue: string) {
         applyThemeMode(themeValue as 'auto' | 'light' | 'dark');
+        if (wallpaperEffect.value === 'acrylic' || wallpaperEffect.value === 'mica') {
+            void applyWallpaperEffect(wallpaperEffect.value).catch(error => { settingsError.value = `应用背景失败: ${String(error)}`; });
+        }
         persistTheme(themeValue as 'auto' | 'light' | 'dark');
         if (systemThemeUnsubscribe) {
             systemThemeUnsubscribe();
@@ -221,7 +231,7 @@ export const useSettingsStore = defineStore('settings', () => {
         // 显示设置
         showUserId,
         onlyAuthor,
-        noImage,
+        noImage, mediaBlocks, mediaPolicy, isMediaBlocked, settingsError, wallpaperBusy,
         theme,
         // 壁纸设置
         wallpaperPath,
@@ -252,9 +262,10 @@ export const useSettingsStore = defineStore('settings', () => {
 }, {
     persist: {
         storage: localStorage,
+        afterHydrate: ({ store }) => { store.mediaBlocks = normalizeMediaBlocks(store.mediaBlocks); store.applyTheme(store.theme); },
 
         pick: [
-            'showUserId', 'onlyAuthor', 'noImage', 'theme',
+            'showUserId', 'onlyAuthor', 'noImage', 'mediaBlocks', 'theme',
             'wallpaperPath', 'wallpaperAccent', 'wallpaperBlur', 'wallpaperEffect', 'wallpaperSolidColor',
             'useProxy', 'proxyUrl', 'enableAutoSign', 'blockList',
         ],

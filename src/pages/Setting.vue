@@ -3,7 +3,11 @@ import { onMounted, ref, computed, inject, type ComputedRef, type Ref } from 'vu
 import { getUserList, type User } from '@/services/user-manage';
 import type { SettingItem, MenuSettingItem, InfoItem } from '@/types/settings';
 import { useSettingsStore } from '@/stores/settings';
-import { fetchText } from '@/core/request';
+import { checkForUpdates } from '@/services/update-check';
+import { validateProxy } from '@/utils/settings-policy';
+import type { MediaKind } from '@/utils/settings-policy';
+import { probeConnection } from '@/core/request';
+import { connectionMessage } from '@/utils/settings-policy';
 import { invoke } from '@tauri-apps/api/core';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { WALLPAPER_EFFECT_OPTIONS } from '@/stores/settings';
@@ -26,14 +30,21 @@ const emit = defineEmits<Emits>();
 // Inject
 const updateTabMeta = inject<(info: { key: string | number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 const settingsStore = useSettingsStore();
+const actionError = ref('');
+const proxyError = computed(() => { try { validateProxy(settingsStore.useProxy, settingsStore.proxyUrl); return ''; } catch (error) { return String(error); } });
+const selectingWallpaper = ref(false);
+const testing = ref(false);
+const checkingUpdates = ref(false);
+const updateDesc = ref('按构建日期检查正式版及预发布版本');
+const latestReleaseUrl = ref('');
 const connectionTestDesc = ref('测试当前网络配置是否可用');
-const wallpaperDesc = ref('选择本地图片作为背景壁纸');
+const wallpaperDesc = ref(settingsStore.wallpaperPath ? `当前壁纸：${settingsStore.wallpaperPath.split(/[\\/]/).pop()}` : '选择本地图片作为背景壁纸');
 const isMacOS = document.documentElement.classList.contains('macos');
 const wallpaperEffectOptions = isMacOS
   ? WALLPAPER_EFFECT_OPTIONS
     .filter(({ value }) => value !== 'mica')
     .map((option) => option.value === 'acrylic' ? { ...option, label: '透明' } : option)
-  : WALLPAPER_EFFECT_OPTIONS;
+  : /Windows/i.test(navigator.userAgent) ? WALLPAPER_EFFECT_OPTIONS : WALLPAPER_EFFECT_OPTIONS.filter(({ value }) => value === 'image' || value === 'solid');
 
 // State 定义
 const user: Ref<User[]> = ref([]);
@@ -74,20 +85,38 @@ const pluginSettings: Ref<MenuSettingItem[]> = ref([{
 
 pluginSettings.value = [];
 
-const currentSettingItems: Ref<InfoItem[]> = ref([
-  { title: 'NeoTieBa', icon: 'rocket', desc: 'InDev 2025', id: 7 },
-  { title: '更新历史', icon: 'history', desc: '查看拉了什么史' },
-  { title: '联系', icon: 'hub', desc: '查看项目地址 (GitHub)' },
-  { title: '作者', icon: 'person', desc: 'Vkango' },
-  { title: '警告', icon: 'warning', desc: '仅供学习交流使用，出现的任何后果作者概不负责。' },
-  { title: '检查更新', icon: 'update', desc: '不知道有没有更新 (因为没服务器' }
+const currentSettingItems = computed<InfoItem[]>(() => [
+ { title: 'NeoTieBa', icon: 'rocket', desc: `${__APP_VERSION__} · 构建 ${new Date(__BUILD_TIME__).toLocaleString('zh-CN')} · ${__BUILD_COMMIT__.slice(0, 8)}`, id: 7 },
+ { title: '更新历史', icon: 'history', desc: '查看 GitHub Releases' },
+ { title: '联系', icon: 'hub', desc: '查看项目地址 (GitHub)' },
+ { title: '作者', icon: 'person', desc: 'Vkango' },
+ { title: '警告', icon: 'warning', desc: '仅供学习交流使用，出现的任何后果作者概不负责。' },
+ { title: '检查更新', icon: 'update', desc: updateDesc.value },
+ ...(latestReleaseUrl.value ? [{ title: '查看发布 / 下载', icon: 'download', desc: '打开最新发布页面，选择适用的安装包' }] : []),
 ]);
+async function openAboutItem(title: string) {
+ actionError.value = '';
+ try {
+  if (title === '检查更新') {
+   if (checkingUpdates.value) return;
+   checkingUpdates.value = true; updateDesc.value = '检查中...'; latestReleaseUrl.value = '';
+   try { const result = await checkForUpdates(); updateDesc.value = result.message; latestReleaseUrl.value = result.url; }
+   catch (error) { updateDesc.value = `检查失败：${String(error)}`; }
+   finally { checkingUpdates.value = false; }
+   return;
+  }
+  const urls: Record<string, string> = { '更新历史': 'https://github.com/Vkango/NeoTieBa/releases', '联系': 'https://github.com/Vkango/NeoTieBa', '作者': 'https://github.com/Vkango', '查看发布 / 下载': latestReleaseUrl.value };
+  if (urls[title]) await openUrl(urls[title]);
+ } catch (error) { actionError.value = String(error); }
+}
+
+const mediaSettings = computed<SettingItem[]>(() => (['avatars', 'videos', 'images', 'audio'] as MediaKind[]).map(kind => ({ id: `media_${kind}`, icon: 'block', title: `禁用${({ avatars: '头像', videos: '视频', images: '帖子配图', audio: '语音' })[kind]}`, type: 'toggle' as const, desc: '启用无图模式时生效', value: settingsStore.mediaPolicy[kind] })));
 
 // 设置项配置
 const displaySettings: ComputedRef<SettingItem[]> = computed(() => [
   { id: 'show_user_id', icon: 'person', title: '同时显示用户名与 ID', type: 'toggle', desc: '在帖子中同时显示用户名和用户 ID', value: settingsStore.showUserId },
   { id: 'only_author', icon: 'person', title: '默认只看楼主', type: 'toggle', desc: '打开帖子时优先只显示楼主内容', value: settingsStore.onlyAuthor },
-  { id: 'no_image', icon: 'image_not_supported', title: '无图模式', type: 'toggle', desc: '减少图片加载，节省流量和内存', value: settingsStore.noImage },
+  { id: 'no_image', icon: 'image_not_supported', title: '无图模式', type: 'toggle', desc: '按下方勾选项禁用媒体，保留表情与壁纸', value: settingsStore.noImage },
   {
     id: 'theme',
     icon: 'palette',
@@ -107,11 +136,13 @@ const displaySettings: ComputedRef<SettingItem[]> = computed(() => [
     icon: 'blur_on',
     title: '背景选项',
     type: 'select',
-    desc: isMacOS ? '图片 / 透明 / 纯色，切换即时生效' : '图片 / Acrylic / Mica / 纯色，切换即时生效',
+    desc: '选择背景模式，切换即时生效',
     value: isMacOS && settingsStore.wallpaperEffect === 'mica' ? 'image' : settingsStore.wallpaperEffect,
     options: wallpaperEffectOptions,
   },
+]);
 
+const backgroundSettings = computed<SettingItem[]>(() => [
   ...(settingsStore.wallpaperEffect === 'image'
     ? [
       { id: 'wallpaper', icon: 'wallpaper', title: '壁纸图片', type: 'button' as const, desc: wallpaperDesc.value, action: 'wallpaper' },
@@ -172,10 +203,12 @@ const handleQRLogin = (): void => {
 // 用户变更处理
 const handleUserChanged = async (): Promise<void> => {
   await loadUsers();
+  actionError.value = '';
   emit('userChanged');
 };
 
 const updateSetting = (id: string, value: string | boolean | number): void => {
+  if (id.startsWith('media_')) { settingsStore.mediaBlocks = { ...settingsStore.mediaPolicy, [id.slice(5)]: Boolean(value) }; return; }
   if (['show_user_id', 'only_author', 'no_image', 'theme', 'wallpaper_path', 'wallpaper_accent', 'wallpaper_blur', 'wallpaper_effect', 'wallpaper_solid_color'].includes(id)) {
     settingsStore.updateDisplaySetting(id, value);
     return;
@@ -187,16 +220,19 @@ const updateSetting = (id: string, value: string | boolean | number): void => {
 };
 
 const pickWallpaper = async (): Promise<void> => {
+  if (settingsStore.wallpaperBusy || selectingWallpaper.value) return;
+  selectingWallpaper.value = true;
+  const previous = wallpaperDesc.value;
   wallpaperDesc.value = '正在选择...';
   try {
     const path = await settingsStore.pickWallpaper();
     wallpaperDesc.value = path
       ? `当前壁纸: ${path.split(/[\\/]/).pop() || path}`
-      : '选择壁纸图片作为背景';
+      : previous;
   } catch (error) {
     wallpaperDesc.value = '选择壁纸失败';
-    throw error;
-  }
+    actionError.value = String(error);
+  } finally { selectingWallpaper.value = false; }
 };
 
 const removeWallpaper = (): void => {
@@ -206,17 +242,17 @@ const removeWallpaper = (): void => {
 
 // 连接测试
 const testConnection = async (): Promise<void> => {
+  if (testing.value) return;
+  testing.value = true;
   connectionTestDesc.value = '测试中...';
   const startedAt = performance.now();
 
   try {
-    await fetchText('https://tieba.baidu.com', {
-      proxyUrl: settingsStore.useProxy ? settingsStore.proxyUrl : undefined,
-    });
-    connectionTestDesc.value = `连接正常，用时 ${Math.round(performance.now() - startedAt)}ms`;
+    const status = await probeConnection();
+    connectionTestDesc.value = connectionMessage(status, Math.round(performance.now() - startedAt));
   } catch (error) {
     connectionTestDesc.value = error instanceof Error ? error.message : '连接失败';
-  }
+  } finally { testing.value = false; }
 };
 
 const handleSettingAction = (setting: SettingItem): void => {
@@ -233,12 +269,8 @@ const handleSettingAction = (setting: SettingItem): void => {
 
 const openDevTools = (): void => {
   invoke('toggle_devtools').catch((error) => {
-    console.error('切换开发者工具失败:', error);
+    actionError.value = `打开开发者工具失败：${String(error)}`;
   });
-};
-
-const openProjectUrl = (): void => {
-  openUrl('https://github.com/Vkango/NeoTieBa');
 };
 
 // 滚动处理
@@ -263,7 +295,7 @@ const onScroll = (_target: HTMLElement): void => {
               @click="openUserManage">
 
               <div v-if="currentUser" style="display: flex; gap: 10px; text-align: left; width: 100%;">
-                <img class="avatar" :src="currentUser.avatar || ''" referrerpolicy="no-referrer">
+                <RemoteImage kind="avatars" class="avatar" :src="currentUser.avatar || ''" referrerpolicy="no-referrer" />
                 <div style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
                   <div
                     style="font-weight: bold; color: rgb(var(--text-color)); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -313,18 +345,34 @@ const onScroll = (_target: HTMLElement): void => {
 
         <!-- 设置内容区域 -->
         <div style="width: 100%;">
+          <p v-if="actionError || settingsStore.settingsError || proxyError" role="alert">{{ actionError || settingsStore.settingsError || proxyError }}</p>
           <!-- 显示设置 -->
           <div v-if="currentPage === 0" class="settings-content">
             <div style="display: flex; text-align: left; gap: 10px; align-items: center; margin-bottom: 20px;">
               <div style="font-size: 25px; font-weight: bold;">显示</div>
             </div>
             <div class="setting-section">
-              <Item v-for="setting in displaySettings" :key="setting.id" :title="setting.title" :desc="setting.desc"
+              <template v-for="setting in displaySettings" :key="setting.id">
+              <Item :title="setting.title" :desc="setting.desc"
                 :icon="setting.icon" :type="setting.type" :value="'value' in setting ? setting.value : undefined"
                 @update:value="updateSetting(setting.id, $event)" :options="'options' in setting ? setting.options : []"
                 :placeholder="'placeholder' in setting ? setting.placeholder : undefined"
                 :min="'min' in setting ? setting.min : undefined" :max="'max' in setting ? setting.max : undefined"
                 :step="'step' in setting ? setting.step : undefined" @click="handleSettingAction(setting)" />
+              <div v-if="setting.id === 'no_image' && settingsStore.noImage" class="media-setting-group" aria-label="无图模式禁用选项">
+                <Item v-for="mediaSetting in mediaSettings" :key="mediaSetting.id" :title="mediaSetting.title" :desc="mediaSetting.desc"
+                  :icon="mediaSetting.icon" :type="mediaSetting.type" :value="'value' in mediaSetting ? mediaSetting.value : undefined"
+                  @update:value="updateSetting(mediaSetting.id, $event)" />
+              </div>
+              <div v-if="setting.id === 'wallpaper_effect' && backgroundSettings.length" class="media-setting-group" aria-label="背景模式设置">
+                <Item v-for="backgroundSetting in backgroundSettings" :key="backgroundSetting.id" :title="backgroundSetting.title" :desc="backgroundSetting.desc"
+                  :icon="backgroundSetting.icon" :type="backgroundSetting.type" :value="'value' in backgroundSetting ? backgroundSetting.value : undefined"
+                  @update:value="updateSetting(backgroundSetting.id, $event)"
+                  :min="'min' in backgroundSetting ? backgroundSetting.min : undefined" :max="'max' in backgroundSetting ? backgroundSetting.max : undefined"
+                  :step="'step' in backgroundSetting ? backgroundSetting.step : undefined" @click="handleSettingAction(backgroundSetting)" />
+              </div>
+              </template>
+
             </div>
           </div>
 
@@ -351,12 +399,13 @@ const onScroll = (_target: HTMLElement): void => {
                 <span
                   style="font-size: 14px; font-weight: bold; padding: 5px 10px; background-color: rgba( 36,200,219, 0.15); border-radius: 5px 0px 0px 5px;">Built
                   with</span>
-                <img src="/assets/tauri-logo.svg" height="20px">
+                <img class="tauri-logo-light" src="/assets/tauri-logo-light.svg" height="20px" alt="Tauri">
+                <img class="tauri-logo-dark" src="/assets/tauri-logo.svg" height="20px" alt="Tauri">
               </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px">
               <Item v-for="item in currentSettingItems" :key="item.id" :icon="item.icon" :title="item.title"
-                :desc="item.desc" style="width: 100%;" @click="item.title === '联系' ? openProjectUrl() : null"></Item>
+                :desc="item.desc" style="width: 100%;" @click="openAboutItem(item.title)"></Item>
             </div>
           </div>
         </div>
@@ -369,6 +418,13 @@ const onScroll = (_target: HTMLElement): void => {
 </template>
 
 <style scoped>
+
+.media-setting-group { display: flex; flex-direction: column; gap: 8px; margin-left: 24px; padding-left: 12px; border-left: 2px solid rgba(var(--text-color), 0.12); }
+
+.tauri-logo-dark { display: none; }
+:global(:root.dark .tauri-logo-light) { display: none; }
+:global(:root.dark .tauri-logo-dark) { display: block; }
+
 .filter-button.selected {
   background-color: rgba(var(--text-color), 0.05);
   font-weight: bold;

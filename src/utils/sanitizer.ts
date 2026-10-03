@@ -7,10 +7,10 @@ export function sanitize(content: string): string {
     try {
         const cleaned = content.replace(CONTROL_CHARS, '');
         return DOMPurify.sanitize(cleaned, {
-            ADD_TAGS: ['img', 'a', 'span', 'div', 'br', 'p', 'b', 'i', 'strong', 'em', 'font', 'video'],
+            ADD_TAGS: ['img', 'a', 'span', 'div', 'br', 'p', 'b', 'i', 'strong', 'em', 'font', 'video', 'audio'],
             ADD_ATTR: ['src', 'data-full-src', 'href', 'style', 'class', 'target', 'color', 'size', 'width', 'height', 'controls', 'poster', 'referrerpolicy',
                 'loading',
-                'decoding'
+                'decoding', 'preload'
             ],
         });
     } catch (error) {

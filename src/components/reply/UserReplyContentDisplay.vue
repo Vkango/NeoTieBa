@@ -10,11 +10,15 @@
   </div>
 </template>
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useSettingsStore } from '@/stores/settings';
+const settings = useSettingsStore();
+const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), images: settings.isMediaBlocked('images'), videos: settings.isMediaBlocked('videos'), audio: settings.isMediaBlocked('audio') }));
 import { ref, onMounted } from 'vue';
 import { processContentElements } from '@/utils/helper';
 import type { ContentElement } from '@/types/common';
 const create_time1 = ref<string>('');
-const content = ref<string>('');
+const content = computed(() => processContentElements(props.content as ContentElement[], false, blocked.value));
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp * 1000);
   const yyyy = date.getFullYear();
@@ -40,7 +44,6 @@ const props = defineProps({
 })
 onMounted(() => {
   create_time1.value = formatDate(props.createTime as any);
-  content.value = processContentElements(props.content as ContentElement[]);
 })
 </script>
 

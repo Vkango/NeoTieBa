@@ -2,8 +2,9 @@
   <Teleport to="#titlebar-mount">
     <RippleButton class="control-button" style="padding: 0; width: 48px; height: 45px;" id="avatar"
       @click="emit('showNotificationBox')">
-      <img class="avatar" style="width: 20px; height: 20px; border-radius: 20px; padding: 0; margin-top: 5px;"
-        :src="user.avatar">
+      <img v-if="!user.avatar || user.avatar === '/assets/user.svg'" class="avatar avatar-icon" src="/assets/user.svg" style="width: 20px; height: 20px; border-radius: 20px; padding: 0; margin-top: 5px;">
+      <RemoteImage v-else kind="avatars" class="avatar" style="width: 20px; height: 20px; border-radius: 20px; padding: 0; margin-top: 5px;"
+        :src="user.avatar" />
       <div id="msgCount" v-if="msgCount > 0">{{ msgCount > 99 ? `99+` : msgCount }}</div>
     </RippleButton>
     <RippleButton class="control-button" @click="emit('showTabs')"> <!--Tabs-->
@@ -65,6 +66,10 @@ const emit = defineEmits(['showTabs', 'showNotificationBox']);
 }
 
 .icon {
+  filter: invert(var(--invert));
+}
+
+.avatar-icon {
   filter: invert(var(--invert));
 }
 

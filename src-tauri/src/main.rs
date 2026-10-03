@@ -13,7 +13,7 @@ use cookie_manager::{
 use file_io::{copy_file_to_install_dir, read_file, read_file_bytes, write_file};
 use request::{
     fetch_data, fetch_data_buffer, fetch_data_post, fetch_data_with_cookie, fetch_data_with_headers,
-    fetch_image,
+    fetch_image, test_connection,
 };
 use tauri::Manager;
 #[cfg(not(target_os = "macos"))]
@@ -123,8 +123,8 @@ fn toggle_devtools<R: Runtime>(window: tauri::WebviewWindow<R>) {
 }
 
 #[tauri::command]
-fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &str) -> Result<(), String> {
-    if let Err(e) = apply_effect(&window, effect) {
+fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &str, dark: Option<bool>) -> Result<(), String> {
+    if let Err(e) = apply_effect(&window, effect, dark) {
         return Err(format!("apply_effect({}) failed: {}", effect, e));
     }
     Ok(())
@@ -132,25 +132,26 @@ fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &st
 
 #[tauri::command]
 fn set_window_dark_mode<R: Runtime>(window: tauri::WebviewWindow<R>, dark: bool) -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    if let Err(e) = apply_mica(&window, Some(dark)) {
-        return Err(format!("apply_mica(dark) failed: {}", e));
-    }
+    // Theme must not implicitly replace the selected wallpaper effect.
+    window.set_theme(Some(if dark { tauri::Theme::Dark } else { tauri::Theme::Light })).map_err(|error| error.to_string())?;
     Ok(())
 }
 
 #[cfg(target_os = "windows")]
-fn apply_effect<R: Runtime>(window: &tauri::WebviewWindow<R>, effect: &str) -> Result<(), String> {
+fn apply_effect<R: Runtime>(window: &tauri::WebviewWindow<R>, effect: &str, dark: Option<bool>) -> Result<(), String> {
+    clear_acrylic(window).map_err(|e| e.to_string())?;
+    clear_mica(window).map_err(|e| e.to_string())?;
     match effect {
         "acrylic" => apply_acrylic(window, Some((255, 255, 255, 0)))
             .map_err(|e| format!("{}", e)),
-        "mica" => apply_mica(window, None).map_err(|e| format!("{}", e)),
-        _ => Ok(()),
+        "mica" => apply_mica(window, dark).map_err(|e| format!("{}", e)),
+        "image" | "solid" => Ok(()),
+        _ => Err("Unsupported wallpaper effect".into()),
     }
 }
 
 #[cfg(not(target_os = "windows"))]
-fn apply_effect<R: Runtime>(_window: &tauri::WebviewWindow<R>, _effect: &str) -> Result<(), String> {
+fn apply_effect<R: Runtime>(_window: &tauri::WebviewWindow<R>, _effect: &str, _dark: Option<bool>) -> Result<(), String> {
     Ok(())
 }
 
@@ -240,6 +241,7 @@ fn main() {
             set_wallpaper_effect,
             set_window_dark_mode,
             fetch_data_command,
+            test_connection,
             fetch_data_with_headers_command,
             read_file,
             read_file_bytes,

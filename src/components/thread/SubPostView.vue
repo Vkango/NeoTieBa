@@ -2,10 +2,10 @@
   <Container @yscroll="onScroll" style="background-color: transparent;">
     <div class="thread" @click.stop>
       <div class="user-info" @click="openUser(props.uid)">
-        <div class="avatar"><img class="avatar"
-            :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
+        <div class="avatar"><RemoteImage kind="avatars" class="avatar"
+            :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar" /></div>
         <div>
-          <div class="user-name">{{ user_name }}<span class="level"
+          <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small><span class="level"
               :class="{ 'color1': (level || 0) >= 0 && (level || 0) < 4, 'color2': (level || 0) >= 4 && (level || 0) < 10, 'color3': (level || 0) >= 10 && (level || 0) < 16, 'color4': (level || 0) >= 16 }">{{
                 level || 0 }} {{ is_lz ? '楼主' : '' }}</span>
           </div>
@@ -42,6 +42,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useSettingsStore } from '@/stores/settings';
+const settings = useSettingsStore();
+const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), images: settings.isMediaBlocked('images'), videos: settings.isMediaBlocked('videos'), audio: settings.isMediaBlocked('audio') }));
 import { onMounted, ref, type Ref } from 'vue';
 import SubPost from './SubPost.vue';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
@@ -105,7 +109,7 @@ const api = useApi();
 const subpost_list: Ref<SubPostItem[]> = ref<SubPostItem[]>([]);
 const currentPage: Ref<number> = ref<number>(1);
 const isThreadsLoading: Ref<boolean> = ref<boolean>(false);
-const content: Ref<string> = ref<string>('');
+const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value));
 const create_time1: Ref<string> = ref<string>('');
 let pageInfo: PageInfo | null = null;
 
@@ -180,7 +184,6 @@ function formatDate(timestamp: number): string {
 onMounted(async (): Promise<void> => {
   try {
     create_time1.value = formatDate(props.create_time);
-    content.value = processContentElements(props.thread_content as ContentElement[]);
     if (props.reply_num > 0) {
       await loadData();
     }

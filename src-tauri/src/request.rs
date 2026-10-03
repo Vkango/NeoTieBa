@@ -24,7 +24,7 @@ fn build_client(proxy_url: Option<&str>) -> Result<Client, String> {
     if let Some(client) = clients.get(&key) {
         return Ok(client.clone());
     }
-    let mut builder = Client::builder();
+    let mut builder = Client::builder().timeout(std::time::Duration::from_secs(30));
 
     if let Some(proxy_url) = key.as_deref() {
         let proxy = Proxy::all(proxy_url).map_err(|error| format!("Invalid proxy: {}", error))?;
@@ -357,4 +357,40 @@ pub async fn fetch_data_with_cookie(
         .text()
         .await
         .map_err(|error| format!("Failed to read response body: {}", error))
+}
+
+// Connectivity and HTTP acceptance are separate: a 403 still proves reachability.
+async fn probe_url(url: &str, proxy_url: Option<&str>) -> Result<u16, String> {
+    let response = build_client(proxy_url)?
+        .get(url)
+        .header(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+        .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+        .send().await.map_err(|error| format!("连接失败: {}", error))?;
+    Ok(response.status().as_u16())
+}
+
+#[command]
+pub async fn test_connection(proxy_url: Option<String>) -> Result<u16, String> {
+    probe_url("https://tieba.baidu.com", proxy_url.as_deref()).await
+}
+
+#[cfg(test)]
+mod connectivity_tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    #[tokio::test]
+    async fn forbidden_is_reachable_and_probe_sends_browser_headers() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut header = Vec::new();
+            while !header.ends_with(b"\r\n\r\n") { header.push(socket.read_u8().await.unwrap()); }
+            let header = String::from_utf8(header).unwrap().to_ascii_lowercase();
+            assert!(header.contains("user-agent: mozilla/5.0"));
+            socket.write_all(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").await.unwrap();
+        });
+        assert_eq!(probe_url(&format!("http://{address}/"), Some(&format!("http://{address}"))).await.unwrap(), 403);
+        server.await.unwrap();
+    }
 }

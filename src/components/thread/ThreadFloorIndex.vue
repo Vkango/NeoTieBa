@@ -11,7 +11,6 @@ const props = defineProps<{
   totalPages?: number;
   busy: boolean;
   local?: boolean;
-  readOnly?: boolean;
   galleryActive?: boolean;
   favourite: boolean;
   favouriteHere: boolean;
@@ -107,7 +106,7 @@ defineExpose({ reveal });
         :class="{ current: entry.id === currentId }" :aria-current="entry.id === currentId ? 'location' : undefined"
         :aria-label="'跳转到第 ' + entry.floor + ' 楼'" :disabled="busy" @click="navigate(entry, index)">
         <span class="floor-summary" :aria-hidden="!isOpen">
-          <img v-if="isOpen" :src="entry.avatar" alt="" loading="lazy" referrerpolicy="no-referrer" />
+          <RemoteImage kind="avatars" v-if="isOpen" :src="entry.avatar" alt="" loading="lazy" referrerpolicy="no-referrer" />
           <span class="floor-number">{{ entry.floor }} 楼</span>
           <span class="floor-preview">{{ entry.preview }}</span>
         </span>
@@ -129,11 +128,11 @@ defineExpose({ reveal });
         <span class="material-symbols-outlined">{{ onlyAuthor ? 'group' : 'person' }}</span>
       </button>
       <button type="button" :aria-label="favouriteHere ? '取消收藏' : '收藏到当前楼层'"
-        :title="favouriteHere ? '取消收藏' : '收藏到第 ' + current?.floor + ' 楼'" :disabled="busy || local || readOnly"
+        :title="favouriteHere ? '取消收藏' : '收藏到第 ' + current?.floor + ' 楼'" :disabled="busy || local"
         @click="emit('bookmark')">
         <span class="material-symbols-outlined">{{ favouriteHere ? 'bookmark_added' : 'bookmark' }}</span>
       </button>
-      <button v-if="favourite && !favouriteHere" type="button" aria-label="取消收藏" title="取消收藏" :disabled="busy || local || readOnly"
+      <button v-if="favourite && !favouriteHere" type="button" aria-label="取消收藏" title="取消收藏" :disabled="busy || local"
         @click="emit('removeBookmark')">
         <span class="material-symbols-outlined">bookmark_remove</span>
       </button>

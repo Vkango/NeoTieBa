@@ -1,11 +1,18 @@
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 import Components from 'unplugin-vue-components/vite';
 import AutoImport from 'unplugin-auto-import/vite';
 
+const packageInfo = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+let commit = process.env.NEOTIEBA_BUILD_COMMIT || '';
+if (!commit) { try { commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {} }
+const builtAt = process.env.NEOTIEBA_BUILD_TIME || new Date().toISOString();
 const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
+  define: { __APP_VERSION__: JSON.stringify(packageInfo.version), __BUILD_TIME__: JSON.stringify(builtAt), __BUILD_COMMIT__: JSON.stringify(commit) },
   plugins: [
     vue(),
     // 组件自动导入

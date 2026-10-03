@@ -1,46 +1,26 @@
 <template>
-  <img :class="props.class" :src="displaySrc || props.src" :alt="props.alt" :style="props.style"
-    :loading="props.loading" referrerpolicy="no-referrer" @error="loadThroughProxy">
+  <span v-if="blocked" :class="props.class" :style="props.style" class="media-placeholder">{{ kind === 'avatars' ? '头像已禁用' : '图片已禁用' }}</span>
+  <img v-else :class="props.class" :src="displaySrc || undefined" :alt="props.alt" :style="props.style" :loading="props.loading" referrerpolicy="no-referrer" @error="loadThroughProxy">
 </template>
-
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
-
-const props = withDefaults(defineProps<{
-  src: string;
-  alt?: string;
-  class?: string;
-  style?: string | Record<string, string>;
-  loading?: 'eager' | 'lazy';
-}>(), {
-  alt: '',
-  class: undefined,
-  style: undefined,
-  loading: 'lazy',
-});
-
+import { ref, watch, computed } from 'vue';
+import { fetchImage } from '@/core/request';
+import { useSettingsStore } from '@/stores/settings';
+import { normalizeMediaUrl, type MediaKind } from '@/utils/settings-policy';
+const props = withDefaults(defineProps<{ src?: string; alt?: string; class?: string; style?: string | Record<string, string>; loading?: 'eager' | 'lazy'; kind?: MediaKind }>(), { src: '', alt: '', loading: 'lazy', kind: 'images' });
+const settings = useSettingsStore();
+const blocked = computed(() => /^https?:|^\/\//.test(props.src) && settings.isMediaBlocked(props.kind));
 const displaySrc = ref('');
-const proxyAttempted = ref(false);
-
-function normalizeUrl(value: string): string {
-  if (value.startsWith('//')) return `https:${value}`;
-  if (value.startsWith('http://')) return `https://${value.slice('http://'.length)}`;
-  return value;
+let generation = 0;
+let attempted = false;
+const normalizeUrl = normalizeMediaUrl;
+watch(() => [props.src, blocked.value, settings.useProxy, settings.proxyUrl], () => { generation++; attempted = false; displaySrc.value = blocked.value || settings.useProxy && /^https?:|^\/\//.test(props.src) ? '' : normalizeUrl(props.src);
+ if (!blocked.value && settings.useProxy) void loadThroughProxy(); }, { immediate: true, flush: 'sync' });
+async function loadThroughProxy() {
+ if (attempted || blocked.value || !props.src || !/^https?:|^\/\//.test(props.src)) return;
+ attempted = true;
+ const token = generation;
+ try { const result = await fetchImage(normalizeUrl(props.src)); if (token === generation && !blocked.value) displaySrc.value = result; }
+ catch (error) { console.warn('图片加载失败', error); }
 }
-
-async function loadThroughProxy(): Promise<void> {
-  if (proxyAttempted.value || !props.src || props.src.startsWith('data:')) return;
-  proxyAttempted.value = true;
-  try {
-    displaySrc.value = await invoke<string>('fetch_image_base64', { url: normalizeUrl(props.src) });
-  } catch (error) {
-    console.warn('图片加载失败:', props.src, error);
-  }
-}
-
-watch(() => props.src, () => {
-  proxyAttempted.value = false;
-  displaySrc.value = normalizeUrl(props.src);
-}, { immediate: true });
 </script>

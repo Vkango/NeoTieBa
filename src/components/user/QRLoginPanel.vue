@@ -20,7 +20,7 @@
             <div class="success-icon">
                 <span class="material-symbols-outlined">check_circle</span>
             </div>
-            <img class="user-avatar" alt="avatar" :src="loginInfo.avatar" referrerpolicy="no-referrer" />
+            <RemoteImage kind="avatars" class="user-avatar" alt="avatar" :src="loginInfo.avatar" referrerpolicy="no-referrer" />
             <div class="user-name">{{ loginInfo.user_name }}</div>
             <div class="success-tip">登录成功！</div>
 

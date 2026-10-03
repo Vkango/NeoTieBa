@@ -1,15 +1,15 @@
 <template>
   <div class="thread">
     <div class="user-info">
-      <div class="avatar"><img class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"></div>
-      <div class="user-name">{{ user_name }}</div>
+      <div class="avatar"><RemoteImage kind="avatars" class="avatar"
+          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar" /></div>
+      <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small></div>
     </div>
     <div class="thread-preview">
       <div class="thread-title">{{ thread_title }}</div>
       <div class="thread-media">
-        <img class="thread-img" v-if="media.length != 0" :src="(media[0] as MediaItem).big_pic"
-          referrerpolicy="no-referrer">
+        <RemoteImage kind="images" class="thread-img" v-if="media.length != 0" :src="(media[0] as MediaItem).big_pic"
+          referrerpolicy="no-referrer" />
       </div>
       <div class="thread-info">
         <span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>{{ create_time1 }}
@@ -20,6 +20,8 @@
 </template>
 
 <script setup lang="ts">
+import { useSettingsStore } from "@/stores/settings";
+const settings = useSettingsStore();
 import { onMounted, ref, type PropType } from 'vue';
 import type { MediaItem } from '@/types/common';
 const create_time1 = ref<string>('')
@@ -37,6 +39,7 @@ onMounted(() => {
   create_time1.value = formatDate(props.create_time);
 })
 const props = defineProps({
+  uid: { type: [String, Number], default: '' },
   msg: {
     type: String,
     required: false,

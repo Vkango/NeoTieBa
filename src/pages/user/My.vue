@@ -160,10 +160,10 @@ const history = (): void => {
               referrerpolicy="no-referrer">
           </div>
           <div class="banner-content">
-            <img class="avatar"
+            <RemoteImage kind="avatars" class="avatar"
               :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait"
               referrerpolicy="no-referrer"
-              @click="openImageViewer && openImageViewer('https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait)">
+              @click="openImageViewer && openImageViewer('https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait)" />
             <div>
               <div class="title">{{ returnData.user.nameShow }} ({{ returnData.user.name }})</div>
               <div class="description">{{ returnData.user.intro }}</div>
@@ -226,7 +226,7 @@ const history = (): void => {
           </div>
           <TransitionGroup name="fade1">
             <div class="reply-list" v-if="atReplyPage">
-              <UserReply @openThread="onThreadClicked(item.thread_id)" v-for="item in returnData2" msg=""
+              <UserReply :uid="item.replyer.id" @openThread="onThreadClicked(item.thread_id)" v-for="item in returnData2" msg=""
                 :user_name="item.replyer.name || item.replyer.name_show"
                 :thread_title="replaceEmoticonsWithImages(item.content)" :avatar="item.replyer.portrait"
                 :media="[{ postContent: [{ type: 0, text: replaceEmoticonsWithImages(item.quote_content) }], createTime: String(item.time) }]"
@@ -234,7 +234,7 @@ const history = (): void => {
               </UserReply>
             </div>
             <div class="at-list" v-if="!atReplyPage">
-              <UserReply @openThread="onThreadClicked(item.thread_id)" v-for="item in returnData3" msg=""
+              <UserReply :uid="item.replyer.id" @openThread="onThreadClicked(item.thread_id)" v-for="item in returnData3" msg=""
                 :user_name="item.replyer.name || item.replyer.name_show" :thread_title="item.content"
                 :avatar="item.replyer.portrait"
                 :media="[{ postContent: [{ type: 0, text: item.title }], createTime: item.time }]" :create_time="0"
