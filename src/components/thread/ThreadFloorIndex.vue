@@ -145,7 +145,8 @@ defineExpose({ reveal });
   position: absolute;
   top: 50%;
   right: 12px;
-  z-index: 20;
+  /* Stay below the global tabs and notification surfaces. */
+  z-index: 1000;
   transform: translateY(-50%);
   width: 34px;
   max-width: calc(100% - 24px);

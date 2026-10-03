@@ -642,6 +642,7 @@ onMounted(async (): Promise<void> => {
   max-height: calc(100% - 70px);
   overflow-y: auto;
   border: 1.5px solid rgba(var(--text-color), 0.1);
+  z-index: 2000;
 }
 
 .navi-button {
