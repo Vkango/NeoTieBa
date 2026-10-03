@@ -84,6 +84,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'openUser', uid: string | number): void;
   (e: 'selectImage', url: string): void;
+  (e: 'registerImages', urls: string[]): void;
   (e: 'viewAllReplies', data: Props): void;
 }>();
 
@@ -113,6 +114,13 @@ const handleClick = (event: any) => {
 const handleSubpostImage = (url: string) => {
   if (props.embeddedImages) emit('selectImage', url);
   else openImageViewer?.(url);
+};
+const registerSubpostImages = (items: any[]) => {
+  const urls = items.flatMap(item => (Array.isArray(item?.content) ? item.content : [])
+    .filter((part: any) => Number(part?.type) === 3 || Number(part?.type) === 20)
+    .map((part: any) => part.bigCdnSrc || part.big_cdn_src || part.bigSrc || part.big_src || part.originSrc || part.origin_src)
+    .filter((url: unknown): url is string => typeof url === 'string' && !!url));
+  if (urls.length) emit('registerImages', urls);
 };
 
 const handleImageError = async (event: Event): Promise<void> => {
@@ -156,6 +164,7 @@ onMounted(async () => {
     const Api = apiStore.getApi();
     Api.viewSubPost(props.tid, props.pid, 1, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '').then((res: any) => {
       subpost_list.value = res.subpost_list;
+      registerSubpostImages(subpost_list.value);
       if (subpost_list.value.length > 5) {
         subpost_list.value = subpost_list.value.slice(0, 5);
       }

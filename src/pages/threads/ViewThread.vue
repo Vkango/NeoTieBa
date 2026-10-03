@@ -189,7 +189,10 @@ const galleryImages = computed<GalleryImage[]>(() => {
         floor: Number(post.floor), src, alt: `第 ${post.floor} 楼图片`
       }] : [];
     }));
-  return galleryIncludeSubposts.value ? [...mainImages, ...subpostGalleryImages.value] : mainImages;
+  if (!galleryIncludeSubposts.value) return mainImages;
+  // Keep the gallery in reading order. Stable sorting preserves the main
+  // floor image before any楼中楼 images discovered for the same floor.
+  return [...mainImages, ...subpostGalleryImages.value].sort((a, b) => a.floor - b.floor);
 });
 const selectedImageIndex = computed(() => galleryImages.value.findIndex(image => image.id === selectedImageId.value));
 const selectedImage = computed(() => galleryImages.value[selectedImageIndex.value]);
@@ -240,12 +243,23 @@ function stepGallery(direction: number) {
   if (image) void selectGalleryImage(image.id);
 }
 function selectReplyImage(url: string, postId: string) {
+  if (!galleryIncludeSubposts.value) {
+    openImageViewer?.(url);
+    return;
+  }
   const image = galleryImages.value.find(image => image.postId === postId && new URL(image.src, window.location.href).href === new URL(url, window.location.href).href);
   if (image) void selectGalleryImage(image.id);
   else if (galleryOpen.value) {
     const id = `subpost-${btoa(url).replace(/[^a-z0-9]/gi, '')}`;
     if (!subpostGalleryImages.value.some(item => item.id === id)) subpostGalleryImages.value.push({ id, postId, authorId: '', floor: Number(threadList.value.find(p => String(p.id) === postId)?.floor ?? 0), src: url, alt: '楼中楼图片' });
     selectedImageId.value = id;
+  }
+}
+function registerReplyImages(urls: string[], postId: string) {
+  const floor = Number(threadList.value.find(p => String(p.id) === postId)?.floor ?? 0);
+  for (const url of urls) {
+    const id = `subpost-${btoa(url).replace(/[^a-z0-9]/gi, '')}`;
+    if (!subpostGalleryImages.value.some(item => item.id === id)) subpostGalleryImages.value.push({ id, postId, authorId: '', floor, src: url, alt: '楼中楼图片' });
   }
 }
 async function toggleGalleryAuthor() {
@@ -683,7 +697,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
               <div v-for="item in visibleThreadList" :key="item.id" :ref="element => setPostElement(item.id, element)"
                 class="post-anchor"
                 :class="{ 'gallery-selected': galleryOpen && String(item.id) === selectedImage?.postId }">
-                <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))"
+                <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))" @register-images="registerReplyImages($event, String(item.id))"
                   :like="item.agree.agreeNum - item.agree.disagreeNum"
                   :user_name="item.author?.nameShow || item.author?.name || '匿名用户'" :uid="item.authorId"
                   @openUser="onUserNameClicked($event)" :avatar="item.author?.portrait || 'default'"

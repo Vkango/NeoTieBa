@@ -511,6 +511,21 @@ onMounted(async (): Promise<void> => {
     try {
       if (processedUrls.value.find((u: string) => u === url)) return;
 
+      // Clipboard jump for ordinary Tieba thread links.
+      const tiebaThread = url.trim().match(/^https?:\/\/tieba\.baidu\.com\/p\/([1-9]\d*)\/?(?:[?#].*)?$/i);
+      if (tiebaThread) {
+        const tid = tiebaThread[1];
+        await safeAddNotification(
+          '打开贴吧帖子',
+          '<span class="material-symbols-outlined" style="font-size: 17px;">content_paste</span>Clipboard 跳转',
+          Tip,
+          () => openThread(tid),
+          { Tip: `检测到帖子链接（ID: ${tid}），点击此处跳转` },
+          60000
+        );
+        return;
+      }
+
       const parser = new URLParser(url);
       if (parser.getProtocol().toLowerCase() === 'neotieba') {
         const params = parser.toObject().params;
