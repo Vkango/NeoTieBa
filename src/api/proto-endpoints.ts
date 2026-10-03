@@ -56,6 +56,15 @@ export const PROTO_ENDPOINTS = {
         fileName: 'file',
         auth: 'none',
     },
+    floor: {
+        id: 'floor',
+        url: 'https://tiebac.baidu.com/c/f/pb/floor?cmd=302002',
+        requestMessage: 'PbFloorReqIdl',
+        responseMessage: 'PbFloorResIdl',
+        clientVersion: '12.79.1.0',
+        fileName: 'file',
+        auth: 'cookie',
+    },
 } as const satisfies Record<string, ProtoEndpointConfig>;
 
 export type ProtoEndpointId = keyof typeof PROTO_ENDPOINTS;

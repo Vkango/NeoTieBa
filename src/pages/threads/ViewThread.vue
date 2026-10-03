@@ -172,19 +172,25 @@ function resizeWithKeyboard(event: KeyboardEvent) {
   settleLayout();
 }
 const galleryOnlyAuthor = ref(false);
+const galleryIncludeSubposts = ref(true);
+const subpostGalleryImages = ref<GalleryImage[]>([]);
 const selectedImageId = ref('');
 const galleryAutoFollow = ref(false);
 let galleryFollowVersion = 0;
 const visibleThreadList = computed(() => (galleryOpen.value ? galleryOnlyAuthor.value : props.local && onlyThreadAuthor.value)
   ? threadList.value.filter(post => String(post.authorId) === threadAuthorId.value) : threadList.value);
-const galleryImages = computed<GalleryImage[]>(() => settings.isMediaBlocked('images') ? [] : visibleThreadList.value.flatMap(post =>
-  (Array.isArray(post.content) ? post.content : []).flatMap((content: Record<string, unknown>, index: number) => {
-    const src = content.bigCdnSrc || content.big_cdn_src || content.bigSrc || content.big_src || content.originSrc || content.origin_src;
-    return Number(content.type) === 3 && typeof src === 'string' && src ? [{
-      id: `${post.id}-${index}`, postId: String(post.id), authorId: String(post.authorId),
-      floor: Number(post.floor), src, alt: `第 ${post.floor} 楼图片`
-    }] : [];
-  })));
+const galleryImages = computed<GalleryImage[]>(() => {
+  if (settings.isMediaBlocked('images')) return [];
+  const mainImages = visibleThreadList.value.flatMap(post =>
+    (Array.isArray(post.content) ? post.content : []).flatMap((content: Record<string, unknown>, index: number) => {
+      const src = content.bigCdnSrc || content.big_cdn_src || content.bigSrc || content.big_src || content.originSrc || content.origin_src;
+      return Number(content.type) === 3 && typeof src === 'string' && src ? [{
+        id: `${post.id}-${index}`, postId: String(post.id), authorId: String(post.authorId),
+        floor: Number(post.floor), src, alt: `第 ${post.floor} 楼图片`
+      }] : [];
+    }));
+  return galleryIncludeSubposts.value ? [...mainImages, ...subpostGalleryImages.value] : mainImages;
+});
 const selectedImageIndex = computed(() => galleryImages.value.findIndex(image => image.id === selectedImageId.value));
 const selectedImage = computed(() => galleryImages.value[selectedImageIndex.value]);
 let layoutTimer: ReturnType<typeof setTimeout> | undefined;
@@ -236,6 +242,11 @@ function stepGallery(direction: number) {
 function selectReplyImage(url: string, postId: string) {
   const image = galleryImages.value.find(image => image.postId === postId && new URL(image.src, window.location.href).href === new URL(url, window.location.href).href);
   if (image) void selectGalleryImage(image.id);
+  else if (galleryOpen.value) {
+    const id = `subpost-${btoa(url).replace(/[^a-z0-9]/gi, '')}`;
+    if (!subpostGalleryImages.value.some(item => item.id === id)) subpostGalleryImages.value.push({ id, postId, authorId: '', floor: Number(threadList.value.find(p => String(p.id) === postId)?.floor ?? 0), src: url, alt: '楼中楼图片' });
+    selectedImageId.value = id;
+  }
 }
 async function toggleGalleryAuthor() {
   galleryOnlyAuthor.value = !galleryOnlyAuthor.value;
@@ -609,7 +620,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
             <span class="material-symbols-outlined">chevron_left</span>
           </button>
           <span class="image-position" aria-live="polite">{{ selectedImageIndex + 1 }} / {{ galleryImages.length
-          }}<small>第 {{ selectedImage.floor }} 楼</small></span>
+            }}<small>第 {{ selectedImage.floor }} 楼</small></span>
           <button type="button" class="gallery-button" :disabled="selectedImageIndex >= galleryImages.length - 1"
             @click="stepGallery(1)" title="下一张" aria-label="下一张">
             <span class="material-symbols-outlined">chevron_right</span>
@@ -621,6 +632,8 @@ const ViewAllReplie = (data: SubPostInfo): void => {
           </button>
           <button type="button" class="gallery-button author-filter" :aria-pressed="galleryOnlyAuthor"
             @click="toggleGalleryAuthor()">只看楼主</button>
+          <button type="button" class="gallery-button author-filter" :aria-pressed="galleryIncludeSubposts"
+            @click="galleryIncludeSubposts = !galleryIncludeSubposts">包括楼中楼图片</button>
           <button type="button" class="gallery-button" @click="toggleGallery" title="退出看图模式" aria-label="退出看图模式">
             <span class="material-symbols-outlined">close</span>
           </button>
@@ -673,11 +686,10 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                 <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))"
                   :like="item.agree.agreeNum - item.agree.disagreeNum"
                   :user_name="item.author?.nameShow || item.author?.name || '匿名用户'" :uid="item.authorId"
-                  @openUser="onUserNameClicked($event)"
-                  :avatar="item.author?.portrait || 'default'"
+                  @openUser="onUserNameClicked($event)" :avatar="item.author?.portrait || 'default'"
                   :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
-                  :create_time="item.time" :reply_num="item.subPostNumber" :tid="String(tid)"
-                  :pid="String(item.id)" :floor="item.floor" :is_lz="String(item.authorId) === threadAuthorId"
+                  :create_time="item.time" :reply_num="item.subPostNumber" :tid="String(tid)" :pid="String(item.id)"
+                  :floor="item.floor" :is_lz="String(item.authorId) === threadAuthorId"
                   :level="item.author?.levelId || 0" :ipAddress="item.author?.ipAddress || ''"
                   @viewAllReplies="ViewAllReplie">
                 </Reply>
@@ -723,11 +735,10 @@ const ViewAllReplie = (data: SubPostInfo): void => {
       <ThreadFloorIndex v-if="threadList.length && !isLoading" ref="floorIndexRef" :entries="floorEntries"
         :current-id="activePostId" :reading-index="readingIndex" :reading-page="readingPage" :total-pages="totalPages"
         :busy="isThreadsLoading || isFavouriteLoading || isFloorNavigating" :local="props.local"
-        :gallery-active="galleryOpen"
-        :only-author="galleryOpen ? galleryOnlyAuthor : onlyThreadAuthor" :favourite="isFavourite"
-        :favourite-here="isFavourite && favouritePostId === activePostId" @gallery="toggleGallery"
-        @navigate="navigateToFloor" @jump="openJump" @only-author="toggleOnlyAuthor" @bookmark="toggleFavourite()"
-        @remove-bookmark="toggleFavourite(true)" />
+        :gallery-active="galleryOpen" :only-author="galleryOpen ? galleryOnlyAuthor : onlyThreadAuthor"
+        :favourite="isFavourite" :favourite-here="isFavourite && favouritePostId === activePostId"
+        @gallery="toggleGallery" @navigate="navigateToFloor" @jump="openJump" @only-author="toggleOnlyAuthor"
+        @bookmark="toggleFavourite()" @remove-bookmark="toggleFavourite(true)" />
       <Transition name="fade1">
         <div v-if="isJumpOpen" class="jump-overlay" @click.self="!isThreadsLoading && (isJumpOpen = false)">
           <section class="jump-card" role="dialog" aria-modal="true" :aria-labelledby="'jump-title-' + props.key_">

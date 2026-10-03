@@ -28,7 +28,7 @@
 
         </div>
         <div class="subpost" v-if="reply_num > 0">
-          <SubPost v-for="item in subpost_list" :thread_content="item.content" @openUser="openUser"
+          <SubPost v-for="item in subpost_list" :thread_content="item.content" @openUser="openUser" @select-image="openImageViewer"
             :avatar="item.author.portrait" :uid="item.author.id" :user_name="item.author.name_show || item.author.name">
           </SubPost>
         </div>
@@ -51,6 +51,7 @@ import SubPost from './SubPost.vue';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
 import { useSendToast, useImageViewer } from '@/composables/useGlobalProvides';
 import { useApi } from '@/composables/useApi';
+import { useUserStore } from '@/stores/user';
 
 // 类型定义
 interface Props {
@@ -104,6 +105,7 @@ const emit = defineEmits<Emits>();
 const sendToast = useSendToast();
 const openImageViewer = useImageViewer();
 const api = useApi();
+const userStore = useUserStore();
 
 // State
 const subpost_list: Ref<SubPostItem[]> = ref<SubPostItem[]>([]);
@@ -159,7 +161,7 @@ const handleClick = (event: MouseEvent): void => {
 const loadData = async (): Promise<void> => {
   try {
     isThreadsLoading.value = true;
-    const res = await api.viewSubPost(props.tid, props.pid, currentPage.value);
+    const res = await api.viewSubPost(props.tid, props.pid, currentPage.value, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '');
     subpost_list.value = [...subpost_list.value, ...res.subpost_list];
     pageInfo = res.page;
     console.log(pageInfo);

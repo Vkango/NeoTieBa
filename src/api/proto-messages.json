@@ -30,5 +30,13 @@
   "FrsPageResIdl": {
     "path": "FrsPage/FrsPageResIdl.proto",
     "namespace": "FrsPage"
+  },
+  "PbFloorReqIdl": {
+    "path": "PbFloor/PbFloorReqIdl.proto",
+    "namespace": "PbFloor"
+  },
+  "PbFloorResIdl": {
+    "path": "PbFloor/PbFloorResIdl.proto",
+    "namespace": "PbFloor"
   }
 }

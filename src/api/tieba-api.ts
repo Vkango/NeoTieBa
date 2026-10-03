@@ -13,6 +13,7 @@ import { browse_bar_protobuf, type BrowseBarProtoOptions } from "@/api/frs-page"
 import { normalizeThreadPage, normalizeUserPostPage, normalizeUserProfile } from '@/api/adapters';
 import type { ThreadPage, UserPostPage, UserProfile } from '@/types/client';
 import { createFollowedForumsForm, normalizeFollowedForums, type FollowedForum } from '@/api/followed-forums';
+import { callProtoEndpoint, createCommon } from '@/core/proto-client';
 
 export class tieBaAPI {
     constructor() {
@@ -386,9 +387,31 @@ export class tieBaAPI {
         return JSON.parse(responseData);
     }
 
-    async viewSubPost(tid: string | number, pid: string | number, page = 1): Promise<any> {
-        const data = `kz=${tid}&pid=${pid}&pn=${page}`;
-        const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/floor?' + this.calcSign(data), this.getRequestOptions());
-        return JSON.parse(responseData);
+    async viewSubPost(tid: string | number, pid: string | number, page = 1, bduss = '', stoken = ''): Promise<any> {
+        const response: any = await callProtoEndpoint('floor', {
+            data: {
+                kz: tid,
+                pid,
+                pn: page,
+                sort: 0,
+                common: createCommon('22.10.1.0', { ...this.getRequestOptions(), bduss, stoken }),
+            },
+        });
+        if (response?.error?.errorno) throw new Error(response.error.errmsg || `Tieba server error: ${response.error.errorno}`);
+        const data = response?.data ?? response;
+        // Keep the legacy component contract while decoding the protobuf's
+        // camelCase field names (subpostList/page/subpostNum).
+        const subpostList = data.subpostList ?? data.subpost_list ?? [];
+        return {
+            ...data,
+            subpost_list: subpostList.map((item: any) => item?.author ? {
+                ...item,
+                author: {
+                    ...item.author,
+                    name_show: item.author.nameShow ?? item.author.name_show ?? item.author.name ?? '',
+                },
+            } : item),
+            subpost_num: data.subpostNum ?? data.subpost_num ?? subpostList.length,
+        };
     }
 }

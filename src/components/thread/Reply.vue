@@ -30,7 +30,7 @@
 
       </div>
       <div class="subpost" v-if="reply_num > 0">
-        <SubPost v-for="item in subpost_list" :thread_content="item.content" @openUser="openUser"
+        <SubPost v-for="item in subpost_list" :thread_content="item.content" :embedded-images="props.embeddedImages" @openUser="openUser" @select-image="handleSubpostImage"
           :avatar="item.author.portrait" :uid="item.author.id" :user_name="item.author.name_show || item.author.name">
         </SubPost>
         <RippleButton v-if="reply_num > 5" @click="emit('viewAllReplies', props)"
@@ -45,7 +45,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
+import { useUserStore } from '@/stores/user';
 const settings = useSettingsStore();
+const userStore = useUserStore();
 const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), images: settings.isMediaBlocked('images'), videos: settings.isMediaBlocked('videos'), audio: settings.isMediaBlocked('audio') }));
 import { onMounted, ref, inject, nextTick } from 'vue';
 import { useApiStore } from '@/stores';
@@ -108,6 +110,10 @@ const handleClick = (event: any) => {
     emit('openUser', event.target.getAttribute('uid'));
   }
 }
+const handleSubpostImage = (url: string) => {
+  if (props.embeddedImages) emit('selectImage', url);
+  else openImageViewer?.(url);
+};
 
 const handleImageError = async (event: Event): Promise<void> => {
   const image = event.target as HTMLImageElement;
@@ -148,7 +154,7 @@ onMounted(async () => {
   if (props.reply_num > 0) {
     const apiStore = useApiStore();
     const Api = apiStore.getApi();
-    Api.viewSubPost(props.tid, props.pid).then((res: any) => {
+    Api.viewSubPost(props.tid, props.pid, 1, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '').then((res: any) => {
       subpost_list.value = res.subpost_list;
       if (subpost_list.value.length > 5) {
         subpost_list.value = subpost_list.value.slice(0, 5);

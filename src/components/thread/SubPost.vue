@@ -21,8 +21,11 @@ const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), i
 import { processContentElements } from '@/utils/helper';
 import type { ContentElement } from '@/types/common';
 const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value));
-const emit = defineEmits(['openUser'])
+const emit = defineEmits(['openUser', 'selectImage'])
 const handleClick = (event: any) => {
+  if (event.target.classList.contains('thread-reply-img')) {
+    emit('selectImage', event.target.getAttribute('data-full-src') || event.target.src);
+  }
   if (event.target.classList.contains('at-button')) {
     emit('openUser', event.target.getAttribute('uid'));
   }
@@ -46,7 +49,8 @@ const props = defineProps({
   },
   uid: {
     required: true,
-  }
+  },
+  embeddedImages: { type: Boolean, default: false }
 })
 </script>
 <style scoped>

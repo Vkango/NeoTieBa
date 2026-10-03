@@ -48,12 +48,14 @@ export function normalizePost(raw: any, userMap = new Map<string, StableUser>())
 
 export function normalizeThreadPage(raw: any, tid: string | number): ThreadPage {
     const data = raw?.data ?? {};
-    const users: StableUser[] = Array.isArray(data.userList)
-        ? data.userList.map((user: any) => normalizeUser(user))
+    const usersRaw = data.userList ?? data.user_list ?? [];
+    const postsRaw = data.postList ?? data.post_list ?? [];
+    const users: StableUser[] = Array.isArray(usersRaw)
+        ? usersRaw.map((user: any) => normalizeUser(user))
         : [];
     const userMap = new Map<string, StableUser>(users.map((user): [string, StableUser] => [user.id, user]));
-    const posts = Array.isArray(data.postList)
-        ? data.postList.map((post: any) => normalizePost(post, userMap))
+    const posts = Array.isArray(postsRaw)
+        ? postsRaw.map((post: any) => normalizePost(post, userMap))
         : [];
 
     return {
