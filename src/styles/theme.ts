@@ -1,6 +1,20 @@
 import { invoke } from '@tauri-apps/api/core';
 
 export type ThemeMode = 'auto' | 'light' | 'dark';
+export type AccentMode = 'forum' | 'custom';
+export function readableAccentHex(hex: string): string {
+    const value = hex.replace('#', '').trim();
+    if (!/^[0-9a-f]{6}$/i.test(value)) return '#3b82f6';
+    let r = parseInt(value.slice(0, 2), 16), g = parseInt(value.slice(2, 4), 16), b = parseInt(value.slice(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    if (brightness < 50) { const lift = value.toLowerCase() === '000000' ? 105 : 70; r = Math.min(255, r + lift); g = Math.min(255, g + lift); b = Math.min(255, b + lift); }
+    return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
+export function applyAccentColor(hex: string): void {
+    const value = readableAccentHex(hex).slice(1);
+    const r = parseInt(value.slice(0, 2), 16), g = parseInt(value.slice(2, 4), 16), b = parseInt(value.slice(4, 6), 16);
+    document.documentElement.style.setProperty('--primary-color', `${r}, ${g}, ${b}`);
+}
 
 export const THEME_STORAGE_KEY = 'neotieba-theme';
 

@@ -4,7 +4,7 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { applyTheme as applyThemeMode, onSystemThemeChange, persistTheme } from '@/styles/theme';
+import { applyTheme as applyThemeMode, onSystemThemeChange, persistTheme, applyAccentColor, type AccentMode } from '@/styles/theme';
 
 function guessMime(path: string): string {
     const lower = path.toLowerCase();
@@ -39,6 +39,8 @@ export const useSettingsStore = defineStore('settings', () => {
     const mediaPolicy = computed(() => normalizeMediaBlocks(mediaBlocks.value));
     function isMediaBlocked(kind: MediaKind): boolean { return mediaBlocked(noImage.value, mediaPolicy.value, kind); }
     const theme = ref<'auto' | 'light' | 'dark'>('auto');
+    const accentMode = ref<AccentMode>('forum');
+    const customAccentColor = ref('#3b82f6');
     const wallpaperPath = ref<string>('');
     const wallpaperUrl = ref<string>('');
     const wallpaperAccent = ref(0);
@@ -63,6 +65,8 @@ export const useSettingsStore = defineStore('settings', () => {
             case 'theme':
                 theme.value = value;
                 break;
+            case 'accent_mode': accentMode.value = value as AccentMode; if (accentMode.value === 'custom') applyAccentColor(customAccentColor.value); break;
+            case 'custom_accent_color': customAccentColor.value = String(value); applyAccentColor(customAccentColor.value); break;
             case 'wallpaper_path':
                 wallpaperPath.value = value;
                 break;
@@ -233,6 +237,7 @@ export const useSettingsStore = defineStore('settings', () => {
         onlyAuthor,
         noImage, mediaBlocks, mediaPolicy, isMediaBlocked, settingsError, wallpaperBusy,
         theme,
+        accentMode, customAccentColor,
         // 壁纸设置
         wallpaperPath,
         wallpaperUrl,
@@ -265,7 +270,7 @@ export const useSettingsStore = defineStore('settings', () => {
         afterHydrate: ({ store }) => { store.mediaBlocks = normalizeMediaBlocks(store.mediaBlocks); store.applyTheme(store.theme); },
 
         pick: [
-            'showUserId', 'onlyAuthor', 'noImage', 'mediaBlocks', 'theme',
+            'showUserId', 'onlyAuthor', 'noImage', 'mediaBlocks', 'theme', 'accentMode', 'customAccentColor',
             'wallpaperPath', 'wallpaperAccent', 'wallpaperBlur', 'wallpaperEffect', 'wallpaperSolidColor',
             'useProxy', 'proxyUrl', 'enableAutoSign', 'blockList',
         ],

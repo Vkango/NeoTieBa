@@ -130,6 +130,8 @@ const displaySettings: ComputedRef<SettingItem[]> = computed(() => [
       { label: '深色', value: 'dark' },
     ],
   },
+  { id: 'accent_mode', icon: 'color_lens', title: '主题色来源', type: 'select', desc: '使用当前吧主题色或固定自定义颜色', value: settingsStore.accentMode, options: [{ label: '吧主题色', value: 'forum' }, { label: '自定义主题色', value: 'custom' }] },
+  ...(settingsStore.accentMode === 'custom' ? [{ id: 'custom_accent_color', icon: 'colorize', title: '自定义主题色', type: 'color' as const, desc: '全局使用此颜色', value: settingsStore.customAccentColor }] : []),
   { id: 'wallpaper_accent', icon: 'contrast', title: '背景亮度', type: 'slider', desc: '亮度越高底色越淡 (0-100)', value: settingsStore.wallpaperAccent ?? 0, min: 0, max: 100 },
   {
     id: 'wallpaper_effect',
@@ -209,7 +211,7 @@ const handleUserChanged = async (): Promise<void> => {
 
 const updateSetting = (id: string, value: string | boolean | number): void => {
   if (id.startsWith('media_')) { settingsStore.mediaBlocks = { ...settingsStore.mediaPolicy, [id.slice(5)]: Boolean(value) }; return; }
-  if (['show_user_id', 'only_author', 'no_image', 'theme', 'wallpaper_path', 'wallpaper_accent', 'wallpaper_blur', 'wallpaper_effect', 'wallpaper_solid_color'].includes(id)) {
+  if (['show_user_id', 'only_author', 'no_image', 'theme', 'accent_mode', 'custom_accent_color', 'wallpaper_path', 'wallpaper_accent', 'wallpaper_blur', 'wallpaper_effect', 'wallpaper_solid_color'].includes(id)) {
     settingsStore.updateDisplaySetting(id, value);
     return;
   }

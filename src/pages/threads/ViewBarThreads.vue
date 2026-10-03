@@ -8,6 +8,8 @@ import BarInfoCard from '@/components/user/BarInfoCard.vue';
 import RemoteImage from '@/components/common/RemoteImage.vue';
 import { getCurrentUser, type User as ManagedUser } from '@/services/user-manage';
 import domToImage from 'dom-to-image';
+import { useSettingsStore } from '@/stores/settings';
+import { applyAccentColor, readableAccentHex } from '@/styles/theme';
 
 interface Props {
   barName: string;
@@ -136,6 +138,7 @@ const returnData: Ref<ForumData> = ref<ForumData>({
   thread_list: [],
   user_list: []
 });
+const settingsStore = useSettingsStore();
 const isLoading: Ref<boolean> = ref<boolean>(true);
 const isThreadsLoading: Ref<boolean> = ref<boolean>(true);
 const pinnedThreadList: Ref<ThreadItem[]> = ref<ThreadItem[]>([]);
@@ -147,8 +150,9 @@ const threadSortType = ref<number>(BAR_SORT_REPLY);
 const threadScopeLabel = computed(() => isGoodOnly.value ? '精华帖子' : '全部帖子');
 const threadSortLabel = computed(() => threadSortType.value === BAR_SORT_CREATE ? '发布时间排序' : '回复时间排序');
 const themeColor = computed(() => {
+  if (settingsStore.accentMode === 'custom') return readableAccentHex(settingsStore.customAccentColor);
   const color = returnData.value.forum.theme_color?.dark?.light_color?.replace('#', '');
-  return color ? `#${color}` : 'var(--text-color)';
+  return color ? readableAccentHex(color) : 'var(--primary-color)';
 });
 const forumLevelId = computed(() => Number(returnData.value.forum.level_id ?? returnData.value.forum.user_level ?? 0));
 const forumLevelName = computed(() => returnData.value.forum.level_name?.trim() || '吧等级');
@@ -334,7 +338,7 @@ const loadData = async (): Promise<void> => {
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
-    document.documentElement.style.setProperty('--primary-color', `${r}, ${g}, ${b}`);
+    if (settingsStore.accentMode === 'forum') applyAccentColor(hex);
 
     // 检查亮度
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
