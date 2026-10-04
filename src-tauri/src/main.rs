@@ -11,10 +11,7 @@ use cookie_manager::{
     get_cookies_string, set_cookie,
 };
 use file_io::{copy_file_to_install_dir, read_file, read_file_bytes, write_file};
-use request::{
-    fetch_data, fetch_data_post, fetch_data_with_cookie,
-    fetch_data_with_headers, fetch_image, test_connection,
-};
+use request::{fetch_image, http_request, test_connection, RequestSchema};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tauri::Manager;
@@ -24,8 +21,6 @@ use tauri_plugin_decorum::WebviewWindowExt;
 use window_vibrancy::*;
 // use api::{ get_user_info };
 use base64::{engine::general_purpose, Engine as _};
-use reqwest::header::HeaderMap;
-use serde_json::Value;
 use tauri::command;
 
 // src-tauri/src/main.rs
@@ -178,45 +173,8 @@ fn apply_effect<R: Runtime>(
 }
 
 #[command]
-async fn fetch_data_command(url: &str, proxy_url: Option<String>) -> Result<Value, String> {
-    match fetch_data(url, proxy_url.as_deref()).await {
-        Ok(data) => Ok(serde_json::Value::String(data)),
-        Err(e) => Err(format!("Failed to fetch data: {}", e)),
-    }
-}
-
-#[command]
-async fn fetch_data_with_headers_command(
-    url: &str,
-    headers_json: &str,
-    proxy_url: Option<String>,
-) -> Result<Value, String> {
-    let headers: HeaderMap = match serde_json::from_str(headers_json) {
-        Ok(json) => {
-            let mut headers = HeaderMap::new();
-            if let Value::Object(map) = json {
-                for (key, value) in map {
-                    if let Some(value_str) = value.as_str() {
-                        let header_name = key
-                            .as_str()
-                            .parse::<reqwest::header::HeaderName>()
-                            .map_err(|e| format!("Invalid header name '{}': {}", key, e))?;
-                        let header_value = value_str
-                            .parse()
-                            .map_err(|e| format!("Invalid header value for '{}': {}", key, e))?;
-                        headers.insert(header_name, header_value);
-                    }
-                }
-            }
-            headers
-        }
-        Err(e) => return Err(format!("Invalid headers JSON: {}", e)),
-    };
-
-    match fetch_data_with_headers(url, headers, proxy_url.as_deref()).await {
-        Ok(data) => Ok(serde_json::to_value(data).unwrap()),
-        Err(e) => Err(format!("Failed to fetch data: {}", e)),
-    }
+async fn http_request_command(request: RequestSchema) -> Result<request::ResponseData, String> {
+    http_request(request).await
 }
 
 #[command]
@@ -249,15 +207,12 @@ fn main() {
             toggle_devtools,
             set_wallpaper_effect,
             set_window_dark_mode,
-            fetch_data_command,
+            http_request_command,
             test_connection,
-            fetch_data_with_headers_command,
             read_file,
             read_file_bytes,
             copy_file_to_install_dir,
             write_file,
-            fetch_data_with_cookie,
-            fetch_data_post,
             fetch_image_base64,
             open_login,
             get_cookies,

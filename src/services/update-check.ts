@@ -1,7 +1,7 @@
-import { fetchTextWithHeaders } from '@/core/request';
+import { httpRequest, type RequestSchema } from '@/core/request';
 import { assessRelease, releaseMetadata, type Release } from '@/utils/settings-policy';
-export async function checkForUpdates(request = fetchTextWithHeaders, builtAt = __BUILD_TIME__, commit = __BUILD_COMMIT__) {
- const response = await request('https://api.github.com/repos/Vkango/NeoTieBa/releases?per_page=100', { Accept: 'application/vnd.github+json', 'User-Agent': 'NeoTieBa' });
+export async function checkForUpdates(request: (schema: RequestSchema) => ReturnType<typeof httpRequest> = httpRequest, builtAt = __BUILD_TIME__, commit = __BUILD_COMMIT__) {
+ const response = await request({ url: 'https://api.github.com/repos/Vkango/NeoTieBa/releases?per_page=100', headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'NeoTieBa' } });
  const data: unknown = JSON.parse(response.text);
  if (!Array.isArray(data)) throw new Error('GitHub 返回了无效发布数据');
  const releases = (data as Release[]).filter(r => !r.draft && r.published_at && /^https:\/\/github.com\/Vkango\/NeoTieBa\/releases\//.test(r.html_url));

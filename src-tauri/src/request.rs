@@ -1,14 +1,46 @@
-use reqwest::header::{HeaderMap, HeaderValue, COOKIE, REFERER, USER_AGENT};
+use reqwest::header::{HeaderValue, COOKIE, REFERER, USER_AGENT};
 use reqwest::{Client, Proxy};
 use serde::Serialize;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use tauri::command;
 
 #[derive(Serialize)]
 pub struct ResponseData {
+    pub status: u16,
     pub text: String,
     pub headers: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RequestSchema {
+    pub url: String,
+    pub method: Option<String>,
+    pub headers: Option<HashMap<String, String>>,
+    pub cookie: Option<String>,
+    pub body: Option<String>,
+    pub proxy_url: Option<String>,
+}
+
+pub async fn http_request(request: RequestSchema) -> Result<ResponseData, String> {
+    let client = build_client(request.proxy_url.as_deref())?;
+    let method = request.method.as_deref().unwrap_or("GET").parse::<reqwest::Method>()
+        .map_err(|e| format!("Invalid HTTP method: {e}"))?;
+    let mut builder = client.request(method, &request.url);
+    if let Some(headers) = request.headers {
+        for (name, value) in headers {
+            let name = name.parse::<reqwest::header::HeaderName>().map_err(|e| format!("Invalid header name: {e}"))?;
+            builder = builder.header(name, HeaderValue::from_str(&value).map_err(|e| format!("Invalid header value: {e}"))?);
+        }
+    }
+    if let Some(cookie) = request.cookie.filter(|v| !v.trim().is_empty()) { builder = builder.header(COOKIE, cookie); }
+    if let Some(body) = request.body { builder = builder.body(body); }
+    let response = builder.send().await.map_err(|e| format!("Request failed: {e}"))?;
+    let status = response.status().as_u16();
+    let headers = response.headers().iter().map(|(k,v)| (k.to_string(), v.to_str().unwrap_or("").to_string())).collect();
+    let text = response.text().await.map_err(|e| format!("Failed to read response body: {e}"))?;
+    Ok(ResponseData { status, text, headers })
 }
 
 fn build_client(proxy_url: Option<&str>) -> Result<Client, String> {
@@ -84,27 +116,31 @@ mod tests {
                 "application/x-www-form-urlencoded".to_string(),
             )]);
             assert_eq!(
-                fetch_data_post(
-                    "http://neotieba.invalid/",
-                    "tid=123&sign=ABC".to_string(),
-                    Some(proxy.clone()),
-                    Some(headers),
-                    Some("session=test".to_string())
-                )
+                http_request(RequestSchema {
+                    url: "http://neotieba.invalid/".to_string(),
+                    method: Some("POST".to_string()),
+                    headers: Some(headers),
+                    cookie: Some("session=test".to_string()),
+                    body: Some("tid=123&sign=ABC".to_string()),
+                    proxy_url: Some(proxy.clone()),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .text,
                 "OK"
             );
             assert_eq!(
-                fetch_data_post(
-                    "http://neotieba.invalid/",
-                    "plain-body".to_string(),
-                    Some(proxy),
-                    None,
-                    None
-                )
+                http_request(RequestSchema {
+                    url: "http://neotieba.invalid/".to_string(),
+                    method: Some("POST".to_string()),
+                    headers: None,
+                    cookie: None,
+                    body: Some("plain-body".to_string()),
+                    proxy_url: Some(proxy),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .text,
                 "OK"
             );
             let requests = server.await.unwrap();
@@ -145,19 +181,31 @@ mod tests {
                 requests
             });
             assert_eq!(
-                fetch_data_with_cookie(
-                    "http://neotieba.invalid/",
-                    "session=test",
-                    Some(proxy.clone())
-                )
+                http_request(RequestSchema {
+                    url: "http://neotieba.invalid/".to_string(),
+                    method: None,
+                    headers: None,
+                    cookie: Some("session=test".to_string()),
+                    body: None,
+                    proxy_url: Some(proxy.clone()),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .text,
                 "OK"
             );
             assert_eq!(
-                fetch_data("http://neotieba.invalid/", Some(&format!(" {proxy} ")))
-                    .await
-                    .unwrap(),
+                http_request(RequestSchema {
+                    url: "http://neotieba.invalid/".to_string(),
+                    method: None,
+                    headers: None,
+                    cookie: None,
+                    body: None,
+                    proxy_url: Some(format!(" {proxy} ")),
+                })
+                .await
+                .unwrap()
+                .text,
                 "OK"
             );
             let requests = server.await.unwrap();
@@ -167,20 +215,6 @@ mod tests {
         .await
         .expect("client did not reuse its connection");
     }
-}
-
-pub async fn fetch_data(url: &str, proxy_url: Option<&str>) -> Result<String, String> {
-    let client = build_client(proxy_url)?;
-    let response = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|error| format!("Failed to send request: {}", error))?;
-
-    response
-        .text()
-        .await
-        .map_err(|error| format!("Failed to read response body: {}", error))
 }
 
 pub async fn fetch_image(url: &str, proxy_url: Option<&str>) -> Result<(String, Vec<u8>), String> {
@@ -210,100 +244,6 @@ pub async fn fetch_image(url: &str, proxy_url: Option<&str>) -> Result<(String, 
         .to_vec();
 
     Ok((mime, bytes))
-}
-
-#[command]
-pub async fn fetch_data_post(
-    url: &str,
-    body: String,
-    proxy_url: Option<String>,
-    headers: Option<HashMap<String, String>>,
-    cookie: Option<String>,
-) -> Result<String, String> {
-    let client = build_client(proxy_url.as_deref())?;
-    let mut request = client.post(url).body(body);
-    if let Some(headers) = headers {
-        for (name, value) in headers {
-            let name = name
-                .parse::<reqwest::header::HeaderName>()
-                .map_err(|error| format!("Invalid header name: {}", error))?;
-            let value = HeaderValue::from_str(&value)
-                .map_err(|error| format!("Invalid header value: {}", error))?;
-            request = request.header(name, value);
-        }
-    }
-    if let Some(cookie) = cookie.filter(|value| !value.is_empty()) {
-        request = request.header(COOKIE, cookie);
-    }
-    let response = request
-        .send()
-        .await
-        .map_err(|error| format!("Failed to send post request: {}", error))?;
-
-    response
-        .text()
-        .await
-        .map_err(|error| format!("Failed to read response body: {}", error))
-}
-
-pub async fn fetch_data_with_headers(
-    url: &str,
-    headers: HeaderMap,
-    proxy_url: Option<&str>,
-) -> Result<ResponseData, String> {
-    let client = build_client(proxy_url)?;
-    let response = client
-        .get(url)
-        .headers(headers)
-        .send()
-        .await
-        .map_err(|error| format!("Failed to send header request: {}", error))?;
-
-    let headers = response
-        .headers()
-        .iter()
-        .map(|(key, value)| (key.to_string(), value.to_str().unwrap_or("").to_string()))
-        .collect();
-
-    let text = response
-        .text()
-        .await
-        .map_err(|error| format!("Failed to read response body: {}", error))?;
-
-    Ok(ResponseData { text, headers })
-}
-
-#[command]
-pub async fn fetch_data_with_cookie(
-    url: &str,
-    cookie: &str,
-    proxy_url: Option<String>,
-) -> Result<String, String> {
-    let mut headers = HeaderMap::new();
-
-    if !cookie.trim().is_empty() {
-        headers.insert(
-            COOKIE,
-            HeaderValue::from_str(cookie).map_err(|error| format!("Invalid cookie: {}", error))?,
-        );
-    }
-
-    let client = build_client(proxy_url.as_deref())?;
-    let response = client
-        .get(url)
-        .headers(headers)
-        .send()
-        .await
-        .map_err(|error| format!("Failed to send cookie request: {}", error))?;
-
-    if !response.status().is_success() {
-        return Err(format!("Request failed with status: {}", response.status()));
-    }
-
-    response
-        .text()
-        .await
-        .map_err(|error| format!("Failed to read response body: {}", error))
 }
 
 // Connectivity and HTTP acceptance are separate: a 403 still proves reachability.

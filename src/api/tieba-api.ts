@@ -1,11 +1,5 @@
 import CryptoJS from "crypto-js";
-import {
-    fetch_data_with_headers_command,
-    fetchData,
-    fetchDataPost,
-    fetchData_with_cookie,
-    type RequestOptions
-} from '@/core/request';
+import { httpRequest, type RequestOptions } from '@/core/request';
 import { user_info_protobuf } from "@/api/user-info";
 import { user_post_protobuf } from "@/api/user-post";
 import { get_post_proto } from "@/api/get-post";
@@ -66,20 +60,19 @@ export class tieBaAPI {
         const signInput = Object.entries(fields).map(([key, value]) => `${key}=${value}`).join('');
         const form = new URLSearchParams(fields);
         form.set('sign', CryptoJS.MD5(signInput + 'tiebaclient!!!').toString().toUpperCase());
-        const raw = await fetchDataPost(
-            cancel ? 'https://tieba.baidu.com/mo/q/post_rmstore' : 'https://tiebac.baidu.com/c/c/post/addstore',
-            form.toString(),
-            {
-                ...this.getRequestOptions(),
-                cookie: `BDUSS=${bduss}; STOKEN=${stoken};`,
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'User-Agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/101.0 Mobile Safari/537.36 tieba/22.1.1.0',
-                    'x-requested-with': 'XMLHttpRequest',
-                    'Subapp-Type': 'hybrid',
-                },
-            }
-        );
+        const raw = (await httpRequest({
+            url: cancel ? 'https://tieba.baidu.com/mo/q/post_rmstore' : 'https://tiebac.baidu.com/c/c/post/addstore',
+            method: 'POST',
+            body: form.toString(),
+            ...this.getRequestOptions(),
+            cookie: `BDUSS=${bduss}; STOKEN=${stoken};`,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/101.0 Mobile Safari/537.36 tieba/22.1.1.0',
+                'x-requested-with': 'XMLHttpRequest',
+                'Subapp-Type': 'hybrid',
+            },
+        })).text;
         const response = JSON.parse(raw);
         const code = cancel ? response.no : response.error_code;
         if (code === undefined || code === null || String(code) !== '0') {
@@ -117,11 +110,11 @@ export class tieBaAPI {
     async getUserInfo(bduss: string, stoken: string): Promise<any> {
         try {
             const cookie = `BDUSS=${bduss}; STOKEN=${stoken};`;
-            const responseData = await fetchData_with_cookie(
-                'https://tieba.baidu.com/f/user/json_userinfo',
+            const responseData = (await httpRequest({
+                url: 'https://tieba.baidu.com/f/user/json_userinfo',
                 cookie,
-                this.getRequestOptions()
-            );
+                ...this.getRequestOptions(),
+            })).text;
             return JSON.parse(responseData);
         } catch (error) {
             console.error('Error getting user info with cookie:', error);
@@ -131,33 +124,35 @@ export class tieBaAPI {
 
     async searchThreadInBar(barName: string, keyword: string, pn: number): Promise<any> {
         const url = `http://tieba.baidu.com/mo/q/search/thread?st=5&tt=1&ct=2&cv=12.91.1.0&fname=${encodeURIComponent(barName)}&word=${encodeURIComponent(keyword)}&pn=${pn}&rn=20`;
-        const responseData = await fetchData(url, this.getRequestOptions());
+        const responseData = (await httpRequest({ url, ...this.getRequestOptions() })).text;
         return JSON.parse(responseData);
     }
 
     async searchPostInBar(barName: string, keyword: string, pn: number): Promise<any> {
         const url = `http://tieba.baidu.com/mo/q/search/thread?st=5&tt=3&ct=2&cv=12.91.1.0&fname=${encodeURIComponent(barName)}&word=${encodeURIComponent(keyword)}&pn=${pn}&rn=20`;
-        const responseData = await fetchData(url, this.getRequestOptions());
+        const responseData = (await httpRequest({ url, ...this.getRequestOptions() })).text;
         return JSON.parse(responseData);
     }
 
     async searchBar(keyword: string): Promise<any> {
         const data = `word=${encodeURIComponent(keyword)}`;
-        const responseData = await fetchDataPost(
-            'https://tiebac.baidu.com/mo/q/search/forum',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'https://tiebac.baidu.com/mo/q/search/forum',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async searchUser(keyword: string): Promise<any> {
         const data = `word=${encodeURIComponent(keyword)}`;
-        const responseData = await fetchDataPost(
-            'https://tiebac.baidu.com/mo/q/search/user',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'https://tiebac.baidu.com/mo/q/search/user',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
@@ -173,11 +168,12 @@ export class tieBaAPI {
         cv = "99.9.101"
     ): Promise<any> {
         const data = `word=${encodeURIComponent(keyword)}&pn=${pn}&st=${st}&tt=${tt}&rn=${rn}&fname=${encodeURIComponent(fname)}&ct=${ct}&is_use_zonghe=${is_use_zonghe}&cv=${cv}`;
-        const responseData = await fetchDataPost(
-            'https://tiebac.baidu.com/mo/q/search/thread',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'https://tiebac.baidu.com/mo/q/search/thread',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
@@ -215,126 +211,141 @@ export class tieBaAPI {
         }
 
         const data = params.join('&');
-        const responseData = await fetchData('http://c.tieba.baidu.com/c/f/frs/page?' + this.calcSign(data), this.getRequestOptions());
+        const responseData = (await httpRequest({
+            url: 'http://c.tieba.baidu.com/c/f/frs/page?' + this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async getHomeRecommend(bduss = '', stoken = ''): Promise<any> {
-        const responseData = await fetch_data_with_headers_command(
-            'http://tieba.baidu.com/mg/o/getRecommPage?load_type=1&eqid=&refer=tieba.baidu.com&page_thread_count=10',
-            {
+        const responseData = await httpRequest({
+            url: 'http://tieba.baidu.com/mg/o/getRecommPage?load_type=1&eqid=&refer=tieba.baidu.com&page_thread_count=10',
+            headers: {
                 'Cookie': `BDUSS=${bduss}; STOKEN=${stoken}`,
                 'Host': 'tieba.baidu.com',
                 'Accept-Encoding': 'gzip, deflate, br, zstd'
             },
-            this.getRequestOptions()
-        );
+            ...this.getRequestOptions(),
+        });
         return JSON.parse(responseData.text);
     }
 
     async getForumDetail(forumId: string, bduss = '', stoken = ''): Promise<any> {
         const data = `BDUSS=${bduss}&_client_type=2&_client_version=12.68.1.0&forum_id=${forumId}&is_newfrs=1&stoken=${stoken}`;
-        const responseData = await fetchDataPost(
-            'http://c.tieba.baidu.com/c/f/forum/getforumdetail',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'http://c.tieba.baidu.com/c/f/forum/getforumdetail',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async getForumRule(forumId: string, bduss = '', stoken = ''): Promise<any> {
         const data = `BDUSS=${bduss}&_client_type=2&_client_version=12.68.1.0&forum_id=${forumId}&stoken=${stoken}`;
-        const responseData = await fetchDataPost(
-            'http://c.tieba.baidu.com/c/f/forum/forumRuleDetail',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'http://c.tieba.baidu.com/c/f/forum/forumRuleDetail',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async getUserSign(forumId: string, bduss: string, stoken: string): Promise<any> {
         const data = `BDUSS=${bduss}&_client_type=2&_client_version=12.68.1.0&forum_ids=${forumId}&from=frs&stoken=${stoken}`;
-        const responseData = await fetchDataPost(
-            'http://c.tieba.baidu.com/c/f/forum/getUserSign',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'http://c.tieba.baidu.com/c/f/forum/getUserSign',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async getUserForumLevelInfo(forumId: string, bduss: string, stoken: string): Promise<any> {
         const params = `_client_type=2&_client_version=12.68.1.0&BDUSS=${bduss}&stoken=${stoken}&forum_id=${forumId}&subapp_type=hybrid`;
-        const responseData = await fetch_data_with_headers_command(
-            'https://c.tieba.baidu.com/c/f/forum/getUserForumLevelInfo?' + this.calcSign(params),
-            { 'Subapp-Type': 'hybrid' },
-            this.getRequestOptions()
-        );
+        const responseData = await httpRequest({
+            url: 'https://c.tieba.baidu.com/c/f/forum/getUserForumLevelInfo?' + this.calcSign(params),
+            headers: { 'Subapp-Type': 'hybrid' },
+            ...this.getRequestOptions(),
+        });
         return JSON.parse(responseData.text);
     }
 
     async getBawuInfo(forumId: string): Promise<any> {
         const data = `_client_version=12.68.1.0&forum_id=${forumId}`;
-        const responseData = await fetchData(
-            'http://c.tieba.baidu.com/c/f/forum/getBawuInfo?' + this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'http://c.tieba.baidu.com/c/f/forum/getBawuInfo?' + this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async FollowBar(cookie: string, page = 1): Promise<any> {
         const url = `https://tieba.baidu.com/mg/o/getForumHome?st=0&pn=${page}&rn=20&eqid=&refer=`;
-        const response = await fetchData_with_cookie(url, cookie, this.getRequestOptions());
+        const response = (await httpRequest({ url, cookie, ...this.getRequestOptions() })).text;
         return JSON.parse(response);
     }
 
     async viewThread(id: string | number, page = 1): Promise<any> {
         const data = `_client_version=7.2.2&kz=${id}&net_type=1&pn=${page}`;
-        const responseData = await fetchData('http://c.tieba.baidu.com/c/f/pb/page?' + this.calcSign(data), this.getRequestOptions());
+        const responseData = (await httpRequest({
+            url: 'http://c.tieba.baidu.com/c/f/pb/page?' + this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async userProfile(uid: string | number): Promise<any> {
         const data = `uid=${uid}`;
-        const responseData = await fetchData('http://c.tieba.baidu.com/c/u/user/profile?' + this.calcSign(data), this.getRequestOptions());
+        const responseData = (await httpRequest({
+            url: 'http://c.tieba.baidu.com/c/u/user/profile?' + this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async userCard(id: string | number): Promise<any> {
-        const responseData = await fetchData('https://tieba.baidu.com/home/get/panel?id=' + id, this.getRequestOptions());
+        const responseData = (await httpRequest({
+            url: 'https://tieba.baidu.com/home/get/panel?id=' + id,
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async Favourite(BDUSS: string, offset = 0): Promise<any> {
         const data = `${BDUSS}&offset=${offset}&rn=20`;
-        const responseData = await fetchDataPost(
-            'https://c.tieba.baidu.com/c/f/post/threadstore',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'https://c.tieba.baidu.com/c/f/post/threadstore',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async followbar_list(bduss: string, stoken: string): Promise<{ forum_info: FollowedForum[] }> {
-        const responseData = await fetchDataPost(
-            'https://c.tieba.baidu.com/c/f/forum/getforumlist',
-            createFollowedForumsForm(bduss, stoken),
-            {
-                ...this.getRequestOptions(),
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            }
-        );
+        const responseData = (await httpRequest({
+            url: 'https://c.tieba.baidu.com/c/f/forum/getforumlist',
+            method: 'POST',
+            body: createFollowedForumsForm(bduss, stoken),
+            ...this.getRequestOptions(),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        })).text;
         return { forum_info: normalizeFollowedForums(JSON.parse(responseData)) };
     }
 
     async myProfile(cookie: string): Promise<any> {
         const url = `https://tieba.baidu.com/mg/o/profile?format=json&eqid=&refer=`;
-        const response = await fetchData_with_cookie(url, cookie, this.getRequestOptions());
+        const response = (await httpRequest({ url, cookie, ...this.getRequestOptions() })).text;
         return JSON.parse(response);
     }
 
     async get_self_id(cookie: string): Promise<string> {
         const url = `https://tieba.baidu.com/mo/q/sync`;
-        const response = await fetchData_with_cookie(url, cookie, this.getRequestOptions());
+        const response = (await httpRequest({ url, cookie, ...this.getRequestOptions() })).text;
         return JSON.parse(response).data.user_id;
     }
 
@@ -359,31 +370,34 @@ export class tieBaAPI {
             'scr_w=1080'
         ].join('&');
 
-        const responseData = await fetchDataPost(
-            'https://c.tieba.baidu.com/c/f/excellent/personalized',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'https://c.tieba.baidu.com/c/f/excellent/personalized',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async get_reply_me(cookie: string, pn = 1): Promise<any> {
         const data = `BDUSS=${cookie}&pn=${pn}`;
-        const responseData = await fetchDataPost(
-            'https://c.tieba.baidu.com/c/u/feed/replyme',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'https://c.tieba.baidu.com/c/u/feed/replyme',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 
     async get_at_me(cookie: string, pn = 1): Promise<any> {
         const data = `BDUSS=${cookie}&pn=${pn}`;
-        const responseData = await fetchDataPost(
-            'https://c.tieba.baidu.com/c/u/feed/atme',
-            this.calcSign(data),
-            this.getRequestOptions()
-        );
+        const responseData = (await httpRequest({
+            url: 'https://c.tieba.baidu.com/c/u/feed/atme',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+        })).text;
         return JSON.parse(responseData);
     }
 

@@ -1,4 +1,4 @@
-import { fetch_data_with_headers_command, fetchData } from '@/core/request';
+import { httpRequest } from '@/core/request';
 
 export class ApiLogin {
     private BAIDUID = '';
@@ -31,7 +31,7 @@ export class ApiLogin {
             "Cookie": this.BAIDUID
         };
         try {
-            const response = await fetch_data_with_headers_command(url, headers);
+            const response = await httpRequest({ url, headers });
             return response.text;
         } catch (error) {
             console.error("get_token error:", error);
@@ -52,7 +52,7 @@ export class ApiLogin {
             "Cookie": this.BAIDUID
         };
         try {
-            const response = await fetch_data_with_headers_command(url, headers);
+            const response = await httpRequest({ url, headers });
             return response.headers?.['set-cookie'] || null;
         } catch (error) {
             console.error("get_pass_id error:", error);
@@ -63,7 +63,7 @@ export class ApiLogin {
     async get_qr_code(): Promise<any> {
         const url = "https://passport.baidu.com/v2/api/getqrcode?lp=pc&qrloginfrom=p";
         try {
-            const response = JSON.parse(await fetchData(url));
+            const response = JSON.parse((await httpRequest({ url })).text);
             return response;
         } catch (error) {
             console.error("get_qr_code error:", error);
@@ -74,7 +74,7 @@ export class ApiLogin {
     async get_auth_cookie(): Promise<void> {
         if (this.isCancelled) return;
         try {
-            const response = await fetch_data_with_headers_command("https://passport.baidu.com", {});
+            const response = await httpRequest({ url: "https://passport.baidu.com" });
             this.BAIDUID = response.headers?.['set-cookie'] || '';
             const qrResult = await this.get_qr_code();
             if (!qrResult) throw new Error("Failed to get QR code");
@@ -109,7 +109,7 @@ export class ApiLogin {
             "Cookie": this.BAIDUID
         };
         try {
-            const response = await fetch_data_with_headers_command(url, headers);
+            const response = await httpRequest({ url, headers });
             return response.text;
         } catch (error) {
             console.error("get_scan_status error:", error);
@@ -130,7 +130,7 @@ export class ApiLogin {
             "Cookie": this.BAIDUID
         };
         try {
-            const response = await fetch_data_with_headers_command(url, headers);
+            const response = await httpRequest({ url, headers });
             return response.text;
         } catch (error) {
             console.error("login_with_bduss error:", error);
