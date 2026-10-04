@@ -29,5 +29,11 @@ export async function callProtoEndpoint<TRequest extends object, TResponse>(
     requestData: TRequest,
     options: ProtoCallOptions = {}
 ): Promise<TResponse> {
-    return await invoke<TResponse>('protobuf_call', { endpoint: endpointId, request: requestData, proxyUrl: options.proxyUrl });
+    return await invoke<TResponse>('protobuf_call', {
+        endpoint: endpointId,
+        request: requestData,
+        proxyUrl: options.proxyUrl,
+        bduss: options.bduss,
+        stoken: options.stoken,
+    });
 }

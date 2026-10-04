@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE, REFERER, USER_AGENT};
+use reqwest::header::{HeaderMap, HeaderValue, COOKIE, REFERER, USER_AGENT};
 use reqwest::{Client, Proxy};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -213,59 +213,6 @@ pub async fn fetch_image(url: &str, proxy_url: Option<&str>) -> Result<(String, 
 }
 
 #[command]
-pub async fn fetch_data_buffer(
-    url: &str,
-    buffer: Vec<u8>,
-    file_name: &str,
-    proxy_url: Option<String>,
-) -> Result<Vec<u8>, String> {
-    let client = build_client(proxy_url.as_deref())?;
-    let boundary = "-*_r1999";
-
-    let mut body = Vec::new();
-    body.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-    body.extend_from_slice(
-        format!(
-            "Content-Disposition: form-data; name=\"data\"; filename=\"{}\"\r\n\r\n",
-            file_name
-        )
-        .as_bytes(),
-    );
-    body.extend_from_slice(&buffer);
-    body.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
-
-    let mut headers = HeaderMap::new();
-    headers.insert("Host", HeaderValue::from_static("tiebac.baidu.com"));
-    headers.insert("User-Agent", HeaderValue::from_static("neotieba"));
-    headers.insert("x_bd_data_type", HeaderValue::from_static("protobuf"));
-    headers.insert("Connection", HeaderValue::from_static("keep-alive"));
-    headers.insert("Accept", HeaderValue::from_static("*/*"));
-    headers.insert(
-        CONTENT_TYPE,
-        HeaderValue::from_str(&format!("multipart/form-data; boundary={}", boundary))
-            .map_err(|error| format!("Invalid content type: {}", error))?,
-    );
-
-    let response = client
-        .post(url)
-        .headers(headers)
-        .body(body)
-        .send()
-        .await
-        .map_err(|error| format!("Failed to send protobuf request: {}", error))?;
-
-    if !response.status().is_success() {
-        return Err(format!("Request failed with status: {}", response.status()));
-    }
-
-    response
-        .bytes()
-        .await
-        .map(|data| data.to_vec())
-        .map_err(|error| format!("Failed to read response body: {}", error))
-}
-
-#[command]
 pub async fn fetch_data_post(
     url: &str,
     body: String,
@@ -385,12 +332,27 @@ mod connectivity_tests {
         let server = tokio::spawn(async move {
             let (mut socket, _) = listener.accept().await.unwrap();
             let mut header = Vec::new();
-            while !header.ends_with(b"\r\n\r\n") { header.push(socket.read_u8().await.unwrap()); }
+            while !header.ends_with(b"\r\n\r\n") {
+                header.push(socket.read_u8().await.unwrap());
+            }
             let header = String::from_utf8(header).unwrap().to_ascii_lowercase();
             assert!(header.contains("user-agent: mozilla/5.0"));
-            socket.write_all(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").await.unwrap();
+            socket
+                .write_all(
+                    b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                )
+                .await
+                .unwrap();
         });
-        assert_eq!(probe_url(&format!("http://{address}/"), Some(&format!("http://{address}"))).await.unwrap(), 403);
+        assert_eq!(
+            probe_url(
+                &format!("http://{address}/"),
+                Some(&format!("http://{address}"))
+            )
+            .await
+            .unwrap(),
+            403
+        );
         server.await.unwrap();
     }
 }

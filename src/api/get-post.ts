@@ -23,7 +23,7 @@ export async function get_post_proto(
             },
         };
         if (withComments) {
-            requestData.data.common.BDUSS = bduss || options.bduss || '';
+            requestData.data.common.bduss = bduss || options.bduss || '';
             requestData.data.with_floor = 1;
             requestData.data.floor_sort_type = 1;
             requestData.data.floor_rn = commentRn;

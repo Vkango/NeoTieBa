@@ -42,10 +42,12 @@ impl TiebaClient {
         self
     }
 
-    pub async fn post_protobuf(&self, url: &str, payload: &[u8], file_name: &str) -> Result<Vec<u8>, TiebaError> {
+    pub async fn post_protobuf(&self, url: &str, payload: &[u8], file_name: &str, cookie: Option<&str>) -> Result<Vec<u8>, TiebaError> {
         let form = reqwest::multipart::Part::bytes(payload.to_vec()).file_name(file_name.to_owned());
-        let response = self.client.post(url).header("x_bd_data_type", "protobuf")
-            .multipart(reqwest::multipart::Form::new().part("data", form)).send().await?;
+        let mut request = self.client.post(url).header("x_bd_data_type", "protobuf")
+            .multipart(reqwest::multipart::Form::new().part("data", form));
+        if let Some(cookie) = cookie.filter(|value| !value.is_empty()) { request = request.header(reqwest::header::COOKIE, cookie); }
+        let response = request.send().await?;
         let status = response.status();
         if !status.is_success() { return Err(TiebaError::Http(status.as_u16())); }
         let bytes = response.bytes().await?;

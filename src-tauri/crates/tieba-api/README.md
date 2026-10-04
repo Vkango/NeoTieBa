@@ -1,7 +1,3 @@
 # tieba-api
 
-Reusable Rust primitives for Baidu Tieba protobuf endpoints.
-
-The crate intentionally starts with the transport boundary. Generated protobuf
-types and endpoint-specific DTOs can be added without coupling them to Tauri.
-
+Protobuf 请求封装, 为 NeoTieBa 设计. 遵循相同的 GPL-3 协议.

@@ -2,21 +2,21 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod cookie_manager;
 mod file_io;
-mod request;
 mod protobuf_api;
+mod request;
 use protobuf_api::protobuf_call;
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use cookie_manager::{
     clear_cookies, delete_cookie, get_baidu_auth_cookies, get_cookie, get_cookies,
     get_cookies_string, set_cookie,
 };
 use file_io::{copy_file_to_install_dir, read_file, read_file_bytes, write_file};
 use request::{
-    fetch_data, fetch_data_buffer, fetch_data_post, fetch_data_with_cookie, fetch_data_with_headers,
-    fetch_image, test_connection,
+    fetch_data, fetch_data_post, fetch_data_with_cookie,
+    fetch_data_with_headers, fetch_image, test_connection,
 };
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tauri::Manager;
 #[cfg(not(target_os = "macos"))]
 use tauri_plugin_decorum::WebviewWindowExt;
@@ -49,11 +49,11 @@ async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
         "login_window",
         WebviewUrl::External(Url::parse("about:blank").unwrap()),
     )
-        .title("登录百度账号")
-        .inner_size(800.0, 600.0)
-        .center()
-        .build()
-        .map_err(|e| format!("创建窗口失败: {}", e))?;
+    .title("登录百度账号")
+    .inner_size(800.0, 600.0)
+    .center()
+    .build()
+    .map_err(|e| format!("创建窗口失败: {}", e))?;
 
     let cancelled = Arc::new(AtomicBool::new(false));
     let destroyed = cancelled.clone();
@@ -92,7 +92,7 @@ async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
                             "bduss": bduss, "stoken": stoken,
                         }),
                     )
-                        .map_err(|e| e.to_string())?;
+                    .map_err(|e| e.to_string())?;
                     let _ = window.close();
                     return Ok::<(), String>(());
                 }
@@ -102,7 +102,7 @@ async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
         }
-            .await;
+        .await;
         if let Err(error) = result {
             if !cancelled.load(Ordering::Relaxed) {
                 if let Some(main) = app.get_webview_window("main") {
@@ -125,7 +125,11 @@ fn toggle_devtools<R: Runtime>(window: tauri::WebviewWindow<R>) {
 }
 
 #[tauri::command]
-fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &str, dark: Option<bool>) -> Result<(), String> {
+fn set_wallpaper_effect<R: Runtime>(
+    window: tauri::WebviewWindow<R>,
+    effect: &str,
+    dark: Option<bool>,
+) -> Result<(), String> {
     if let Err(e) = apply_effect(&window, effect, dark) {
         return Err(format!("apply_effect({}) failed: {}", effect, e));
     }
@@ -133,19 +137,31 @@ fn set_wallpaper_effect<R: Runtime>(window: tauri::WebviewWindow<R>, effect: &st
 }
 
 #[tauri::command]
-fn set_window_dark_mode<R: Runtime>(window: tauri::WebviewWindow<R>, dark: bool) -> Result<(), String> {
+fn set_window_dark_mode<R: Runtime>(
+    window: tauri::WebviewWindow<R>,
+    dark: bool,
+) -> Result<(), String> {
     // Theme must not implicitly replace the selected wallpaper effect.
-    window.set_theme(Some(if dark { tauri::Theme::Dark } else { tauri::Theme::Light })).map_err(|error| error.to_string())?;
+    window
+        .set_theme(Some(if dark {
+            tauri::Theme::Dark
+        } else {
+            tauri::Theme::Light
+        }))
+        .map_err(|error| error.to_string())?;
     Ok(())
 }
 
 #[cfg(target_os = "windows")]
-fn apply_effect<R: Runtime>(window: &tauri::WebviewWindow<R>, effect: &str, dark: Option<bool>) -> Result<(), String> {
+fn apply_effect<R: Runtime>(
+    window: &tauri::WebviewWindow<R>,
+    effect: &str,
+    dark: Option<bool>,
+) -> Result<(), String> {
     clear_acrylic(window).map_err(|e| e.to_string())?;
     clear_mica(window).map_err(|e| e.to_string())?;
     match effect {
-        "acrylic" => apply_acrylic(window, Some((255, 255, 255, 0)))
-            .map_err(|e| format!("{}", e)),
+        "acrylic" => apply_acrylic(window, Some((255, 255, 255, 0))).map_err(|e| format!("{}", e)),
         "mica" => apply_mica(window, dark).map_err(|e| format!("{}", e)),
         "image" | "solid" => Ok(()),
         _ => Err("Unsupported wallpaper effect".into()),
@@ -153,7 +169,11 @@ fn apply_effect<R: Runtime>(window: &tauri::WebviewWindow<R>, effect: &str, dark
 }
 
 #[cfg(not(target_os = "windows"))]
-fn apply_effect<R: Runtime>(_window: &tauri::WebviewWindow<R>, _effect: &str, _dark: Option<bool>) -> Result<(), String> {
+fn apply_effect<R: Runtime>(
+    _window: &tauri::WebviewWindow<R>,
+    _effect: &str,
+    _dark: Option<bool>,
+) -> Result<(), String> {
     Ok(())
 }
 
@@ -200,19 +220,6 @@ async fn fetch_data_with_headers_command(
 }
 
 #[command]
-async fn fetch_data_buffer_base64(
-    url: &str,
-    buffer: Vec<u8>,
-    proxy_url: Option<String>,
-    file_name: &str,
-) -> Result<String, String> {
-    match fetch_data_buffer(url, buffer, file_name, proxy_url).await {
-        Ok(data) => Ok(general_purpose::STANDARD.encode(&data)),
-        Err(e) => Err(format!("Failed to fetch data: {}", e)),
-    }
-}
-
-#[command]
 async fn fetch_image_base64(url: &str, proxy_url: Option<String>) -> Result<String, String> {
     let (mime, bytes) = fetch_image(url, proxy_url.as_deref()).await?;
     Ok(format!(
@@ -251,8 +258,6 @@ fn main() {
             write_file,
             fetch_data_with_cookie,
             fetch_data_post,
-            fetch_data_buffer,
-            fetch_data_buffer_base64,
             fetch_image_base64,
             open_login,
             get_cookies,
@@ -261,8 +266,8 @@ fn main() {
             delete_cookie,
             clear_cookies,
             get_baidu_auth_cookies,
-            get_cookies_string
-            ,protobuf_call
+            get_cookies_string,
+            protobuf_call
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

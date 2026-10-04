@@ -7,7 +7,6 @@ export interface RequestOptions {
     headers?: Record<string, string>;
     cookie?: string;
     proxyUrl?: string;
-    fileName?: string;
 }
 
 export interface FetchWithHeadersResponse {
@@ -82,29 +81,8 @@ export async function fetchTextWithHeaders(
     }
 }
 
-export async function postProtobuf(url: string, buffer: Uint8Array, options: RequestOptions = {}): Promise<string> {
-    try {
-        return await invoke<string>('fetch_data_buffer_base64', {
-            url,
-            buffer,
-            proxyUrl: resolveProxyUrl(options.proxyUrl),
-            fileName: options.fileName ?? 'file',
-        });
-    } catch (error) {
-        throw new Error(`Protobuf request failed: ${toErrorMessage(error)}`);
-    }
-}
-
 export async function fetchData(url: string, options: RequestOptions = {}): Promise<string> {
     return fetchText(url, options);
-}
-
-export async function fetch_data_buffer(
-    url: string,
-    buffer: Uint8Array,
-    options: RequestOptions = {}
-): Promise<string> {
-    return postProtobuf(url, buffer, options);
 }
 
 export async function fetchDataPost(url: string, body: string, options: RequestOptions = {}): Promise<string> {
