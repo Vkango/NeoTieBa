@@ -79,7 +79,7 @@
                                         <div class="status-text">
                                             {{ userInfo.is_like ? `你已关注 ${barInfo.name}吧` : `你还未关注 ${barInfo.name}吧` }}
                                         </div>
-                                        <button class="action-btn" @click="handleToggleFollow">
+                                        <button class="action-btn" :disabled="actionLoading" @click="handleToggleFollow">
                                             {{ userInfo.is_like ? '取消关注' : '关注' }}
                                         </button>
                                     </div>
@@ -103,7 +103,7 @@
                                     </div>
 
                                     <div class="sign-section">
-                                        <button class="sign-btn" :disabled="userInfo.is_sign_in" @click="handleSignIn">
+                                        <button class="sign-btn" :disabled="userInfo.is_sign_in || actionLoading" @click="handleSignIn">
                                             {{ userInfo.is_sign_in ? '今日已签到' : '签到' }}
                                         </button>
                                         <div class="sign-stats">
@@ -161,14 +161,15 @@
                             <div v-if="activeTab === 'bawu'" class="tab-content">
                                 <div v-if="bawuList.length > 0" class="bawu-list">
                                     <div v-for="group in groupedBawu" :key="group.type" class="bawu-group">
-                                        <h3 class="bawu-type">{{ group.type }}</h3>
+                                        <h3 class="bawu-type">{{ group.type }}<span class="bawu-count">{{ group.members.length }}</span></h3>
                                         <div class="bawu-members">
-                                            <div v-for="bawu in group.members" :key="bawu.id" class="bawu-item">
-                                                <RemoteImage :src="bawu.portrait" :alt="bawu.name" class="bawu-avatar" />
-                                                <div class="bawu-info">
-                                                    <div class="bawu-name">{{ bawu.name }}</div>
-                                                    <div class="bawu-level">Lv.{{ bawu.level }}</div>
-                                                </div>
+                                            <div v-for="bawu in group.members" :key="bawu.id" class="bawu-capsule"
+                                                @click="handleOpenBawuUser(bawu.id)">
+                                                <RemoteImage v-if="bawu.portrait" :src="bawu.portrait" :alt="bawu.name"
+                                                    class="bawu-avatar" />
+                                                <span v-else class="bawu-avatar bawu-avatar-fallback">{{ bawu.name.charAt(0) }}</span>
+                                                <span class="bawu-name">{{ bawu.name }}</span>
+                                                <span v-if="bawu.level > 0" class="bawu-level">Lv.{{ bawu.level }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -192,9 +193,9 @@
 
 <script setup lang="ts">
 import RemoteImage from '@/components/common/RemoteImage.vue';
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import { useApiStore } from '@/stores'
-import { getCurrentUser } from '@/services/user-manage'
+import { getCurrentUser, type User as ManagedUser } from '@/services/user-manage'
 import type {
     BarInfo,
     UserBarInfo,
@@ -208,8 +209,7 @@ import type {
     UserSignResponse,
     UserForumLevelInfoResponse,
     ForumRuleResponse,
-    BawuInfoResponse,
-    BawuInfoMember
+    BawuInfoResponse
 } from '@/types/api'
 import { formatNumber } from '@/utils/helper'
 
@@ -231,11 +231,14 @@ const props = withDefaults(defineProps<{
     })
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'openUser'])
+
+const sendToast = inject<(title: string, duration: number) => void>('sendToast')
 
 const activeTab = ref('info')
 const isLoading = ref(false)
 const isLoggedIn = ref(false)
+const actionLoading = ref(false)
 const apiStore = useApiStore()
 const n = apiStore.getApi()
 
@@ -297,6 +300,11 @@ const groupedBawu = computed(() => {
 // use shared formatNumber from src/helper.ts
 
 const handleOverlayClick = () => {
+    emit('close')
+}
+
+const handleOpenBawuUser = (uid: string | number) => {
+    emit('openUser', uid)
     emit('close')
 }
 
@@ -423,28 +431,20 @@ const loadData = async () => {
         try {
             const bawuInfo = await n.getBawuInfo(forumId) as BawuInfoResponse
 
-            if (bawuInfo && bawuInfo.error_code === '0') {
-                console.log(bawuInfo)
-                const bawuTypes: Record<string, string> = {
-                    'admin': '大吧主',
-                    'manager': '小吧主',
-                    'assist': '吧务助理'
-                }
-
+            if (bawuInfo && String(bawuInfo.error_code) === '0' && Array.isArray(bawuInfo.bawu_team_info?.bawu_team_list)) {
                 const tempBawuList: BawuMember[] = []
-                for (const [key, typeName] of Object.entries(bawuTypes)) {
-                    const members = (bawuInfo as any)[key] as BawuInfoMember[] || []
-                    members.forEach((member) => {
+                for (const group of bawuInfo.bawu_team_info.bawu_team_list) {
+                    const typeName = group.role_name || '吧务'
+                    for (const member of group.role_info || []) {
                         tempBawuList.push({
-                            id: String(member.id),
-                            name: member.name_show || member.name,
-                            portrait: `https://tb.himg.baidu.com/sys/portrait/item/${member.portrait}`,
-                            level: member.level_id || 0,
+                            id: String(member.user_id),
+                            name: member.name_show || member.user_name || '匿名吧务',
+                            portrait: member.portrait ? `http://tb.himg.baidu.com/sys/portrait/item/${member.portrait}` : '',
+                            level: Number(member.user_level ?? 0),
                             type: typeName
                         })
-                    })
+                    }
                 }
-
                 bawuList.value = tempBawuList
             }
         } catch (error) {
@@ -459,11 +459,80 @@ const loadData = async () => {
 }
 
 const handleToggleFollow = async () => {
+    if (actionLoading.value) return
 
+    const forumId = barInfo.value.id || props.forumData.id
+    if (!forumId) return
+
+    let user: ManagedUser | null = null
+    try {
+        user = await getCurrentUser()
+    } catch {
+        user = null
+    }
+    if (!user?.bduss) {
+        sendToast?.('请先登录后再操作', 2000)
+        return
+    }
+
+    actionLoading.value = true
+    try {
+        if (userInfo.value.is_like) {
+            await n.unfollowBar(barInfo.value.name, forumId, user.bduss, user.stoken)
+            userInfo.value.is_like = false
+            sendToast?.(`已取消关注 ${barInfo.value.name}吧`, 2000)
+        } else {
+            await n.followBar(barInfo.value.name, forumId, user.bduss, user.stoken)
+            userInfo.value.is_like = true
+            sendToast?.(`关注 ${barInfo.value.name}吧成功`, 2000)
+        }
+    } catch (error) {
+        console.error('关注操作失败:', error)
+        sendToast?.(error instanceof Error && error.message ? error.message : '操作失败，请稍后再试', 2000)
+    } finally {
+        actionLoading.value = false
+    }
 }
 
 const handleSignIn = async () => {
+    if (userInfo.value.is_sign_in || actionLoading.value) return
 
+    const forumId = barInfo.value.id || props.forumData.id
+    if (!forumId) return
+
+    let user: ManagedUser | null = null
+    try {
+        user = await getCurrentUser()
+    } catch {
+        user = null
+    }
+    if (!user?.bduss) {
+        sendToast?.('请先登录后再签到', 2000)
+        return
+    }
+
+    actionLoading.value = true
+    try {
+        const response = await n.signForum(barInfo.value.name, forumId, user.bduss, user.stoken)
+        const errorCode = String(response?.error_code)
+
+        if (errorCode === '0') {
+            userInfo.value.is_sign_in = true
+            userInfo.value.sign_in_count += 1
+            userInfo.value.cont_sign_num += 1
+            sendToast?.(`签到成功，已连续签到${userInfo.value.cont_sign_num}天`, 2000)
+        } else if (errorCode === '1602') {
+            userInfo.value.is_sign_in = true
+            sendToast?.('今日已签到过啦', 2000)
+        } else {
+            throw new Error(String(response?.error_msg || '签到失败，请稍后再试'))
+        }
+    } catch (error) {
+        console.error('签到失败:', error)
+        sendToast?.(error instanceof Error && error.message ? error.message : '签到失败，请稍后再试', 2000)
+    } finally {
+        actionLoading.value = false
+    }
 }
 
 watch(() => props.visible, (newVal) => {
@@ -976,65 +1045,88 @@ watch(() => props.visible, (newVal) => {
 .bawu-list {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
 }
 
 .bawu-group {
     background: rgba(var(--text-color), 0.02);
     padding: 16px;
-    border-radius: 8px;
+    border-radius: 12px;
 }
 
 .bawu-type {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: rgb(var(--text-color));
     margin: 0 0 12px 0;
-    padding-bottom: 8px;
-    border-bottom: 2px solid rgba(var(--text-color), 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bawu-count {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(var(--text-color), 0.55);
+    background: rgba(var(--text-color), 0.06);
+    border-radius: 999px;
+    padding: 1px 8px;
 }
 
 .bawu-members {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-}
-
-.bawu-item {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 12px;
-    background: rgba(var(--text-color), 0.03);
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.bawu-item:hover {
+.bawu-capsule {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px 5px 5px;
     background: rgba(var(--text-color), 0.05);
-    transform: translateX(4px);
+    border: 1px solid rgba(var(--text-color), 0.08);
+    border-radius: 999px;
+    transition: background-color 0.2s ease;
+    max-width: 100%;
+    cursor: pointer;
+}
+
+.bawu-capsule:hover {
+    background: rgba(var(--text-color), 0.1);
 }
 
 .bawu-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
     object-fit: cover;
+    flex-shrink: 0;
 }
 
-.bawu-info {
-    flex: 1;
+.bawu-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(var(--text-color), 0.7);
+    background: rgba(var(--text-color), 0.1);
 }
 
 .bawu-name {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: rgb(var(--text-color));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .bawu-level {
-    font-size: 12px;
-    color: rgba(var(--text-color), 0.6);
+    font-size: 11px;
+    color: rgba(var(--text-color), 0.55);
+    white-space: nowrap;
 }
 
 .no-bawu {
@@ -1062,10 +1154,6 @@ watch(() => props.visible, (newVal) => {
     }
 
     .activity-stats {
-        grid-template-columns: 1fr;
-    }
-
-    .bawu-members {
         grid-template-columns: 1fr;
     }
 }

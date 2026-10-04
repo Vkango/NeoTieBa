@@ -103,34 +103,29 @@ export interface ForumRuleResponse {
     [key: string]: any;
 }
 
-export interface BawuInfoMember {
-    id: string | number;
-    name: string;
-    name_show?: string;
-    nick_name_new?: string;
-    show_name?: string;
+export interface BawuTeamMember {
+    forum_id?: string | number;
+    user_id: string | number;
     user_name?: string;
+    name_show?: string;
     portrait: string;
-    avatar?: string;
-    level?: number;
-    level_id?: number;
-    user_level?: number;
+    level_name?: string;
+    user_level?: string | number;
+    [key: string]: any;
+}
+
+export interface BawuTeamRoleGroup {
+    role_name: string;
+    role_info: BawuTeamMember[];
     [key: string]: any;
 }
 
 export interface BawuInfoResponse {
     error_code: string;
-    admin?: BawuInfoMember[];
-    manager?: BawuInfoMember[];
-    assist?: BawuInfoMember[];
-    voice_editor?: BawuInfoMember[];
-    image_editor?: BawuInfoMember[];
-    video_editor?: BawuInfoMember[];
-    broadcast_editor?: BawuInfoMember[];
-    journal_chief_editor?: BawuInfoMember[];
-    journal_editor?: BawuInfoMember[];
-    profess_admin?: BawuInfoMember[];
-    fourth_admin?: BawuInfoMember[];
+    bawu_team_info?: {
+        total_num?: string | number;
+        bawu_team_list: BawuTeamRoleGroup[];
+    };
     [key: string]: any;
 }
 

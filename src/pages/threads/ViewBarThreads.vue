@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { useTabStore } from '@/stores/tabs';
-import { computed, ref, onMounted, inject, type Ref } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, inject, type Ref } from 'vue';
 import { useApiStore } from '@/stores';
 import PinnedThread from '@/components/thread/PinnedThread.vue';
 import Thread from '@/components/thread/Thread.vue';
-import BarInfoCard from '@/components/user/BarInfoCard.vue';
 import RemoteImage from '@/components/common/RemoteImage.vue';
+import type { BawuGroup } from '@/types/common';
 import { getCurrentUser, type User as ManagedUser } from '@/services/user-manage';
 import domToImage from 'dom-to-image';
 import { useSettingsStore } from '@/stores/settings';
 import { applyAccentColor, readableAccentHex } from '@/styles/theme';
+import { formatNumber } from '@/utils/helper';
 
 interface Props {
   barName: string;
@@ -103,7 +103,22 @@ const sendToast = inject<(title: string, duration: number) => void>('sendToast')
 // State
 const BAR_SORT_REPLY = 6;
 const BAR_SORT_CREATE = 1;
-const barDetailVisible: Ref<boolean> = ref<boolean>(false);
+const barInfoExpanded: Ref<boolean> = ref<boolean>(false);
+const barInfoTab: Ref<'info' | 'rules' | 'bawu'> = ref('info');
+const panelDataLoaded: Ref<boolean> = ref<boolean>(false);
+const barRule = ref<{
+  title: string;
+  preface: string;
+  rules: Array<{ title: string; content: Array<{ type: string; text: string; link?: string }> }>;
+}>({ title: '', preface: '', rules: [] });
+const bawuLoading: Ref<boolean> = ref<boolean>(false);
+const bawuGroups: Ref<BawuGroup[]> = ref<BawuGroup[]>([]);
+const barDescription = ref<string>('');
+const totalSignNum = ref<number>(0);
+const followDays = ref<number>(0);
+const myThreadNum = ref<number>(0);
+const dayPostNum = ref<number>(0);
+const isNarrowLayout = ref<boolean>(false);
 const captureRef = ref<HTMLElement | null>(null);
 
 const handleShare = async () => {
@@ -155,6 +170,24 @@ const themeColor = computed(() => {
   return color ? readableAccentHex(color) : 'var(--primary-color)';
 });
 const forumLevelId = computed(() => Number(returnData.value.forum.level_id ?? returnData.value.forum.user_level ?? 0));
+const isSignedIn = ref<boolean>(false);
+const isFollowed = ref<boolean>(false);
+const contSignNum = ref<number>(0);
+const isSigning = ref<boolean>(false);
+const isFollowing = ref<boolean>(false);
+const signButtonBackground = computed(() => {
+  const color = themeColor.value;
+  return color.startsWith('var(') ? `rgba(${color.slice(4, -1)}, 1)` : color;
+});
+const signButtonState = computed(() => {
+  if (!isFollowed.value) {
+    return { main: isFollowing.value ? '关注中…' : '关注', signed: false };
+  }
+  if (isSignedIn.value) {
+    return { main: '已签到', signed: true };
+  }
+  return { main: isSigning.value ? '签到中…' : '签到', signed: false };
+});
 const forumLevelName = computed(() => returnData.value.forum.level_name?.trim() || '吧等级');
 const forumCurScore = computed(() => Math.max(0, Number(returnData.value.forum.cur_score ?? 0)));
 const forumLevelupScore = computed(() => Math.max(0, Number(returnData.value.forum.levelup_score ?? 0)));
@@ -195,13 +228,92 @@ const openSearchInBar = (): void => {
   });
 };
 
-// 显示/隐藏吧详情
-const showbarDetail = (): void => {
-  barDetailVisible.value = true;
+// 展开/收起吧信息面板
+const toggleBarInfo = async (): Promise<void> => {
+  barInfoExpanded.value = !barInfoExpanded.value;
+  if (barInfoExpanded.value && !panelDataLoaded.value) {
+    panelDataLoaded.value = true;
+    await Promise.all([loadBawuInfo(), loadBarRules(), loadForumDescription()]);
+  }
 };
 
-const hidebarDetail = (): void => {
-  barDetailVisible.value = false;
+const loadForumDescription = async (): Promise<void> => {
+  const forumId = returnData.value.forum.id;
+  if (!forumId) {
+    return;
+  }
+
+  try {
+    const detail = await api.getForumDetail(String(forumId), currentUser.value?.bduss ?? '', currentUser.value?.stoken ?? '');
+    if (detail && String(detail.error_code) === '0' && detail.forum_info) {
+      const text = detail.forum_info.content?.[0]?.text;
+      if (text) {
+        barDescription.value = String(text);
+      }
+    }
+  } catch (error) {
+    console.warn('获取吧简介失败:', error);
+  }
+};
+
+const loadBarRules = async (): Promise<void> => {
+  const forumId = returnData.value.forum.id;
+  if (!forumId) {
+    return;
+  }
+
+  try {
+    const ruleData = await api.getForumRule(String(forumId), currentUser.value?.bduss ?? '', currentUser.value?.stoken ?? '');
+
+    if (ruleData && String(ruleData.error_code) === '0' && ruleData.forum_rule_id) {
+      barRule.value = {
+        title: ruleData.title || '',
+        preface: ruleData.preface || '',
+        rules: ([
+          ...(ruleData.rules || []),
+          ...(ruleData.default_rules || []),
+          ...(ruleData.new_rules || [])
+        ] as Array<Record<string, any>>).map((rule) => ({
+          title: rule.title,
+          content: rule.content_list?.flatMap((item: Record<string, any>) => item.content || []) || rule.content || []
+        }))
+      };
+    }
+  } catch (error) {
+    console.warn('获取吧规失败:', error);
+  }
+};
+
+const loadBawuInfo = async (): Promise<void> => {
+  const forumId = returnData.value.forum.id;
+  if (!forumId || bawuLoading.value) {
+    return;
+  }
+
+  bawuLoading.value = true;
+  try {
+    const bawuInfo = await api.getBawuInfo(String(forumId));
+    const teamList = bawuInfo?.bawu_team_info?.bawu_team_list;
+
+    if (String(bawuInfo?.error_code) === '0' && Array.isArray(teamList)) {
+      bawuGroups.value = teamList
+        .map((group) => ({
+          type: group.role_name || '吧务',
+          members: ((group.role_info || []) as Array<Record<string, any>>).map((member) => ({
+            id: String(member.user_id),
+            name: member.name_show || member.user_name || '匿名吧务',
+            portrait: member.portrait ? `http://tb.himg.baidu.com/sys/portrait/item/${member.portrait}` : '',
+            level: Number(member.user_level ?? 0),
+            type: group.role_name || '吧务'
+          }))
+        }))
+        .filter((group) => group.members.length > 0);
+    }
+  } catch (error) {
+    console.warn('获取吧务信息失败:', error);
+  } finally {
+    bawuLoading.value = false;
+  }
 };
 
 // 用户名点击
@@ -294,6 +406,7 @@ const loadData = async (): Promise<void> => {
     // 首页特殊处理
     if (currentPage.value === 1) {
       await loadForumLevelInfo();
+      await loadSignInfo();
 
       updateTabMeta?.({
         key: props.key_,
@@ -364,6 +477,11 @@ const loadForumLevelInfo = async (): Promise<void> => {
     const response = await api.getUserForumLevelInfo(String(forumId), user.bduss, user.stoken);
     const userForumInfo = response?.data?.user_forum_info ?? {};
 
+    isFollowed.value = Number(userForumInfo.is_follow ?? 0) === 1;
+    followDays.value = parseInt(userForumInfo.follow_days, 10) || 0;
+    myThreadNum.value = parseInt(userForumInfo.thread_num, 10) || 0;
+    dayPostNum.value = parseInt(userForumInfo.day_post_num, 10) || 0;
+
     returnData.value.forum = {
       ...returnData.value.forum,
       level_id: Number(userForumInfo.level_id ?? returnData.value.forum.level_id ?? 0),
@@ -376,10 +494,136 @@ const loadForumLevelInfo = async (): Promise<void> => {
   }
 };
 
+const loadSignInfo = async (): Promise<void> => {
+  const forumId = returnData.value.forum.id;
+  const user = currentUser.value;
+
+  if (!forumId || !user?.bduss) {
+    return;
+  }
+
+  try {
+    const response = await api.getUserSign(String(forumId), user.bduss, user.stoken);
+    const info = response?.data?.forum?.[0]?.sign_in_info?.user_info;
+    if (info) {
+      isSignedIn.value = Number(info.is_sign_in) === 1;
+      contSignNum.value = parseInt(info.cont_sign_num, 10) || 0;
+      totalSignNum.value = parseInt(info.cout_total_sign_num, 10) || 0;
+    }
+  } catch (error) {
+    console.warn('Failed to load sign info:', error);
+  }
+};
+
+const handleSignIn = async (): Promise<void> => {
+  if (isSignedIn.value || isSigning.value) {
+    return;
+  }
+
+  const forumId = returnData.value.forum.id;
+  const user = currentUser.value;
+
+  if (!forumId || !user?.bduss) {
+    sendToast?.('请先登录后再签到', 2000);
+    return;
+  }
+
+  isSigning.value = true;
+  try {
+    const response = await api.signForum(props.barName, String(forumId), user.bduss, user.stoken);
+    const errorCode = String(response?.error_code);
+    const errorMsg = String(response?.error_msg || '');
+
+    if (errorCode === '0') {
+      const cont = parseInt(response?.data?.cont_sign_num ?? '', 10);
+      if (!Number.isNaN(cont) && cont > 0) {
+        contSignNum.value = cont;
+      } else {
+        contSignNum.value += 1;
+      }
+      sendToast?.(`签到成功，已连续签到${contSignNum.value}天`, 2000);
+    } else if (errorCode === '1602' || errorMsg.includes('已签')) {
+      isSignedIn.value = true;
+      sendToast?.('今日已签到过啦', 2000);
+    } else {
+      throw new Error(errorMsg || '签到失败，请稍后再试');
+    }
+
+    await loadSignInfo();
+  } catch (error) {
+    console.error('签到失败:', error);
+    sendToast?.(error instanceof Error && error.message ? error.message : '签到失败，请稍后再试', 2000);
+  } finally {
+    isSigning.value = false;
+  }
+};
+
+const handleToggleFollow = async (): Promise<void> => {
+  if (isFollowing.value) {
+    return;
+  }
+
+  const forumId = returnData.value.forum.id;
+  const user = currentUser.value;
+  const forumName = returnData.value.forum.name || props.barName;
+
+  if (!forumId || !user?.bduss) {
+    sendToast?.('请先登录后再操作', 2000);
+    return;
+  }
+
+  isFollowing.value = true;
+  try {
+    const response = isFollowed.value
+      ? await api.unfollowBar(props.barName, String(forumId), user.bduss, user.stoken)
+      : await api.followBar(props.barName, String(forumId), user.bduss, user.stoken);
+    const errorCode = String(response?.error_code);
+
+    if (errorCode === '0') {
+      isFollowed.value = !isFollowed.value;
+      sendToast?.(isFollowed.value ? `关注${forumName}吧成功，现在可以签到啦` : `已取消关注${forumName}吧`, 2000);
+      await loadForumLevelInfo();
+    } else {
+      const message = String(response?.error_msg || '操作失败，请稍后再试');
+      if (message.includes('已关注')) {
+        isFollowed.value = true;
+        sendToast?.(message, 2000);
+      } else {
+        throw new Error(message);
+      }
+    }
+
+    await loadSignInfo();
+  } catch (error) {
+    console.error('关注操作失败:', error);
+    sendToast?.(error instanceof Error && error.message ? error.message : '操作失败，请稍后再试', 2000);
+  } finally {
+    isFollowing.value = false;
+  }
+};
+
+const handleSignButtonClick = (): void => {
+  if (!isFollowed.value) {
+    handleToggleFollow();
+  } else {
+    handleSignIn();
+  }
+};
+
+const updateNarrowLayout = (): void => {
+  isNarrowLayout.value = window.innerWidth < 900;
+};
+
 onMounted(async (): Promise<void> => {
+  updateNarrowLayout();
+  window.addEventListener('resize', updateNarrowLayout);
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
+});
+
+onBeforeUnmount((): void => {
+  window.removeEventListener('resize', updateNarrowLayout);
 });
 </script>
 
@@ -418,6 +662,11 @@ onMounted(async (): Promise<void> => {
               </div>
             </div>
           </div>
+          <RippleButton class="sign-button" :class="{ signed: signButtonState.signed }"
+            :style="signButtonState.signed ? {} : { backgroundColor: signButtonBackground }"
+            :disabled="isSignedIn || isSigning || isFollowing" @click.stop="handleSignButtonClick">
+            <span class="sign-main">{{ signButtonState.main }}</span>
+          </RippleButton>
         </div>
 
         <div class="pinned-thread-list">
@@ -448,24 +697,151 @@ onMounted(async (): Promise<void> => {
               </div>
             </RippleButton>
 
-            <RippleButton class="filter-button"
+            <RippleButton class="filter-button bar-info-toggle" :class="{ active: barInfoExpanded }"
               style="background-color: transparent; box-shadow: none; padding: 5px 10px; justify-self: right;"
-              @click="showbarDetail">
+              @click="toggleBarInfo">
               <div style="display: flex; gap: 10px; align-items: center;">
                 <img src="/assets/info.svg" width="18px" class="icon_">
                 <span>吧信息</span>
               </div>
             </RippleButton>
           </div>
+
+          <div class="bar-info-panel-wrap" :class="{ expanded: barInfoExpanded }">
+            <div class="bar-info-panel">
+              <div class="bar-info-card">
+                <div class="bar-info-tabs">
+                  <RippleButton class="bar-info-tab" :class="{ active: barInfoTab === 'info' }"
+                    @click="barInfoTab = 'info'">
+                    <img src="/assets/info.svg" width="16px" class="icon_">
+                    <span>概览</span>
+                  </RippleButton>
+                  <RippleButton class="bar-info-tab" :class="{ active: barInfoTab === 'rules' }"
+                    @click="barInfoTab = 'rules'">
+                    <img src="/assets/list.svg" width="16px" class="icon_">
+                    <span>吧规</span>
+                  </RippleButton>
+                  <RippleButton class="bar-info-tab" :class="{ active: barInfoTab === 'bawu' }"
+                    @click="barInfoTab = 'bawu'">
+                    <img src="/assets/user.svg" width="16px" class="icon_">
+                    <span>吧务</span>
+                  </RippleButton>
+                </div>
+
+                <div v-if="barInfoTab === 'info'" class="bar-info-content">
+                  <!-- <div class="bar-summary">
+                    <RemoteImage class="bar-summary-avatar" :src="returnData.forum.avatar" />
+                    <div class="bar-summary-main">
+                      <div class="bar-summary-name">{{ returnData.forum.name }}吧</div>
+                      <div class="bar-summary-slogan">{{ returnData.forum.slogan || '暂无简介' }}</div>
+                    </div>
+                  </div> -->
+                  <div class="bar-stat-tags">
+                    <Tag>关注数：{{ formatNumber(Number(returnData.forum.member_num || 0)) }}</Tag>
+                    <Tag>帖子数：{{ formatNumber(Number(returnData.forum.post_num || 0)) }}</Tag>
+                    <Tag>主题帖数：{{ formatNumber(Number(returnData.forum.thread_num || 0)) }}</Tag>
+                    <Tag v-if="returnData.forum.first_class">
+                      {{ returnData.forum.first_class }}{{ returnData.forum.second_class ? ' · ' +
+                        returnData.forum.second_class : '' }}
+                    </Tag>
+                  </div>
+
+                  <div class="info-columns" :class="{ vertical: isNarrowLayout }">
+                    <div class="info-col my-bar-section">
+                      <div class="section-title">我在本吧</div>
+                      <template v-if="currentUser?.bduss">
+                        <div class="follow-status">
+                          <span>{{ isFollowed ? `你已关注 ${returnData.forum.name}吧` : `你还未关注 ${returnData.forum.name}吧`
+                          }}</span>
+                          <button class="mini-action-btn" :disabled="isFollowing" @click="handleToggleFollow">
+                            {{ isFollowed ? '取消关注' : '关注' }}
+                          </button>
+                        </div>
+                        <div class="my-level">
+                          <span class="my-level-badge" :style="{ color: themeColor }">Lv.{{ forumLevelId }}</span>
+                          <span class="my-level-name">{{ forumLevelName }}</span>
+                          <div class="my-level-progress">
+                            <div class="my-level-progress-bar"
+                              :style="{ width: `${levelProgressPercent}%`, backgroundColor: themeColor }"></div>
+                          </div>
+                          <span class="my-level-score">{{ levelScoreText }}</span>
+                        </div>
+                        <div class="sign-row">
+                          <button class="mini-sign-btn" :class="{ signed: isSignedIn }"
+                            :disabled="isSignedIn || isSigning" @click="handleSignIn">
+                            {{ isSignedIn ? '今日已签到' : (isSigning ? '签到中…' : '签到') }}
+                          </button>
+                          <span class="sign-stat">累计 {{ totalSignNum }} 天</span>
+                          <span class="sign-stat">连续 {{ contSignNum }} 天</span>
+                        </div>
+                        <div class="activity-row">
+                          <span class="activity-item">关注 {{ followDays }} 天</span>
+                          <span class="activity-item">总发帖 {{ myThreadNum }}</span>
+                          <span class="activity-item">今日发帖 {{ dayPostNum }}</span>
+                        </div>
+                      </template>
+                      <div v-else class="bar-info-placeholder">请先登录以查看你在本吧的信息</div>
+                    </div>
+
+                    <div class="info-col desc-section">
+                      <div v-if="barDescription" class="bar-description">
+                        <div class="section-title">简介</div>
+                        <p class="bar-description-text">{{ barDescription }}</p>
+                      </div>
+                      <div v-else class="bar-info-placeholder">暂无简介</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else-if="barInfoTab === 'rules'" class="bar-info-content">
+                  <div v-if="barRule.title" class="rule-content">
+                    <h3 class="rule-title">{{ barRule.title }}</h3>
+                    <div v-if="barRule.preface" class="rule-preface">{{ barRule.preface }}</div>
+                    <div v-for="(rule, index) in barRule.rules" :key="index" class="rule-section">
+                      <div class="rule-section-title">{{ rule.title }}</div>
+                      <div v-for="(item, idx) in rule.content" :key="idx" class="rule-item">
+                        <p v-if="item.type === '0'">{{ item.text }}</p>
+                        <a v-else-if="item.type === '1'" :href="item.link" target="_blank">{{ item.text }}</a>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="bar-info-placeholder">本吧暂无吧规，请遵守贴吧社区规范</div>
+                </div>
+
+                <div v-else class="bar-info-content">
+                  <div v-if="bawuGroups.length" class="bawu-groups">
+                    <div v-for="group in bawuGroups" :key="group.type" class="bawu-group">
+                      <h4 class="bawu-group-title">{{ group.type }}<span class="bawu-count">{{ group.members.length
+                          }}</span></h4>
+                      <div class="bawu-members">
+                        <div v-for="member in group.members" :key="member.id" class="bawu-capsule"
+                          @click="onUserNameClicked(member.id)">
+                          <RemoteImage v-if="member.portrait" :src="member.portrait" :alt="member.name"
+                            class="bawu-avatar" />
+                          <span v-else class="bawu-avatar bawu-avatar-fallback">{{ member.name.charAt(0) }}</span>
+                          <span class="bawu-name">{{ member.name }}</span>
+                          <span v-if="member.level > 0" class="bawu-level">Lv.{{ member.level }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="bawuLoading" class="bar-info-placeholder">加载中...</div>
+                  <div v-else class="bar-info-placeholder">暂无吧务信息</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <PinnedThread v-for="item in pinnedThreadList" :key="item.id" :title="item.title"
             @click="handleClick(item.id)"
             :color="returnData.forum.theme_color?.dark?.light_color ? '#' + returnData.forum.theme_color.dark.light_color : ''" />
         </div>
 
         <div class="thread-list">
-          <Thread :uid="item.author?.id" @openUser="onUserNameClicked(item.author?.id || 0)" @openThread="handleClick(item.id)"
-            v-for="item in threadList" :key="item.id" :thread_title="item.title" :media="(item.media || []) as any"
-            :user_name="item.author?.name_show || item.author?.name || '匿名用户'" :avatar="item.author?.portrait || ''"
+          <Thread :uid="item.author?.id" @openUser="onUserNameClicked(item.author?.id || 0)"
+            @openThread="handleClick(item.id)" v-for="item in threadList" :key="item.id" :thread_title="item.title"
+            :media="(item.media || []) as any" :user_name="item.author?.name_show || item.author?.name || '匿名用户'"
+            :avatar="item.author?.portrait || ''"
             :thread_content="(item.rich_abstract?.length === 0 || !Array.isArray(item.rich_abstract) ? [{ type: 0, text: item.title }] : item.rich_abstract) as any"
             :create_time="item.last_time_int" :reply_num="item.reply_num"
             :is_good="Boolean(item.isGood ?? item.is_good)" :theme_color="themeColor"></Thread>
@@ -476,19 +852,6 @@ onMounted(async (): Promise<void> => {
     <transition name="fade1">
       <Loading class="loading-box" v-if="isThreadsLoading"></Loading>
     </transition>
-
-    <BarInfoCard :visible="barDetailVisible && useTabStore().activeKey === String(props.key_)" :forumData="{
-      id: String(returnData.forum.id || ''),
-      name: returnData.forum.name || props.barName,
-      avatar: returnData.forum.avatar || '',
-      slogan: returnData.forum.slogan || '',
-      member_num: Number(returnData.forum.member_num || 0),
-      post_num: Number(returnData.forum.post_num || 0),
-      thread_num: Number(returnData.forum.thread_num || 0),
-      first_class: returnData.forum.first_class || '',
-      second_class: returnData.forum.second_class || '',
-      managers: Array.isArray(returnData.forum.managers) ? returnData.forum.managers : []
-    }" @close="hidebarDetail" />
   </Container>
 </template>
 
@@ -507,6 +870,12 @@ onMounted(async (): Promise<void> => {
   background-color: rgba(var(--primary-color), 0.12) !important;
 }
 
+.bar-info-toggle.active {
+  background-color: transparent !important;
+  opacity: 1;
+  font-weight: 600;
+}
+
 .thread-list {
   padding: 10px;
   border-radius: 5px;
@@ -516,6 +885,399 @@ onMounted(async (): Promise<void> => {
   gap: 8px;
   align-items: center;
   justify-content: center;
+}
+
+.bar-info-panel-wrap {
+  width: 80%;
+  align-self: center;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.bar-info-panel-wrap.expanded {
+  grid-template-rows: 1fr;
+}
+
+.bar-info-panel {
+  width: 100%;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.bar-info-card {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background-color: rgba(var(--text-color), 0.02);
+}
+
+.bar-info-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  margin-left: -10px;
+}
+
+.bar-info-tab {
+  padding: 5px 12px !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.bar-info-tab :deep(.ripple-content) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bar-info-tab.active {
+  opacity: 1;
+  font-weight: 600;
+}
+
+.bar-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bar-info-placeholder {
+  text-align: center;
+  padding: 16px;
+  color: rgba(var(--text-color), 0.5);
+  font-size: 13px;
+}
+
+.bar-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.bar-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bar-summary-name {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.bar-summary-slogan {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.bar-stat-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -5px;
+  align-items: center;
+}
+
+.info-columns {
+  display: flex;
+  align-items: stretch;
+}
+
+.info-columns:not(.vertical) {
+  gap: 24px;
+}
+
+.info-columns.vertical {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-col {
+  min-width: 0;
+}
+
+.info-columns:not(.vertical)>.info-col {
+  flex: 1 1 0%;
+}
+
+.info-columns:not(.vertical)>.desc-section {
+  position: relative;
+  min-height: 0;
+}
+
+.info-columns:not(.vertical)>.desc-section>* {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+}
+
+.bar-description {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-description-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.info-columns.vertical .bar-description-text {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.my-bar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.follow-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.mini-action-btn {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(var(--text-color), 0.08);
+  color: rgb(var(--text-color));
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.mini-action-btn:hover:not(:disabled) {
+  background-color: rgba(var(--text-color), 0.15);
+}
+
+.mini-action-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.my-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.my-level-badge {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.my-level-name {
+  white-space: nowrap;
+}
+
+.my-level-progress {
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background-color: rgba(var(--text-color), 0.14);
+}
+
+.my-level-progress-bar {
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.my-level-score {
+  opacity: 0.65;
+  white-space: nowrap;
+}
+
+.sign-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mini-sign-btn {
+  padding: 5px 18px;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(var(--primary-color), 1);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.mini-sign-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.mini-sign-btn:disabled {
+  cursor: default;
+}
+
+.mini-sign-btn.signed {
+  background-color: rgba(var(--text-color), 0.08);
+  color: rgba(var(--text-color), 0.6);
+}
+
+.sign-stat {
+  font-size: 12px;
+  color: rgba(var(--text-color), 0.6);
+}
+
+.activity-row {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: rgba(var(--text-color), 0.6);
+}
+
+.rule-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  user-select: text;
+  cursor: text;
+}
+
+.rule-title {
+  margin: 0;
+  font-size: 15px;
+}
+
+.rule-preface {
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+.rule-section {
+  padding: 8px 10px;
+  background: rgba(var(--text-color), 0.04);
+  border-radius: 8px;
+}
+
+.rule-section-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.rule-item p {
+  margin: 2px 0;
+  line-height: 1.5;
+}
+
+.rule-item a {
+  color: rgba(var(--primary-color), 1);
+}
+
+.bawu-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bawu-group {
+  background: rgba(var(--text-color), 0.04);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.bawu-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bawu-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(var(--text-color), 0.55);
+  background: rgba(var(--text-color), 0.08);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.bawu-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.bawu-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 5px;
+  background: rgba(var(--text-color), 0.06);
+  border: 1px solid rgba(var(--text-color), 0.08);
+  border-radius: 999px;
+  transition: background-color 0.2s ease;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.bawu-capsule:hover {
+  background: rgba(var(--text-color), 0.12);
+}
+
+.bawu-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.bawu-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--text-color), 0.7);
+  background: rgba(var(--text-color), 0.12);
+}
+
+.bawu-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bawu-level {
+  font-size: 11px;
+  color: rgba(var(--text-color), 0.55);
+  white-space: nowrap;
 }
 
 .pinned-thread-list {
@@ -617,5 +1379,45 @@ onMounted(async (): Promise<void> => {
   width: 100%;
   height: 200px;
   position: relative;
+}
+
+.sign-button {
+  position: absolute;
+  top: 125px;
+  right: 45px;
+  z-index: 2;
+
+  align-items: center;
+  gap: 2px;
+  padding: 8px 30px;
+  border-radius: 999px;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.sign-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.sign-button:active:not(:disabled) {
+  opacity: 0.85;
+}
+
+.sign-button:disabled {
+  cursor: default;
+}
+
+.sign-button.signed {
+  background-color: rgba(var(--text-color), 0.08);
+  color: rgba(var(--text-color), 0.6);
+  box-shadow: none;
+}
+
+.sign-main {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 </style>

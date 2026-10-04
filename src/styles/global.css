@@ -22,7 +22,6 @@
 :root.dark {
     color-scheme: dark;
     color: #f6f6f6;
-    background-color: transparent;
     --text-color: 255, 255, 255;
     --wallpaper-overlay: 0, 0, 0;
     --invert: 0;
@@ -81,11 +80,16 @@ input {
     box-sizing: border-box;
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), textarea {
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+textarea {
     color: rgb(var(--text-color));
     background-color: rgba(var(--background-color), .9);
 }
-input::placeholder, textarea::placeholder { color: rgba(var(--text-color), .5); }
+
+input::placeholder,
+textarea::placeholder {
+    color: rgba(var(--text-color), .5);
+}
 
 input:not([type="range"]):not([type="color"]),
 textarea,

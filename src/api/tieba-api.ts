@@ -255,6 +255,57 @@ export class tieBaAPI {
         });
     }
 
+    async getTbs(bduss: string): Promise<string> {
+        const response = await httpJson({
+            url: 'http://tieba.baidu.com/dc/common/tbs',
+            ...this.getRequestOptions(),
+            cookie: `BDUSS=${bduss};`,
+        });
+        if (String(response?.is_login) !== '1' || !response?.tbs) {
+            throw new Error('登录状态已失效，请重新登录');
+        }
+        return String(response.tbs);
+    }
+
+    async signForum(kw: string, forumId: string | number, bduss: string, stoken: string): Promise<any> {
+        // Mirrors TiebaDesktop sign_forum (src/publics/baidu_features/tieba_apis.py)
+        const tbs = await this.getTbs(bduss);
+        const data = `BDUSS=${bduss}&_client_type=2&_client_version=12.68.1.0&fid=${forumId}&kw=${encodeURIComponent(kw)}&stoken=${stoken}&tbs=${tbs}&from=frs&from_widget=0&subapp_type=hybrid`;
+        return await httpJson({
+            url: 'https://tieba.baidu.com/c/c/forum/sign',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+            cookie: `BDUSS=${bduss}; STOKEN=${stoken};`,
+        });
+    }
+
+    async followBar(kw: string, forumId: string | number, bduss: string, stoken: string): Promise<any> {
+        // Mirrors aiotieba follow_forum
+        const tbs = await this.getTbs(bduss);
+        const data = `BDUSS=${bduss}&fid=${forumId}&kw=${encodeURIComponent(kw)}&tbs=${tbs}`;
+        return await httpJson({
+            url: 'https://tiebac.baidu.com/c/c/forum/like',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+            cookie: `BDUSS=${bduss}; STOKEN=${stoken};`,
+        });
+    }
+
+    async unfollowBar(kw: string, forumId: string | number, bduss: string, stoken: string): Promise<any> {
+        // Mirrors aiotieba unfollow_forum
+        const tbs = await this.getTbs(bduss);
+        const data = `BDUSS=${bduss}&fid=${forumId}&kw=${encodeURIComponent(kw)}&tbs=${tbs}`;
+        return await httpJson({
+            url: 'https://tiebac.baidu.com/c/c/forum/unfavolike',
+            method: 'POST',
+            body: this.calcSign(data),
+            ...this.getRequestOptions(),
+            cookie: `BDUSS=${bduss}; STOKEN=${stoken};`,
+        });
+    }
+
     async getUserForumLevelInfo(forumId: string, bduss: string, stoken: string): Promise<any> {
         const params = `_client_type=2&_client_version=12.68.1.0&BDUSS=${bduss}&stoken=${stoken}&forum_id=${forumId}&subapp_type=hybrid`;
         return await httpJson({
