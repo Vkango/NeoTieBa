@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message BazhuSign {
-    string desc = 1;
-    string level = 2;
-}

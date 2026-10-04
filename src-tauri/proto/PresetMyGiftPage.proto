@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message PresetMyGiftPage {
-    uint32 cur_page = 1;
-    uint32 has_more = 2;
-    uint32 total = 3;
-}

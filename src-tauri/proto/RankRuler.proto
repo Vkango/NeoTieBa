@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message RankRuler {
-    string top_link = 1;
-    string bottom_link = 2;
-}

@@ -3,6 +3,8 @@
 mod cookie_manager;
 mod file_io;
 mod request;
+mod protobuf_api;
+use protobuf_api::protobuf_call;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -260,6 +262,7 @@ fn main() {
             clear_cookies,
             get_baidu_auth_cookies,
             get_cookies_string
+            ,protobuf_call
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-message FeatureCardGameSubNode {
-    string image = 1;
-    string title = 2;
-    string name = 3;
-    string url = 4;
-}

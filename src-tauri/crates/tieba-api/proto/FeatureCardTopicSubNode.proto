@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message FeatureCardTopicSubNode {
+    string image = 1;
+    uint32 update_time = 2;
+    uint32 article_num = 3;
+    string url = 4;
+    string title = 5;
+}

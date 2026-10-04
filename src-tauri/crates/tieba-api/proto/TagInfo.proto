@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message TagInfo {
+    int32 rank_type = 1;
+    int32 class_id = 2;
+    int32 tab_id = 3;
+    string tag_name = 4;
+}

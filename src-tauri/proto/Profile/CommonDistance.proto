@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message CommonDistance {
-    uint32 distance = 1;
-    uint32 time = 2;
-}

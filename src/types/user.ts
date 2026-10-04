@@ -13,14 +13,14 @@ export interface User {
 export interface TiebaUser {
     user_name: string;
     portrait: string;
-    nameShow: string;
+    name_show: string;
     name: string;
     intro: string;
-    tbAge: string;
-    postNum: number;
-    totalAgreeNum: number;
+    tb_age: string;
+    post_num: number;
+    total_agree_num: number;
     sex: number;
-    ipAddress: string;
+    ip_address: string;
 }
 
 export interface UserInfo {

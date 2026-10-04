@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "TabPicDesc.proto";
-
-message TabPic {
-    TabPicDesc normal = 1;
-    TabPicDesc dark = 2;
-}

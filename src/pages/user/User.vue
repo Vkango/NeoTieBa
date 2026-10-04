@@ -18,7 +18,7 @@ interface Emits {
 
 interface UserData {
   user: {
-    nameShow: string;
+    name_show: string;
     portrait: string;
     [key: string]: any;
   };
@@ -38,6 +38,26 @@ interface PostItem {
   [key: string]: any;
 }
 
+function mapUserPost(item: any): PostItem {
+  const content = Array.isArray(item?.content) ? item.content : [];
+  return {
+    ...item,
+    thread_id: String(item?.thread_id ?? ''),
+    user_name: item?.user_name ?? '',
+    name_show: item?.name_show ?? item?.user_name ?? '',
+    user_portrait: item?.user_portrait ?? '',
+    title: item?.title ?? '',
+    content: content.flatMap((block: any) =>
+      Array.isArray(block?.post_content)
+        ? block.post_content.map((entry: any) => ({
+            postContent: [entry],
+            createTime: Number(block?.create_time ?? 0),
+          }))
+        : []
+    ),
+  };
+}
+
 interface FollowBarItem {
   forum_name: string;
   level_id: string | number;
@@ -52,7 +72,7 @@ const openImageViewer = inject<(url: string) => void>('openImageViewer');
 const updateTabMeta = inject<(info: { key: number; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 
 // State
-const returnData: Ref<UserData> = ref({ user: { nameShow: '', portrait: '' } });
+const returnData: Ref<UserData> = ref({ user: { name_show: '', portrait: '' } });
 const returnData1: Ref<UserCardData> = ref({ data: { honor: { grade: {} } } });
 const returnData2: Ref<PostItem[]> = ref([]);
 const isLoading = ref<boolean>(true);
@@ -72,10 +92,10 @@ const nextPage = async (): Promise<void> => {
     isThreadsLoading.value = true;
 
     const response = await api.user_post(props.uid, currentPage.value);
-    const pageData = response.data.postList;
+    const pageData = response?.data?.post_list;
 
     if (Array.isArray(pageData) && pageData.length > 0) {
-      returnData2.value = [...returnData2.value, ...pageData];
+      returnData2.value = [...returnData2.value, ...pageData.map(mapUserPost)];
       hasMore.value = pageData.length !== 0;
     } else {
       hasMore.value = false;
@@ -109,11 +129,11 @@ onMounted(async (): Promise<void> => {
 
     // 加载用户帖子
     const postResponse = await api.user_post(props.uid);
-    const postList = postResponse.data.postList;
+    const post_list = postResponse.data.post_list;
 
-    if (Array.isArray(postList)) {
-      returnData2.value = postList;
-      hasMore.value = postList.length !== 0;
+    if (Array.isArray(post_list)) {
+      returnData2.value = post_list.map(mapUserPost);
+      hasMore.value = post_list.length !== 0;
     } else {
       hasMore.value = false;
     }
@@ -125,7 +145,7 @@ onMounted(async (): Promise<void> => {
 
     updateTabMeta?.({
       key: props.key_,
-      title: `${returnData.value.user.nameShow}的贴吧`,
+      title: `${returnData.value.user.name_show}的贴吧`,
       icon: portraitUrl,
       icon_invert: !returnData.value.user.portrait
     });
@@ -178,15 +198,15 @@ const onScroll = (target: any) => {
               referrerpolicy="no-referrer"
               @click="() => openImageViewer && openImageViewer('https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait)" />
             <div>
-              <div class="title">{{ returnData.user.nameShow }} ({{ returnData.user.name }})</div>
+              <div class="title">{{ returnData.user.name_show }} ({{ returnData.user.name }})</div>
               <div class="description" v-html="sanitize(returnData.user.intro == '' ? '没有签名喵' : returnData.user.intro)">
               </div>
               <div class="tags">
-                <Tag>吧龄：{{ returnData.user.tbAge }}年</Tag>
-                <Tag>发帖：{{ returnData.user.postNum }}</Tag>
-                <Tag>获赞：{{ returnData.user.totalAgreeNum }}</Tag>
-                <Tag>{{ returnData.user.sex == 1 ? '♂' : '♀' }}</Tag>
-                <Tag>IP属地：{{ returnData.user.ipAddress == '' ? '未知' : returnData.user.ipAddress }}</Tag>
+              <Tag>吧龄：{{ returnData.user.tb_age }}年</Tag>
+              <Tag>发帖：{{ returnData.user.post_num }}</Tag>
+              <Tag>获赞：{{ returnData.user.total_agree_num }}</Tag>
+              <Tag>{{ returnData.user.sex == 1 ? '♂' : '♀' }}</Tag>
+                <Tag>IP属地：{{ returnData.user.ip_address == '' ? '未知' : returnData.user.ip_address }}</Tag>
               </div>
             </div>
           </div>
@@ -198,9 +218,9 @@ const onScroll = (target: any) => {
               <h3>回复</h3>
               <div class="reply-list">
                 <div v-if="returnData2 == undefined">还没有回复</div>
-                <UserReply :uid="props.uid" @openThread="onThreadClicked(item.threadId)" v-for="item in returnData2" msg=""
-                  :user_name="item.nameShow + ' (' + item.userName + ')'" :thread_title="item.title"
-                  :avatar="item.userPortrait" :media="item.content" :create_time="0" :threadId="item.threadId">
+                <UserReply :uid="props.uid" @openThread="onThreadClicked(item.thread_id)" v-for="item in returnData2" msg=""
+                  :user_name="item.name_show + ' (' + item.user_name + ')'" :thread_title="item.title"
+                  :avatar="item.user_portrait" :media="item.content" :create_time="Number(item.create_time || 0)" :threadId="item.thread_id">
                 </UserReply>
                 <div v-if="!hasMore">到底了</div>
               </div>

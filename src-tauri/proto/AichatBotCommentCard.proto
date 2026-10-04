@@ -1,5 +1,0 @@
-syntax = "proto3";
-
-message AichatBotCommentCard {
-    string uk = 1;
-}

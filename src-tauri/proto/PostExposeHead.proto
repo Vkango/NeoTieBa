@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message PostExposeHead {
-    string img_url = 1;
-    string corner_url = 2;
-    string schema = 3;
-}

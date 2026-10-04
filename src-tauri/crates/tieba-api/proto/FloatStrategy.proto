@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message FloatStrategy {
+    int32 un_do_mission = 2;
+    string browsetimepage = 3;
+    int32 duration = 4;
+    int64 show_time_begin = 5;
+    int64 show_time_end = 6;
+    int32 show_num = 7;
+    string toast = 8;
+}

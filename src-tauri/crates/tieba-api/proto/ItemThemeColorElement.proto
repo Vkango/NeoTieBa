@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ItemThemeColorElement {
+    string top_color = 1;
+    string bottom_color = 2;
+    string edit_button_color = 3;
+}

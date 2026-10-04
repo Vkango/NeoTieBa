@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message UserSessionInfo {
-    string bduss = 1;
-    string mobile = 2;
-    string email = 3;
-}

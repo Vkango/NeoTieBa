@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message KingkongPositionRow {
+    string icon_src = 1;
+    string title = 2;
+    string desc = 3;
+    string jump_url = 4;
+    int64 last_update_time = 5;
+    int32 uni_id = 6;
+    int32 action_type = 7;
+}

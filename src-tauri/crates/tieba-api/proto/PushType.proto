@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message PushType {
+    int32 type = 1;
+    string name = 2;
+    string icon = 3;
+}

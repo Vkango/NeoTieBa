@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message EsportStatic {
+    string img = 1;
+    string url = 2;
+}

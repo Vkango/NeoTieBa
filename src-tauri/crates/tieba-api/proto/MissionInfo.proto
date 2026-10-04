@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message MissionInfo {
+    int32 missionid = 1;
+    int32 total_limit = 2;
+    int32 browsetime = 3;
+    int32 tasktype = 5;
+    int32 threadnum = 7;
+    string browsetimepage = 8;
+    int32 activityid = 9;
+    int32 cleartype = 10;
+    int32 cleartime = 11;
+}

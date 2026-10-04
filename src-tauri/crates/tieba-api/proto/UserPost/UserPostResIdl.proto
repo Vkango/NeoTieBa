@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "Error.proto";
+import "UserPost/DataRes.proto";
+
+message UserPostResIdl {
+    Error error = 1;
+    DataRes data = 2;
+}

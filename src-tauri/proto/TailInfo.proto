@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-message TailInfo {
-    int32 tail_type = 1;
-    string icon_url = 2;
-    string icon_link = 3;
-    string content = 4;
-}

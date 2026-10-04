@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message SignatureContent {
-    int32 type = 1;
-    string text = 2;
-}

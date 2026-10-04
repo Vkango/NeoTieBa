@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message AppInfo {
+    int32 ad_id = 1;
+    string ad_name = 2;
+    string apk_url = 3;
+    string ad_apk_package_name = 4;
+    int64 app_size = 5;
+}

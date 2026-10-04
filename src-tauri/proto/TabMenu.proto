@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message TabMenu {
-    int32 class_id = 1;
-    string class_name = 2;
-}

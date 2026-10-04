@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message ChatroomSignInfo {
-    int64 chatroom_id = 1;
-    string jump_scheme = 2;
-    string guide_text = 3;
-}

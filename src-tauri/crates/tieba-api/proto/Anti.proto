@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "BlockPopInfo.proto";
+import "DelThreadText.proto";
+
+message Anti {
+    string tbs = 1;
+    int32 ifpost = 2;
+    int32 ifposta = 3;
+    int32 forbid_flag = 4;
+    string forbid_info = 5;
+    int32 block_stat = 6;
+    int32 hide_stat = 7;
+    int32 vcode_stat = 8;
+    int32 days_tofree = 9;
+    int32 has_chance = 10;
+    int32 ifvoice = 11;
+    string voice_message = 12;
+    int32 ifaddition = 13;
+    int32 need_vcode = 14;
+    string vcode_md5 = 15;
+    string vcode_pic_url = 16;
+    string user_mute = 17;
+    string ifxiaoying = 18;
+    string poll_message = 19;
+    string video_message = 20;
+    string video_local_message = 21;
+    BlockPopInfo block_pop_info = 22;
+    int32 reply_private_flag = 23;
+    repeated DelThreadText del_thread_text = 24;
+    int32 multi_delthread = 25;
+    uint32 poll_level = 26;
+    int32 can_goods = 27;
+    bool is_sexyforum = 28;
+    string teenmode_interval = 29;
+    int32 user_chat_block = 30;
+}

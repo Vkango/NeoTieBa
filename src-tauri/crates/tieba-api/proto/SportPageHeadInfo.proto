@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message SportPageHeadInfo {
+    string head_url = 1;
+    int32 is_ad = 2;
+    string jump_url = 3;
+}

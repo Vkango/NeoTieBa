@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "ToastContent.proto";
+
+message Toast {
+    int32 icon_type = 1;
+    repeated ToastContent content = 2;
+    string url = 3;
+    string background = 4;
+    string icon_url = 5;
+    string icon_url_dark = 6;
+    repeated int32 task_ids = 7;
+    int32 icon_width = 8;
+    int32 icon_height = 9;
+    int32 hud_width = 10;
+}

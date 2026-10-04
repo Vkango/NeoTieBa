@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message PermissionList {
+    int32 follow = 1;
+    int32 interact = 2;
+    int32 chat = 3;
+}

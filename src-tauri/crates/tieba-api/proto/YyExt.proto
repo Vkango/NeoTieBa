@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message YyExt {
+    string sid = 1;
+    string ssid = 2;
+    string template_id = 3;
+    string yy_uid = 4;
+    int32 is_yy_game = 5;
+    string stream_info = 6;
+    string rank_show = 7;
+    string icon_url = 8;
+    string feed_id = 9;
+}

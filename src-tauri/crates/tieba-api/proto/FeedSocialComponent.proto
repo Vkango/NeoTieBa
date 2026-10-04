@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "Agree.proto";
+import "LayoutManageInfo.proto";
+
+message FeedSocialComponent {
+    Agree agree = 1;
+    int32 comment_num = 2;
+    int32 share_num = 3;
+    uint64 tid = 4;
+    uint64 fid = 5;
+    repeated LayoutManageInfo manage_list = 6;
+}

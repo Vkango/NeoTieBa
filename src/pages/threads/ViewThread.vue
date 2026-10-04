@@ -16,7 +16,7 @@ import domToImage from 'dom-to-image';
 interface GalleryImage {
   id: string;
   postId: string;
-  authorId: string;
+  author_id: string;
   floor: number;
   src: string;
   alt: string;
@@ -47,11 +47,11 @@ interface User {
 
 interface Post {
   id: string | number;
-  authorId: string | number;
+  author_id: string | number;
   author?: User;
   agree: {
-    agreeNum: number;
-    disagreeNum: number;
+    agree_num: number;
+    disagree_num: number;
   };
   [key: string]: any;
 }
@@ -69,8 +69,8 @@ interface ThreadData {
       name: string;
       avatar: string;
     };
-    userList: User[];
-    postList: Post[];
+    user_list: User[];
+    post_list: Post[];
     page: {
       hasMore: boolean | number;
       totalPage?: number;
@@ -80,7 +80,7 @@ interface ThreadData {
 }
 
 interface SubPostInfo {
-  ipAddress?: string;
+  ip_address?: string;
   like: number;
   user_name: string;
   uid: string | number;
@@ -106,7 +106,7 @@ const updateTabMeta = inject<(info: { key: string | number; title: string; icon:
 
 // State
 const returnData: Ref<ThreadData> = ref({});
-const userList: Ref<User[]> = ref([]);
+const user_list: Ref<User[]> = ref([]);
 const isLoading = ref<boolean>(true);
 const isThreadsLoading = ref<boolean>(true);
 const threadList: Ref<Post[]> = ref([]);
@@ -178,14 +178,14 @@ const selectedImageId = ref('');
 const galleryAutoFollow = ref(false);
 let galleryFollowVersion = 0;
 const visibleThreadList = computed(() => (galleryOpen.value ? galleryOnlyAuthor.value : props.local && onlyThreadAuthor.value)
-  ? threadList.value.filter(post => String(post.authorId) === threadAuthorId.value) : threadList.value);
+  ? threadList.value.filter(post => String(post.author_id) === threadAuthorId.value) : threadList.value);
 const galleryImages = computed<GalleryImage[]>(() => {
   if (settings.isMediaBlocked('images')) return [];
   const mainImages = visibleThreadList.value.flatMap(post =>
     (Array.isArray(post.content) ? post.content : []).flatMap((content: Record<string, unknown>, index: number) => {
       const src = content.bigCdnSrc || content.big_cdn_src || content.bigSrc || content.big_src || content.originSrc || content.origin_src;
       return Number(content.type) === 3 && typeof src === 'string' && src ? [{
-        id: `${post.id}-${index}`, postId: String(post.id), authorId: String(post.authorId),
+        id: `${post.id}-${index}`, postId: String(post.id), author_id: String(post.author_id),
         floor: Number(post.floor), src, alt: `第 ${post.floor} 楼图片`
       }] : [];
     }));
@@ -251,7 +251,7 @@ function selectReplyImage(url: string, postId: string) {
   if (image) void selectGalleryImage(image.id);
   else if (galleryOpen.value) {
     const id = `subpost-${btoa(url).replace(/[^a-z0-9]/gi, '')}`;
-    if (!subpostGalleryImages.value.some(item => item.id === id)) subpostGalleryImages.value.push({ id, postId, authorId: '', floor: Number(threadList.value.find(p => String(p.id) === postId)?.floor ?? 0), src: url, alt: '楼中楼图片' });
+    if (!subpostGalleryImages.value.some(item => item.id === id)) subpostGalleryImages.value.push({ id, postId, author_id: '', floor: Number(threadList.value.find(p => String(p.id) === postId)?.floor ?? 0), src: url, alt: '楼中楼图片' });
     selectedImageId.value = id;
   }
 }
@@ -259,7 +259,7 @@ function registerReplyImages(urls: string[], postId: string) {
   const floor = Number(threadList.value.find(p => String(p.id) === postId)?.floor ?? 0);
   for (const url of urls) {
     const id = `subpost-${btoa(url).replace(/[^a-z0-9]/gi, '')}`;
-    if (!subpostGalleryImages.value.some(item => item.id === id)) subpostGalleryImages.value.push({ id, postId, authorId: '', floor, src: url, alt: '楼中楼图片' });
+    if (!subpostGalleryImages.value.some(item => item.id === id)) subpostGalleryImages.value.push({ id, postId, author_id: '', floor, src: url, alt: '楼中楼图片' });
   }
 }
 async function toggleGalleryAuthor() {
@@ -375,19 +375,19 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
     }
     if (response.error?.errorno) throw new Error(response.error.errmsg || '帖子加载失败');
     const data = response.data;
-    if (!data || !Array.isArray(data.postList)) throw new Error('帖子数据不可用');
-    if (page > 1 && data.postList.length === 0) {
+    if (!data || !Array.isArray(data.post_list)) throw new Error('帖子数据不可用');
+    if (page > 1 && data.post_list.length === 0) {
       sendToast?.('该页没有内容', 2000);
       return false;
     }
-    const { thread, forum, userList: newUsers = [], postList } = data;
-    const users = new Map((replace ? [] : userList.value).map(user => [String(user.id), user]));
+    const { thread, forum, user_list: newUsers = [], post_list } = data;
+    const users = new Map((replace ? [] : user_list.value).map(user => [String(user.id), user]));
     for (const user of newUsers) users.set(String(user.id), user);
-    const posts = postList.map(post => ({ ...post, author: users.get(String(post.authorId)) }));
+    const posts = post_list.map(post => ({ ...post, author: users.get(String(post.author_id)) }));
     if (thread.author?.id !== undefined && String(thread.author.id) !== '0') threadAuthorId.value = String(thread.author.id);
     else {
-      const firstFloor = postList.find(post => Number(post.floor) === 1);
-      if (firstFloor) threadAuthorId.value = String(firstFloor.authorId);
+      const firstFloor = post_list.find(post => Number(post.floor) === 1);
+      if (firstFloor) threadAuthorId.value = String(firstFloor.author_id);
     }
     if (!isFavouriteLoading.value) {
       isFavourite.value = Number(thread.collectStatus) === 2;
@@ -404,7 +404,7 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
     } else if (prepend) firstLoadedPage.value = page;
     for (const post of posts) postPages.set(String(post.id), page);
     onlyThreadAuthor.value = onlyAuthor;
-    userList.value = [...users.values()];
+    user_list.value = [...users.values()];
     if (replace) threadList.value = posts;
     else {
       const ids = new Set(threadList.value.map(post => String(post.id)));
@@ -698,13 +698,13 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                 class="post-anchor"
                 :class="{ 'gallery-selected': galleryOpen && String(item.id) === selectedImage?.postId }">
                 <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))" @register-images="registerReplyImages($event, String(item.id))"
-                  :like="item.agree.agreeNum - item.agree.disagreeNum"
-                  :user_name="item.author?.nameShow || item.author?.name || '匿名用户'" :uid="item.authorId"
+                  :like="Number(item.agree?.agree_num || 0) - Number(item.agree?.disagree_num || 0)"
+                  :user_name="item.author?.name_show || item.author?.name || '匿名用户'" :uid="item.author_id"
                   @openUser="onUserNameClicked($event)" :avatar="item.author?.portrait || 'default'"
                   :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
-                  :create_time="item.time" :reply_num="item.subPostNumber" :tid="String(tid)" :pid="String(item.id)"
-                  :floor="item.floor" :is_lz="String(item.authorId) === threadAuthorId"
-                  :level="item.author?.levelId || 0" :ipAddress="item.author?.ipAddress || ''"
+                  :create_time="item.time" :reply_num="Number(item.sub_post_number || 0)" :tid="String(tid)" :pid="String(item.id)"
+                  :floor="item.floor" :is_lz="String(item.author_id) === threadAuthorId"
+                  :level="item.author?.level_id || 0" :ip_address="item.author?.ip_address || ''"
                   @viewAllReplies="ViewAllReplie">
                 </Reply>
               </div>

@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message IconUrlInfo {
+    string day = 1;
+    string night = 2;
+    string dark = 3;
+}

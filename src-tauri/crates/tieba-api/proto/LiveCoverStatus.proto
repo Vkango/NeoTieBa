@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message LiveCoverStatus {
+    int32 status_num = 1;
+    string status = 2;
+}

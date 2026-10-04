@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "ApkDetail.proto";
+import "ItemDetail.proto";
+import "ItemOptions.proto";
+import "ItemService.proto";
+import "ItemTable.proto";
+import "ItemThemeColor.proto";
+import "Ranking.proto";
+import "TagInfo.proto";
+
+message ItemInfo {
+    uint32 id = 1;
+    string name = 2;
+    string icon_url = 3;
+    string brief = 4;
+    repeated string tags = 5;
+    double icon_size = 6;
+    repeated ItemOptions item_options = 7;
+    ItemTable score = 8;
+    uint32 is_school = 9;
+    ItemThemeColor theme_color = 10;
+    string template_name = 11;
+    string forum_name = 12;
+    repeated TagInfo tag_info = 13;
+    string category1 = 14;
+    string category2 = 15;
+    ItemDetail detail = 16;
+    Ranking ranking = 17;
+    ItemService service = 18;
+    string button_name = 19;
+    string button_link = 20;
+    string item_appid = 21;
+    int32 button_link_type = 22;
+    string apk_name = 23;
+    ApkDetail apk_detail = 24;
+}

@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "Profile/DataReq.proto";
-
-message ProfileReqIdl {
-    DataReq data = 1;
-}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message NoticeMask {
+    int32 attr_type = 1;
+    string attr_value = 2;
+}

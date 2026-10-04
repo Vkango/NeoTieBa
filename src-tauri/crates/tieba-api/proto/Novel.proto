@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+message Novel {
+    string book_id = 1;
+    string gid = 2;
+    string book_name = 3;
+    string author_id = 4;
+    string author = 5;
+    string description = 6;
+    string last_chapter_id = 7;
+    string last_chapter_index = 8;
+    string last_chapter_title = 9;
+    string last_chapter_page_id = 10;
+    string last_chapter_update_time = 11;
+    string ios_detail_params = 12;
+    string android_detail_params = 13;
+    string ios_last_charpter_params = 14;
+    string android_last_charpter_params = 15;
+    string android_last_read_params = 16;
+    string ios_last_read_params = 17;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "Error.proto";
+import "PbPage/DataRes.proto";
+
+message PbPageResIdl {
+    Error error = 1;
+    DataRes data = 2;
+}

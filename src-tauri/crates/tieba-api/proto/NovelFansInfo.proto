@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message NovelFansInfo {
+    int32 level = 1;
+    string level_name = 2;
+    string level_icon = 3;
+}

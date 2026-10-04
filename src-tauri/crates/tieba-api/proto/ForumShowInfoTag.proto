@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "ThemeColorInfo.proto";
+
+message ForumShowInfoTag {
+    string text = 1;
+    ThemeColorInfo text_color = 2;
+    ThemeColorInfo bg_color = 3;
+}

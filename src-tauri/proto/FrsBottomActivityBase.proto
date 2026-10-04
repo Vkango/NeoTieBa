@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "FrsBottomActivity.proto";
-
-message FrsBottomActivityBase {
-    repeated FrsBottomActivity activity_list = 1;
-}

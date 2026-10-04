@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message StarRankIcon {
-    string icon_pic_url = 1;
-    string icon_link = 2;
-}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message PayMemberInfo {
+    int32 props_id = 1;
+    int32 end_time = 2;
+    string url = 3;
+    string expire_remind = 4;
+    string pic_url = 5;
+}

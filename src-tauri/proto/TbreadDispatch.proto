@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message TbreadDispatch {
-    string floor_num = 1;
-    string product_type = 2;
-    string product_id = 3;
-}

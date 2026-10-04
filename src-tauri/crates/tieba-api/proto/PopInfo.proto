@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message PopInfo {
+    int32 if_pop = 1;
+    string title = 2;
+    string v_title = 3;
+    string ahead_info = 4;
+    string ahead_url = 5;
+    string ok_info = 6;
+}

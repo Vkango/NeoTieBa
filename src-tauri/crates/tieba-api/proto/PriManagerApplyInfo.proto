@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message PriManagerApplyInfo {
+    int32 assist_left_num = 1;
+    string assist_apply_url = 2;
+    int32 assist_apply_status = 3;
+}

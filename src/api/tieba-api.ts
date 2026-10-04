@@ -400,18 +400,18 @@ export class tieBaAPI {
         if (response?.error?.errorno) throw new Error(response.error.errmsg || `Tieba server error: ${response.error.errorno}`);
         const data = response?.data ?? response;
         // Keep the legacy component contract while decoding the protobuf's
-        // camelCase field names (subpostList/page/subpostNum).
-        const subpostList = data.subpostList ?? data.subpost_list ?? [];
+        // camelCase field names (subpost_list/page/subpost_num).
+        const subpost_list = data.subpost_list ?? [];
         return {
             ...data,
-            subpost_list: subpostList.map((item: any) => item?.author ? {
+            subpost_list: subpost_list.map((item: any) => item?.author ? {
                 ...item,
                 author: {
                     ...item.author,
-                    name_show: item.author.nameShow ?? item.author.name_show ?? item.author.name ?? '',
+                    name_show: item.author.name_show ?? '',
                 },
             } : item),
-            subpost_num: data.subpostNum ?? data.subpost_num ?? subpostList.length,
+            subpost_num: data.subpost_num ?? subpost_list.length,
         };
     }
 }

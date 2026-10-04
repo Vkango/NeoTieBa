@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "AtMsgBase.proto";
+
+message ChatRoomAtInfo {
+    int32 at_count_all = 1;
+    int32 at_all_msg_count = 2;
+    int32 at_single_msg_count = 3;
+    repeated AtMsgBase at_all_msg_list = 4;
+    repeated AtMsgBase at_single_msg_list = 5;
+}

@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "FrequentlyForumInfo.proto";
-
-message VitalityInfo {
-    FrequentlyForumInfo frequently_forum_info = 1;
-}

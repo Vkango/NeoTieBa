@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message LiveLabelInfo {
-    string name = 1;
-    string icon = 2;
-}

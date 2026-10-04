@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message Level {
+    int32 props_id = 1;
+    string props_type = 2;
+    string props_category = 3;
+    int32 end_time = 4;
+    int32 left_num = 5;
+    int32 update_time = 6;
+    string used_status = 7;
+    string open_status = 8;
+    string expiring_notify = 9;
+    string expired_notify = 10;
+    string max_free_score = 11;
+    string pic_url = 12;
+}

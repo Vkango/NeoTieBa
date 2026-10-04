@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message FeatureCardCompetitionSubNode {
+    string title = 1;
+    string url = 2;
+    string competition_image = 3;
+    string team1_name = 4;
+    string team1_image = 5;
+    string team2_name = 6;
+    string team2_image = 7;
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "FeatureCardGameSubNode.proto";
+
+message FeatureCardGame {
+    repeated FeatureCardGameSubNode sub_nodes = 1;
+    uint32 type = 2;
+    uint32 floor = 3;
+    string title = 4;
+}

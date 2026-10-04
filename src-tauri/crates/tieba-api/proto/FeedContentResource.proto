@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "FeedContentEmoji.proto";
+import "FeedContentIcon.proto";
+import "FeedContentText.proto";
+import "FeedKV.proto";
+
+message FeedContentResource {
+    int32 type = 1;
+    string schema = 7;
+    FeedContentText text_info = 8;
+    FeedContentIcon icon_info = 9;
+    FeedContentEmoji emoji_info = 10;
+    repeated FeedKV business_info = 11;
+    repeated FeedKV log_info = 12;
+}

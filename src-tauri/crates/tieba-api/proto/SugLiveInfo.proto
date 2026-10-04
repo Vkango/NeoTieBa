@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "AlaLiveInfo.proto";
+
+message SugLiveInfo {
+    string word = 1;
+    AlaLiveInfo ala_info = 2;
+}

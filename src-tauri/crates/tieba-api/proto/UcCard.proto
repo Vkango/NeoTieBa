@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "UcCardInfo.proto";
+
+message UcCard {
+    string name = 1;
+    string icon = 2;
+    string doc = 3;
+    string jmp = 4;
+    repeated UcCardInfo uc_cards = 5;
+}

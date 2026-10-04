@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message ForumSubLabel {
+    int32 id = 1;
+    string sub_label_name = 2;
+}

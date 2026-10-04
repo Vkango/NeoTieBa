@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "GuessLikeThreadInfo.proto";
+
+message GuessLikeStruct {
+    string title = 1;
+    repeated GuessLikeThreadInfo thread_list = 2;
+}

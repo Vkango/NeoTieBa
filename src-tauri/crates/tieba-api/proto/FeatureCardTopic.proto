@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "FeatureCardTopicSubNode.proto";
+
+message FeatureCardTopic {
+    uint32 type = 1;
+    uint32 floor = 2;
+    string title = 3;
+    repeated FeatureCardTopicSubNode sub_nodes = 4;
+}

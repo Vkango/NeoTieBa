@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "ItemThemeColorElement.proto";
-
-message ItemThemeColor {
-    ItemThemeColorElement day = 1;
-}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message EditConfig {
+    int32 show_edit = 1;
+    int32 is_first_edit = 2;
+}

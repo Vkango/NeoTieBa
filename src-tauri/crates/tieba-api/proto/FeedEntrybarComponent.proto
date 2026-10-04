@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message FeedEntrybarComponent {
+    string text = 1;
+    string schema = 2;
+}

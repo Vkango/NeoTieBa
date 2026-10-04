@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message ItemPoint {
-    string time_intval = 1;
-    double point = 2;
-}

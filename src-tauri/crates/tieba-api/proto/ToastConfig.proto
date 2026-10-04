@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message ToastConfig {
+    string pre_color_msg = 1;
+    string toast_back_image = 2;
+}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message AtMsgBase {
+    int64 msg_id = 1;
+    string msg_key = 2;
+}

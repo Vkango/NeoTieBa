@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "ChatContent.proto";
+import "User.proto";
+
+message AichatBotCard {
+    User bot_info = 1;
+    string content = 2;
+    ChatContent chat_button = 3;
+    string target_scheme = 4;
+}

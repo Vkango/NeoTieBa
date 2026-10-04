@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message Wares {
+    uint32 props_id = 1;
+    uint32 money = 2;
+    uint32 props_mon = 3;
+    string wars_name = 4;
+    string wars_item = 5;
+    string new_props_id = 6;
+}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message FeatureCardHotSubNode {
+    string url = 1;
+    string title = 2;
+}

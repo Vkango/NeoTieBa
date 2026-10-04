@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message AiChatCard {
+    string portrait = 1;
+    string title_text = 2;
+    string subtitle_text = 3;
+    string btn_text = 4;
+    string btn_link = 5;
+    string title_icon = 6;
+    string uk = 7;
+}

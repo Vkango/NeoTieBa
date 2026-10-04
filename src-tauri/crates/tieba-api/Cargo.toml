@@ -1,0 +1,21 @@
+[package]
+name = "tieba-api"
+version = "0.1.0"
+edition = "2021"
+description = "Rust client primitives for Baidu Tieba protobuf APIs"
+license = "GPL-3.0-only"
+repository = "https://github.com/Vkango/NeoTieBa"
+readme = "README.md"
+keywords = ["tieba", "baidu", "protobuf"]
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls",
+    "multipart",
+] }
+thiserror = "2"
+prost = "0.13.5"
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+prost-build = "0.13.5"

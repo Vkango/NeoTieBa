@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message FeedContentColor {
-    int32 type = 1;
-    string day = 2;
-    string night = 3;
-}

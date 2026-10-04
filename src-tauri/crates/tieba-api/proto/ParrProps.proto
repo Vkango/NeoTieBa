@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "Level.proto";
+import "Props.proto";
+
+message ParrProps {
+    int32 portrait_time = 1;
+    Level level = 2;
+    repeated Props props = 3;
+}

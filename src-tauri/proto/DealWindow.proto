@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "DisplayWindowInfo.proto";
-
-message DealWindow {
-    repeated DisplayWindowInfo list = 1;
-    uint64 total = 2;
-}

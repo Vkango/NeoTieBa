@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "RecomTopicList.proto";
+import "VideoTags.proto";
+
+message WorksInfo {
+    int32 is_works = 1;
+    repeated RecomTopicList topic_list = 2;
+    VideoTags tag_list = 3;
+}

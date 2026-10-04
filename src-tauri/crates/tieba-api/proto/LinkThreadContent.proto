@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message LinkThreadContent {
+    int32 link_type = 1;
+    string link_title = 2;
+    string link_abstract = 3;
+    string link_head_pic = 4;
+    string link_head_small_pic = 5;
+    string link_head_big_pic = 6;
+}

@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message DealAuthInfo {
-    string item_name = 1;
-    string item_content = 2;
-    string item_url = 3;
-}

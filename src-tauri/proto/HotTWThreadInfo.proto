@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "User.proto";
-
-message HotTWThreadInfo {
-    repeated User user_list = 1;
-    uint32 fans_count = 2;
-}

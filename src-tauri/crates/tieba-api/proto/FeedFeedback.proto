@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "FeedbackReason.proto";
+
+message FeedFeedback {
+    string type = 1;
+    string title = 2;
+    string button_text = 3;
+    string common_id = 4;
+    repeated FeedbackReason dislike = 5;
+}

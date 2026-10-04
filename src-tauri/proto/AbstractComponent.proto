@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "FeedContentResource.proto";
-
-message AbstractComponent {
-    repeated FeedContentResource data = 1;
-}

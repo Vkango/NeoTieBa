@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message ConsumeInfo {
-    string icon = 1;
-    string title = 2;
-    string content = 3;
-}

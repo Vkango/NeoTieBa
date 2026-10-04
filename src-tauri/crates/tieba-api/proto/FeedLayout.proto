@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "ComponentFactory.proto";
+import "FeedFeedback.proto";
+import "FeedKV.proto";
+
+message FeedLayout {
+    repeated ComponentFactory components = 1;
+    string schema = 2;
+    repeated FeedKV log_info = 3;
+    FeedFeedback feedback = 4;
+    repeated FeedKV business_info = 5;
+    repeated FeedKV appendix = 6;
+}

@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "ThemeColorInfo.proto";
-
-message TagLabelInfo {
-    repeated ThemeColorInfo labels = 1;
-}

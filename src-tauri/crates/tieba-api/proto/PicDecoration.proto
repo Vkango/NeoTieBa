@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "FeedKV.proto";
+
+message PicDecoration {
+    string location = 1;
+    string name = 2;
+    repeated FeedKV decoration_info = 3;
+}

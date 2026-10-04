@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "MaskLayerText.proto";
-
-message FeedMaskLayer {
-    string topright_text = 1;
-    repeated MaskLayerText button_texts = 2;
-}

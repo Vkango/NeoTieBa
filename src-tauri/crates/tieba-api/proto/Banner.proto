@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "ThreadInfo.proto";
+
+message Banner {
+    string name = 1;
+    string desc = 2;
+    string pic = 3;
+    ThreadInfo thread_info = 4;
+    string url = 5;
+    int32 id = 6;
+    uint64 start_time = 7;
+    uint64 end_time = 8;
+}

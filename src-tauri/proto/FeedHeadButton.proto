@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "FeedKV.proto";
-
-message FeedHeadButton {
-    uint32 type = 1;
-    repeated FeedKV business_info = 2;
-}

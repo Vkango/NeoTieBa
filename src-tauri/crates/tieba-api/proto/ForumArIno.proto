@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message ForumArIno {
+    uint32 _switch = 1;
+    uint32 ar_id = 2;
+    uint32 ar_type = 3;
+    string title = 4;
+    string animation_url = 5;
+    string suspension_url = 6;
+}

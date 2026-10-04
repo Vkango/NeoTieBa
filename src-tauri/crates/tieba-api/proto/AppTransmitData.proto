@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message AppTransmitData {
+    string wise_sample_id = 1;
+    string yy_hdid = 2;
+    string yy_version = 3;
+}

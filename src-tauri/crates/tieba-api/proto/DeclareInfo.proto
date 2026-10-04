@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message DeclareInfo {
+    int32 declare_id = 1;
+    string declare_url = 2;
+    string declare_text = 3;
+    uint64 declare_num = 4;
+    int32 is_declare = 5;
+}

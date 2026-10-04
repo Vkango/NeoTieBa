@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message CartoonChapterInfo {
-    uint32 chapter_id = 1;
-    uint32 chapter_vip = 2;
-}

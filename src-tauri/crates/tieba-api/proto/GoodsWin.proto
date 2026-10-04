@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message GoodsWin {
+    int32 show = 1;
+    string goods_url = 2;
+}

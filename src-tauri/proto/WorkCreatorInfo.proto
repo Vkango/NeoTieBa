@@ -1,5 +1,0 @@
-syntax = "proto3";
-
-message WorkCreatorInfo {
-    string auth_desc = 1;
-}

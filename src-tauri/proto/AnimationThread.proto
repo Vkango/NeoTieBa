@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message AnimationThread {
-    string video_pic = 1;
-    string jump_url = 2;
-}

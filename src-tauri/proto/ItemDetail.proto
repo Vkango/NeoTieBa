@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message ItemDetail {
-    string name = 1;
-    string value = 2;
-}

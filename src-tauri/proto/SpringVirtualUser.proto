@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message SpringVirtualUser {
-    uint32 is_virtual = 1;
-    string url = 2;
-}

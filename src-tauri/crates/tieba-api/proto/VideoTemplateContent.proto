@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message VideoTemplateContent {
+    string content = 1;
+    int32 type = 2;
+    int32 pic_width = 3;
+    int32 pic_height = 4;
+    int64 start_time = 5;
+    int64 end_time = 6;
+    double position_x = 7;
+    double position_y = 8;
+    double position_type = 9;
+    double text_size = 10;
+    string text_color = 11;
+}

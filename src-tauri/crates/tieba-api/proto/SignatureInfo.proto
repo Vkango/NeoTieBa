@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "Avatar.proto";
+import "Equipment.proto";
+
+message SignatureInfo {
+    Equipment equipment = 1;
+    string game_id = 2;
+    string game_name = 3;
+    string player = 4;
+    Avatar avatar = 5;
+    string power = 6;
+    string server = 7;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "RecentUpdate.proto";
+import "ThreadInfo.proto";
+
+message ItemGameInfo {
+    repeated ThreadInfo hot_videos = 1;
+    RecentUpdate recent_update = 2;
+}

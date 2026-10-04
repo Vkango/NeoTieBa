@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message WapRn {
-    int32 frsrn = 1;
-    int32 pbrn = 2;
-}

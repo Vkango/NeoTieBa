@@ -25,8 +25,8 @@
                                     <!-- 用户列表 -->
                                     <div class="user-list-container">
                                         <h3>账号列表</h3>
-                                        <div class="user-list" v-if="userList.length > 0">
-                                            <div v-for="user in userList" :key="user.username" class="user-item"
+                                        <div class="user-list" v-if="user_list.length > 0">
+                                            <div v-for="user in user_list" :key="user.username" class="user-item"
                                                 :class="{ active: user.current }" @click="switchUser(user)">
                                                 <RemoteImage kind="avatars" :src="user.avatar" class="user-avatar"
                                                     referrerpolicy="no-referrer" />
@@ -176,7 +176,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits(['close', 'qrLogin', 'userChanged']);
 
-const userList = ref<User[]>([]);
+const user_list = ref<User[]>([]);
 const showCookieDialog = ref(false);
 const deleteConfirmUser = ref<User | null>(null);
 const currentView = ref('main'); // 'main', 'qr', 'cookie'
@@ -187,11 +187,11 @@ const cookieForm = ref({
 });
 
 const isPrivacyMode = computed(() => {
-    return userList.value.every(u => !u.current);
+    return user_list.value.every(u => !u.current);
 });
 
 const loadUsers = async () => {
-    userList.value = await getUserList();
+    user_list.value = await getUserList();
 };
 
 watch(() => props.visible, async (newVal) => {
@@ -266,7 +266,7 @@ const switchUser = async (user: User) => {
 
 const enablePrivacyMode = async () => {
     // 将所有用户设为非当前
-    for (const user of userList.value) {
+    for (const user of user_list.value) {
         if (user.current) {
             user.current = false;
             await addUser(user);

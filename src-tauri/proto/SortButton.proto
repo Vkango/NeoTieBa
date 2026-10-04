@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message SortButton {
-    string text = 1;
-    int32 source_id = 2;
-}

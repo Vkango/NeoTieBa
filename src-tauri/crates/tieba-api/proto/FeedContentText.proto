@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "FeedContentColor.proto";
+
+message FeedContentText {
+    string text = 1;
+    FeedContentColor color = 2;
+    FeedContentColor bg_color = 3;
+}

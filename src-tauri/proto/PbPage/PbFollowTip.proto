@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message PbFollowTip {
-    uint32 is_toast_tip = 1;
-    string tip_text = 2;
-}

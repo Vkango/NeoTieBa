@@ -84,12 +84,12 @@ export async function getUserList(): Promise<User[]> {
     }
 }
 
-async function saveUserList(userList: User[]): Promise<void> {
-    if (!Array.isArray(userList)) {
+async function saveUserList(user_list: User[]): Promise<void> {
+    if (!Array.isArray(user_list)) {
         throw new Error('Invalid user list: expected an array');
     }
     try {
-        const jsonStr = JSON.stringify(userList, null, 2);
+        const jsonStr = JSON.stringify(user_list, null, 2);
         const encrypted = encrypt(jsonStr);
         await invoke('write_file', { relativePath: USER_FILE_NAME, content: encrypted });
     } catch (e) {
@@ -99,33 +99,33 @@ async function saveUserList(userList: User[]): Promise<void> {
 }
 
 export async function addUser(user: User): Promise<boolean> {
-    let userList = await getUserList();
-    userList = Array.isArray(userList) ? userList : [];
-    const shouldBeCurrent = user.current === true || userList.length === 0;
+    let user_list = await getUserList();
+    user_list = Array.isArray(user_list) ? user_list : [];
+    const shouldBeCurrent = user.current === true || user_list.length === 0;
     const nextUser: User = {
         ...user,
         current: shouldBeCurrent
     };
 
     if (shouldBeCurrent) {
-        userList = userList.map(item => ({ ...item, current: false }));
+        user_list = user_list.map(item => ({ ...item, current: false }));
     }
 
-    const index = userList.findIndex(item => item.username === user.username);
+    const index = user_list.findIndex(item => item.username === user.username);
     if (index !== -1) {
-        userList[index] = nextUser;
-        await saveUserList(userList);
+        user_list[index] = nextUser;
+        await saveUserList(user_list);
         return true;
     } else {
-        userList.push(nextUser);
-        await saveUserList(userList);
+        user_list.push(nextUser);
+        await saveUserList(user_list);
         return false;
     }
 }
 
 export async function removeUser(user: User): Promise<void> {
-    const userList = (await getUserList()).filter(item => item.userId !== user.userId);
-    await saveUserList(userList);
+    const user_list = (await getUserList()).filter(item => item.userId !== user.userId);
+    await saveUserList(user_list);
 }
 
 export async function getCurrentUserCookies(): Promise<string> {
@@ -139,8 +139,8 @@ export async function getCurrentUserBduss(): Promise<string> {
 }
 
 export async function getCurrentUser(): Promise<User> {
-    const userList = await getUserList();
-    const currentUser = userList.find(item => item.current === true);
+    const user_list = await getUserList();
+    const currentUser = user_list.find(item => item.current === true);
 
     if (!currentUser) {
         throw new Error('没有用户登录');
@@ -150,10 +150,10 @@ export async function getCurrentUser(): Promise<User> {
 }
 
 export async function setCurrentUser(username: string): Promise<void> {
-    const userList = await getUserList();
+    const user_list = await getUserList();
     let found = false;
 
-    userList.forEach(item => {
+    user_list.forEach(item => {
         if (item.username === username) {
             item.current = true;
             found = true;
@@ -166,15 +166,15 @@ export async function setCurrentUser(username: string): Promise<void> {
         throw new Error(`用户 ${username} 不存在`);
     }
 
-    await saveUserList(userList);
+    await saveUserList(user_list);
 }
 
 export async function switchUser(user: User): Promise<void> {
-    const userList = await getUserList();
+    const user_list = await getUserList();
 
-    userList.forEach(item => {
+    user_list.forEach(item => {
         item.current = item.username === user.username;
     });
 
-    await saveUserList(userList);
+    await saveUserList(user_list);
 }

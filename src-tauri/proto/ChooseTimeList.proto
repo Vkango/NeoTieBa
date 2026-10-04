@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message ChooseTimeList {
-    int64 time = 1;
-    string title = 2;
-}

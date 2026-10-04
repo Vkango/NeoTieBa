@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "BaseTextColor.proto";
+
+message FeedHeadText {
+    string text = 1;
+    int32 priority = 2;
+    int32 can_degrade = 3;
+    uint32 degrade_len = 4;
+    int32 degrade_priority = 5;
+    string suffix = 6;
+    int32 type = 7;
+    BaseTextColor color = 8;
+    BaseTextColor bg_color = 9;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "User.proto";
+
+message ForumMemberInfo {
+    string total = 1;
+    string title = 2;
+    repeated User member_list = 3;
+}

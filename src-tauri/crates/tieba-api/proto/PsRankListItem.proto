@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "User.proto";
+
+message PsRankListItem {
+    int64 game_id = 1;
+    int64 user_id = 2;
+    int64 score = 3;
+    User user = 4;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message FeedLiveComponent {
+    string top_label = 1;
+    string bottom_label = 2;
+    string audience_label = 3;
+    string cover_url = 4;
+    string schema = 5;
+}

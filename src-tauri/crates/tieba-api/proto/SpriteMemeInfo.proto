@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message SpriteMemeInfo {
+    int64 meme_id = 1;
+    string query = 2;
+    string icon = 3;
+    string use_same_guide = 4;
+    string use_same_text = 5;
+}

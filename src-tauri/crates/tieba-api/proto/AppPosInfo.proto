@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message AppPosInfo {
+    string ap_mac = 1;
+    bool ap_connected = 2;
+    string coordinate_type = 3;
+    string longitude = 4;
+    string latitude = 5;
+    int64 addr_timestamp = 6;
+    string asp_shown_info = 7;
+    string mercator_lat = 8;
+    string mercator_lon = 9;
+    string mercator_radius = 10;
+    int64 mercator_time = 11;
+    int32 mercator_city = 12;
+    string mercator_province_name = 13;
+    string mercator_city_name = 14;
+    string mercator_district_name = 15;
+}

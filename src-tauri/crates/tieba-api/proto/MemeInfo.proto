@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message MemeInfo {
+    uint32 pck_id = 1;
+    uint64 pic_id = 2;
+    string pic_url = 3;
+    string thumbnail = 4;
+    uint32 width = 5;
+    uint32 height = 6;
+    string detail_link = 7;
+}

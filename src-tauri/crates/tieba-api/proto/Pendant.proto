@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message Pendant {
+    uint64 props_id = 1;
+    string img_url = 2;
+    string dynamic_url = 3;
+    string jump_url = 4;
+}

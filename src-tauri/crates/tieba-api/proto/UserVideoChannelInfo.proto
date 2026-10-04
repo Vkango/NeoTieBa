@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message UserVideoChannelInfo {
+    int32 man_channel = 1;
+    int32 follow_channel = 2;
+}

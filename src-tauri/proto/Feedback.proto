@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message Feedback {
-    string icon = 1;
-    string title = 2;
-    string url = 3;
-}

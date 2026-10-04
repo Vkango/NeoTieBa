@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message VoteSchema {
+    string text_before_vote = 1;
+    string text_after_vote = 2;
+    string jump_url = 3;
+}

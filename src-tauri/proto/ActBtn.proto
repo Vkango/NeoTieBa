@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message ActBtn {
-    uint32 type = 1;
-    string url = 2;
-    string text = 3;
-}

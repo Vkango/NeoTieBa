@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message LotteryRegular {
-    string regular = 1;
-    repeated int32 chance = 2;
-}

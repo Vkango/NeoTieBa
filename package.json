@@ -5,13 +5,11 @@
   "packageManager": "pnpm@11.1.2",
   "type": "module",
   "scripts": {
-    "dev": "corepack pnpm proto:generate && vite",
-    "build": "node scripts/generate-proto.mjs && vue-tsc --noEmit && vite build",
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "proto:generate": "node scripts/generate-proto.mjs",
-    "test:settings": "node --test tests/*.test.mjs",
-    "proto:check": "node --test tests/proto-descriptors.test.mjs"
+    "test:settings": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",
@@ -25,7 +23,6 @@
     "fs": "^0.0.1-security",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
-    "protobufjs": "^7.5.0",
     "tauri-plugin-clipboard-x-api": "^2.0.1",
     "vue": "^3.5.13"
   },

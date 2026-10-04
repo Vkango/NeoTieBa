@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message TwAnchorPKItem {
+    string order = 1;
+    uint64 user_id = 2;
+    string head_url = 3;
+    string user_name = 4;
+    string fans_num = 5;
+    int32 user_sex = 6;
+}

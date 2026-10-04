@@ -41,9 +41,6 @@ importers:
       pinia-plugin-persistedstate:
         specifier: ^4.7.1
         version: 4.7.1(pinia@3.0.4(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3)))
-      protobufjs:
-        specifier: ^7.5.0
-        version: 7.6.1
       tauri-plugin-clipboard-x-api:
         specifier: ^2.0.1
         version: 2.0.2
@@ -431,36 +428,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@protobufjs/aspromise@1.1.2':
-    resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
-
-  '@protobufjs/base64@1.1.2':
-    resolution: {integrity: sha512-AZkcAA5vnN/v4PDqKyMR5lx7hZttPDgClv83E//FMNhR2TMcLUhfRUBHCmSl0oi9zMgDDqRUJkSxO3wm85+XLg==}
-
-  '@protobufjs/codegen@2.0.5':
-    resolution: {integrity: sha512-zgXFLzW3Ap33e6d0Wlj4MGIm6Ce8O89n/apUaGNB/jx+hw+ruWEp7EwGUshdLKVRCxZW12fp9r40E1mQrf/34g==}
-
-  '@protobufjs/eventemitter@1.1.1':
-    resolution: {integrity: sha512-vW1GmwMZNnL+gMRaovlh9yZX74kc+TTU3FObkkurpMaRtBfLP3ldjS9KQWlwZgraRE0+dheEEoAxdzcJQ8eXZg==}
-
-  '@protobufjs/fetch@1.1.1':
-    resolution: {integrity: sha512-GpptLrs57adMSuHi3VNj0mAF8dwh36LMaYF6XyJ6JMWlVsc+t42tm1HSEDmOs3A8fC9yyeisgLhsTVQokOZ0zw==}
-
-  '@protobufjs/float@1.0.2':
-    resolution: {integrity: sha512-Ddb+kVXlXst9d+R9PfTIxh1EdNkgoRe5tOX6t01f1lYWOvJnSPDBlG241QLzcyPdoNTsblLUdujGSE4RzrTZGQ==}
-
-  '@protobufjs/inquire@1.1.2':
-    resolution: {integrity: sha512-pa0vFRuws4wkvaXKK1uXZMAwAX4/t8ANaJo45iw/oQHNQ9q5xUzwgFmVJGXiga2BeN+zpX7Vf9vmsiIa2J+MUw==}
-
-  '@protobufjs/path@1.1.2':
-    resolution: {integrity: sha512-6JOcJ5Tm08dOHAbdR3GrvP+yUUfkjG5ePsHYczMFLq3ZmMkAD98cDgcT2iA1lJ9NVwFd4tH/iSSoe44YWkltEA==}
-
-  '@protobufjs/pool@1.1.0':
-    resolution: {integrity: sha512-0kELaGSIDBKvcgS4zkjz1PeddatrjYcmMWOlAuAPwAeccUrPHdUqo/J6LiymHHEiJT5NrF1UVwxY14f+fy4WQw==}
-
-  '@protobufjs/utf8@1.1.1':
-    resolution: {integrity: sha512-oOAWABowe8EAbMyWKM0tYDKi8Yaox52D+HWZhAIJqQXbqe0xI/GV7FhLWqlEKreMkfDjshR5FKgi3mnle0h6Eg==}
 
   '@rollup/rollup-android-arm-eabi@4.60.4':
     resolution: {integrity: sha512-F5QXMSiFebS9hKZj02XhWLLnRpJ3B3AROP0tWbFBSj+6kCbg5m9j5JoHKd4mmSVy5mS/IMQloYgYxCuJC0fxEQ==}
@@ -869,9 +836,6 @@ packages:
     resolution: {integrity: sha512-++gUqRDEvcnN6Zhqrr+y/CkVEHhlrR96vZn3nZZPYzMcBUyBtTKzB9NadClFIsIVSsu+3i9tfk/erqy9kAmt7Q==}
     engines: {node: '>=14'}
 
-  long@5.3.2:
-    resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
-
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -940,10 +904,6 @@ packages:
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
     engines: {node: ^10 || ^12 || >=14}
-
-  protobufjs@7.6.1:
-    resolution: {integrity: sha512-4K0myLaWL5EteuSAro91EGFgcfVgxb64Jx+7oDAY6GOkXD4M69yuSEljNcInGVCA5sOPxmZ/EqDLj2x0Q0+Ygg==}
-    engines: {node: '>=12.0.0'}
 
   quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
@@ -1276,28 +1236,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@protobufjs/aspromise@1.1.2': {}
-
-  '@protobufjs/base64@1.1.2': {}
-
-  '@protobufjs/codegen@2.0.5': {}
-
-  '@protobufjs/eventemitter@1.1.1': {}
-
-  '@protobufjs/fetch@1.1.1':
-    dependencies:
-      '@protobufjs/aspromise': 1.1.2
-
-  '@protobufjs/float@1.0.2': {}
-
-  '@protobufjs/inquire@1.1.2': {}
-
-  '@protobufjs/path@1.1.2': {}
-
-  '@protobufjs/pool@1.1.0': {}
-
-  '@protobufjs/utf8@1.1.1': {}
 
   '@rollup/rollup-android-arm-eabi@4.60.4':
     optional: true
@@ -1677,8 +1615,6 @@ snapshots:
       pkg-types: 2.3.1
       quansync: 0.2.11
 
-  long@5.3.2: {}
-
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -1738,21 +1674,6 @@ snapshots:
       nanoid: 3.3.12
       picocolors: 1.1.1
       source-map-js: 1.2.1
-
-  protobufjs@7.6.1:
-    dependencies:
-      '@protobufjs/aspromise': 1.1.2
-      '@protobufjs/base64': 1.1.2
-      '@protobufjs/codegen': 2.0.5
-      '@protobufjs/eventemitter': 1.1.1
-      '@protobufjs/fetch': 1.1.1
-      '@protobufjs/float': 1.0.2
-      '@protobufjs/inquire': 1.1.2
-      '@protobufjs/path': 1.1.2
-      '@protobufjs/pool': 1.1.0
-      '@protobufjs/utf8': 1.1.1
-      '@types/node': 25.9.1
-      long: 5.3.2
 
   quansync@0.2.11: {}
 

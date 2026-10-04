@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message UserStory {
+    int64 user_id = 1;
+    string user_name = 2;
+    string portrait = 3;
+    uint32 has_read = 4;
+}

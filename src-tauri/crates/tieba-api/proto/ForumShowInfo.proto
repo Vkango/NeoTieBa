@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "ForumShowInfoTag.proto";
+
+message ForumShowInfo {
+    string content = 1;
+    ForumShowInfoTag tag = 2;
+    int64 show_type = 3;
+}

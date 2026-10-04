@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message GraffitiInfo {
-    string url = 1;
-    int64 gid = 2;
-}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message Entry {
+    string icon = 1;
+    string name = 2;
+    int32 id = 3;
+    string bitmap_wh_ratio = 4;
+    int32 icon_type = 5;
+}

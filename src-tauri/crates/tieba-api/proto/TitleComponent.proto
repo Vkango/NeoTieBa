@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "FeedContentResource.proto";
+
+message TitleComponent {
+    repeated FeedContentResource data = 1;
+}

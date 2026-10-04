@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message BusinessMix {
+    int32 mix_type = 1;
+    string url = 2;
+    string scheme = 3;
+    int32 jump_type = 4;
+    string package_name = 5;
+}

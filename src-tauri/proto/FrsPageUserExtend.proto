@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-import "User.proto";
-
-message FrsPageUserExtend {
-    int32 user_extend_storey = 1;
-    string tips = 3;
-    repeated User data = 4;
-}

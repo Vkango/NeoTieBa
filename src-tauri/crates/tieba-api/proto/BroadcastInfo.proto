@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "RecommendForumInfo.proto";
+import "ThreadInfo.proto";
+
+message BroadcastInfo {
+    int64 bcast_id = 1;
+    string title = 2;
+    string content = 3;
+    RecommendForumInfo forum_info = 5;
+    int32 publish_time = 6;
+    int32 pushuser_cnt = 7;
+    int32 pv = 8;
+    string ctr = 9;
+    ThreadInfo thread_infos = 10;
+    int32 audit_status = 11;
+    string pic_url = 12;
+}

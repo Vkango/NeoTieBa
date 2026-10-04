@@ -14,42 +14,42 @@ function numberValue(value: unknown, fallback = 0): number {
 
 export function normalizeUser(raw: any): StableUser {
     return {
-        id: stringValue(raw?.id ?? raw?.uid ?? raw?.userId),
+        id: stringValue(raw?.id ?? raw?.uid ?? raw?.user_id),
         name: stringValue(raw?.name ?? raw?.userName ?? raw?.user_name),
-        displayName: stringValue(raw?.nameShow ?? raw?.name_show ?? raw?.displayName ?? raw?.name ?? raw?.userName),
+        name_show: stringValue(raw?.name_show),
         avatar: stringValue(raw?.portrait ?? raw?.avatar),
-        level: raw?.levelId ?? raw?.level_id ? numberValue(raw.levelId ?? raw.level_id) : undefined,
-        ipAddress: raw?.ipAddress ?? raw?.ip_address,
+        level: raw?.level_id ?? raw?.level_id ? numberValue(raw.level_id ?? raw.level_id) : undefined,
+        ip_address: raw?.ip_address,
     };
 }
 
 export function normalizePost(raw: any, userMap = new Map<string, StableUser>()): StablePost {
-    const authorId = stringValue(raw?.authorId ?? raw?.author_id ?? raw?.userId ?? raw?.uid);
-    const agreeNum = numberValue(raw?.agree?.agreeNum ?? raw?.agree_num);
-    const disagreeNum = numberValue(raw?.agree?.disagreeNum ?? raw?.disagree_num);
+    const author_id = stringValue(raw?.author_id);
+    const agreeNum = numberValue(raw?.agree?.agree_num);
+    const disagreeNum = numberValue(raw?.agree?.disagree_num ?? raw?.disagree_num);
 
     return {
-        id: stringValue(raw?.id ?? raw?.pid),
-        tid: raw?.tid ? stringValue(raw.tid) : undefined,
-        authorId,
-        author: userMap.get(authorId),
+        id: stringValue(raw?.id ?? raw?.pid ?? raw?.post_id),
+        tid: raw?.tid !== undefined ? stringValue(raw.tid) : raw?.thread_id !== undefined ? stringValue(raw.thread_id) : undefined,
+        author_id: author_id || stringValue(raw?.user_id),
+        author: userMap.get(author_id),
         title: raw?.title ? stringValue(raw.title) : undefined,
         content: Array.isArray(raw?.content)
             ? raw.content
             : Array.isArray(raw?.rich_abstract)
                 ? raw.rich_abstract
                 : [],
-        createdAt: numberValue(raw?.time ?? raw?.last_time_int),
+        created_at: numberValue(raw?.time ?? raw?.last_time_int ?? raw?.create_time),
         floor: raw?.floor ? numberValue(raw.floor) : undefined,
-        replyCount: numberValue(raw?.subPostNumber ?? raw?.reply_num),
-        agreeCount: agreeNum - disagreeNum,
+        reply_num: numberValue(raw?.sub_post_number ?? raw?.reply_num),
+        agree_count: agreeNum - disagreeNum,
     };
 }
 
 export function normalizeThreadPage(raw: any, tid: string | number): ThreadPage {
     const data = raw?.data ?? {};
-    const usersRaw = data.userList ?? data.user_list ?? [];
-    const postsRaw = data.postList ?? data.post_list ?? [];
+    const usersRaw = data.user_list ?? [];
+    const postsRaw = data.post_list ?? [];
     const users: StableUser[] = Array.isArray(usersRaw)
         ? usersRaw.map((user: any) => normalizeUser(user))
         : [];
@@ -61,31 +61,31 @@ export function normalizeThreadPage(raw: any, tid: string | number): ThreadPage 
     return {
         tid: stringValue(tid),
         title: stringValue(data.thread?.title),
-        forumName: stringValue(data.forum?.name),
-        forumAvatar: stringValue(data.forum?.avatar),
+        forum_name: stringValue(data.forum?.name),
+        forum_avatar: stringValue(data.forum?.avatar),
         posts,
         users,
-        hasMore: Boolean(data.page?.hasMore ?? data.page?.has_more),
+        has_more: Boolean(data.page?.has_more),
     };
 }
 
-export function normalizeUserProfile(raw: any, userId: string | number): UserProfile {
+export function normalizeUserProfile(raw: any, user_id: string | number): UserProfile {
     const user = raw?.data?.user ?? raw?.user ?? {};
     return {
-        id: stringValue(user?.id ?? user?.uid ?? userId),
+        id: stringValue(user?.id ?? user?.uid ?? user_id),
         name: stringValue(user?.name ?? user?.userName ?? user?.user_name),
-        displayName: stringValue(user?.nameShow ?? user?.name_show ?? user?.name ?? user?.userName),
+        name_show: stringValue(user?.name_show),
         avatar: stringValue(user?.portrait ?? user?.avatar),
         raw,
     };
 }
 
-export function normalizeUserPostPage(raw: any, userId: string | number): UserPostPage {
-    const list = raw?.data?.postList ?? raw?.data?.post_list ?? raw?.post_list ?? [];
+export function normalizeUserPostPage(raw: any, user_id: string | number): UserPostPage {
+    const list = raw?.data?.post_list ?? raw?.post_list ?? [];
     return {
-        userId: stringValue(userId),
+        user_id: stringValue(user_id),
         posts: Array.isArray(list) ? list.map((post: any) => normalizePost(post)) : [],
-        hasMore: Boolean(raw?.data?.page?.hasMore ?? raw?.data?.page?.has_more ?? raw?.has_more),
+        has_more: Boolean(raw?.data?.page?.has_more ?? raw?.has_more),
         raw,
     };
 }

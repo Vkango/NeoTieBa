@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message FeedExtInfo {
+    repeated string feed_tab = 1;
+    repeated string feed_bar = 2;
+}

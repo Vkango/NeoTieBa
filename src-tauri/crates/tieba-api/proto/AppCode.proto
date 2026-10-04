@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message AppCode {
+    string game_icon = 1;
+    string post_url = 2;
+    string button_text = 3;
+}

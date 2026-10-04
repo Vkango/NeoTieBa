@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ThemeMyTab {
+    string url = 1;
+    string dynamic_url = 2;
+    string button_color = 3;
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message ChatroomInfoBasic {
+    int64 forum_id = 1;
+    string forum_name = 2;
+    string avatar = 3;
+    string name = 4;
+    string unread_num = 5;
+    int32 btn_type = 6;
+}

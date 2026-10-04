@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message DownloadBar {
+    string type = 1;
+    string button_text = 2;
+    string schema = 3;
+    string guide_text = 4;
+    string icon = 5;
+}

@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message MaskLayerText {
-    string text = 1;
-    string schema = 2;
-}

@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-message Quote {
-    int64 post_id = 1;
-    string user_name = 2;
-    int64 user_id = 3;
-    string ip = 4;
-    string content = 5;
-}

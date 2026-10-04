@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "ComponentFactory.proto";
+import "FeedFeedback.proto";
+import "FeedKV.proto";
+
+message SidewayLayout {
+    repeated ComponentFactory components = 1;
+    ComponentFactory title = 3;
+    FeedFeedback feedback = 4;
+    repeated FeedKV business_info = 5;
+}

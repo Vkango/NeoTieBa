@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "ThemeColorInfo.proto";
-
-message TagsInfo {
-    ThemeColorInfo img_info = 1;
-}

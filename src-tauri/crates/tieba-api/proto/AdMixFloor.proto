@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message AdMixFloor {
+    int32 ad_type = 1;
+    int32 floor_num = 2;
+    int64 ad_id = 3;
+    string advertise_id = 4;
+}

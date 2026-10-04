@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message WorldCupInfo {
+    string avatar_teamflag_url = 1;
+}

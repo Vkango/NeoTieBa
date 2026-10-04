@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "DiscoverTabCard.proto";
+
+message DiscoverHotForum {
+    repeated DiscoverTabCard tab_list = 1;
+    int32 floor = 2;
+}

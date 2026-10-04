@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message CustomState {
-    string icon = 1;
-    string content = 2;
-    string icon_type = 3;
-}

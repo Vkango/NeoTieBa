@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "AndroidBfbSdk.proto";
+
+message UserBfbInfo {
+    int32 activity_status = 1;
+    string bfb_url = 2;
+    string maste_url = 3;
+    int32 res_no = 4;
+    AndroidBfbSdk android_bfb_sdk = 5;
+}

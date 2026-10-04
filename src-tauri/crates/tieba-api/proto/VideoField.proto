@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "ThumbnailInfo.proto";
+
+message VideoField {
+    string url = 1;
+    uint32 duration = 2;
+    uint32 width = 3;
+    uint32 height = 4;
+    uint32 play_count = 5;
+    ThumbnailInfo thumbnail = 6;
+    int32 is_vertical = 7;
+    string md5 = 8;
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "FeedKV.proto";
+
+message FeedItem {
+    string icon_url = 1;
+    double icon_ratio = 2;
+    string name = 3;
+    double score = 4;
+    repeated string tags = 5;
+    string button_name = 6;
+    string button_link = 7;
+    repeated FeedKV business_info = 8;
+}

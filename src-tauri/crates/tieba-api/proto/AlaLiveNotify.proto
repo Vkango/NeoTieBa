@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message AlaLiveNotify {
+    string noti_content = 1;
+    string noti_url = 2;
+}

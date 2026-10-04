@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "ClickBackCardItem.proto";
+
+message ClickBackCard {
+    string card_name = 1;
+    repeated ClickBackCardItem card_list = 2;
+}

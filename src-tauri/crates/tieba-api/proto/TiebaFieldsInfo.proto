@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "User.proto";
+
+message TiebaFieldsInfo {
+    repeated string tieba_fields = 1;
+    string tieba_name = 2;
+    repeated User user_rank = 3;
+}

@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "RecGuide.proto";
-
-message NaGuide {
-    string dwnl_url = 1;
-    repeated RecGuide rec_info = 2;
-}

@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message RecommendTip {
-    string reason = 1;
-    string is_follow = 2;
-}

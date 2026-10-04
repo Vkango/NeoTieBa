@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "PbContent.proto";
+import "SpriteButton.proto";
+import "ThemeColorInfo.proto";
+
+message SpriteBubble {
+    uint32 scene = 1;
+    string text = 2;
+    uint32 need_send = 3;
+    string send_text = 4;
+    string version = 5;
+    PbContent struct_data = 6;
+    ThemeColorInfo text_color = 7;
+    ThemeColorInfo icon_url = 8;
+    string sprite_text = 9;
+    SpriteButton button_info = 10;
+    int32 speech_type = 11;
+    int32 disappear_seconds = 12;
+    string title = 13;
+    int32 type = 14;
+    ThemeColorInfo img = 15;
+}

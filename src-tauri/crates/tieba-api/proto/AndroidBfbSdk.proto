@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message AndroidBfbSdk {
+    int32 sp_no = 1;
+    string version = 2;
+    string activity_no = 3;
+    string order_no = 4;
+    string return_url = 5;
+    string sign = 6;
+    int32 sign_method = 7;
+}

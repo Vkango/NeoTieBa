@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message BookThread {
+    string book_id = 1;
+    uint32 book_type = 2;
+    uint64 chapter_id = 3;
+}

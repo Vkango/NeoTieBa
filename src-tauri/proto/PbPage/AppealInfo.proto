@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message AppealInfo {
-    string source = 1;
-    string appeal_url = 2;
-}

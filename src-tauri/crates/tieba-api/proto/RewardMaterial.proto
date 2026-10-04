@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message RewardMaterial {
+    string icon = 1;
+    string unlock_level = 2;
+    int32 is_matched = 3;
+    int32 is_newest_matched_level = 4;
+}

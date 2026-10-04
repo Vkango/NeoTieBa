@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "ToastConfig.proto";
+
+message ContriInfo {
+    string color_msg = 1;
+    string after_msg = 2;
+    repeated ToastConfig toast_config = 3;
+}

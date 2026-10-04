@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "SortButton.proto";
+import "TabMenu.proto";
+import "TabPic.proto";
+
+message FrsTabInfo {
+    int32 tab_id = 1;
+    int32 tab_type = 2;
+    string tab_name = 3;
+    string tab_url = 4;
+    string tab_gid = 5;
+    string tab_title = 6;
+    int32 is_general_tab = 7;
+    string tab_code = 8;
+    uint32 tab_version = 9;
+    int32 is_default = 10;
+    int32 need_page = 11;
+    TabPic head_pics = 12;
+    string exposure_monitor_url = 13;
+    string click_monitor_url = 14;
+    string demote_url = 15;
+    int32 is_no_show_publisher = 16;
+    int32 is_no_show_in_publisher = 17;
+    int32 net_tab_type = 18;
+    repeated SortButton sort_menu = 19;
+    repeated TabMenu sub_tab_list = 20;
+}

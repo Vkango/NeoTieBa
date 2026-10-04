@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message LevelInfo {
-    int32 id = 1;
-    string name = 2;
-    int32 score = 3;
-}

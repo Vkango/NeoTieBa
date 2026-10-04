@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message TWGuideDesc {
-    uint32 order = 1;
-    string title = 2;
-    string link = 3;
-}

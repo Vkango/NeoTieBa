@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message RecommendThread {
+    uint64 tid = 1;
+    string title = 2;
+    uint64 post_num = 3;
+    repeated string term_list = 4;
+}

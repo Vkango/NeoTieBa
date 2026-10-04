@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+message ThemeSkinPropMain {
+    int32 props_id = 1;
+    string title = 2;
+    string example_url = 3;
+    string permission = 4;
+    string props_state_img = 5;
+    string package_url = 6;
+    string package_size = 7;
+    int32 props_version = 8;
+    uint32 free_user_level = 9;
+    string activity_url = 10;
+    int32 is_finished = 11;
+    string package_key = 12;
+    uint32 daily_privilege_status = 13;
+    int64 end_time = 14;
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "SignatureContent.proto";
+
+message SignatureData {
+    int32 signature_id = 1;
+    string fontKeyName = 2;
+    string fontColor = 3;
+    repeated SignatureContent content = 4;
+}

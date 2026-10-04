@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message Myrecord {
+    uint32 apply_id = 1;
+    int64 uid = 2;
+    int32 rank = 3;
+    string portrait = 4;
+    string name_show = 5;
+    int32 forum_level = 6;
+    int32 vote_num = 7;
+    int32 agree_num = 8;
+    int32 thread_num = 9;
+    int32 post_num = 10;
+    string apply_declaration = 11;
+    int64 tid = 12;
+}

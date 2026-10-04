@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message ForumPopupInfo {
+    int32 forum_id = 1;
+    int32 mem_count_static = 2;
+    int32 thread_count_static = 3;
+    repeated string forum_names = 4;
+    string forum_name = 5;
+}

@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message FeedContentCustom {
+    string style = 1;
+    string data = 2;
+}

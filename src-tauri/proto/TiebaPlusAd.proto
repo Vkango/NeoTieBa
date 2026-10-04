@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message TiebaPlusAd {
-    string cost_url = 1;
-    string show_url = 2;
-    string ad_source = 3;
-}

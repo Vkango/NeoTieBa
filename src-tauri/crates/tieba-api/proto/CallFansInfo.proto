@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message CallFansInfo {
+    int32 can_call = 1;
+    int64 thread_id = 2;
+}

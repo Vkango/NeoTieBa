@@ -1,5 +1,0 @@
-syntax = "proto3";
-
-message ThreadPicList {
-    string pic = 1;
-}

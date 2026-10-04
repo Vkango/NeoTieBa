@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "ChatRoomAtInfo.proto";
+import "ChatroomInfoBasic.proto";
+import "ChatroomMEMsgInfo.proto";
+
+message ChatroomList {
+    int64 room_id = 1;
+    ChatroomInfoBasic room_info = 2;
+    ChatroomMEMsgInfo msg_info = 3;
+    string jump_url = 4;
+    ChatRoomAtInfo at_info = 5;
+    uint32 is_subscribe = 6;
+}

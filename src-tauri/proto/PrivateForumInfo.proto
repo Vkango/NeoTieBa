@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message PrivateForumInfo {
-    int32 private_forum_status = 1;
-    int32 private_forum_audit_status = 2;
-}

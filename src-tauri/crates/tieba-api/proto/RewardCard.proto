@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "RewardMaterial.proto";
+
+message RewardCard {
+    string id = 1;
+    string icon = 2;
+    string title = 3;
+    string start_text = 4;
+    string end_text = 5;
+    string end_time = 6;
+    string button_text = 7;
+    string jump_url = 8;
+    string join_num = 9;
+    repeated RewardMaterial reward_material = 11;
+    string total_num = 12;
+    repeated string head_imgs = 13;
+    string join_succ_text = 14;
+    string banner_jump_url = 15;
+}

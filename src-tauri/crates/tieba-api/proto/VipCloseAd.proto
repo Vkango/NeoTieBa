@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message VipCloseAd {
+    int32 is_open = 1;
+    int32 vip_close = 2;
+    repeated int32 forum_close = 3;
+}

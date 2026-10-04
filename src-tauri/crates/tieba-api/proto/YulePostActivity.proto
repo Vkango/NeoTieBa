@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message YulePostActivity {
+    int64 start_time = 1;
+    int64 end_time = 2;
+    string activity_banner = 3;
+    string activity_url = 4;
+    string activity_desc = 5;
+    string activity_button = 6;
+}

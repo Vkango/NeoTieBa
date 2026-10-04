@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message AlaShareInfo {
+    string content = 1;
+    int32 share_user_count = 2;
+    int32 share_count = 3;
+    int64 record_tid = 4;
+}

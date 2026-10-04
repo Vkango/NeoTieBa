@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message JNews {
+    int64 jid = 1;
+    string url = 2;
+    string from = 3;
+}

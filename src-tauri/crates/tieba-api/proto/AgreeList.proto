@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "Post.proto";
+import "ThreadInfo.proto";
+import "User.proto";
+
+message AgreeList {
+    ThreadInfo thread_info = 1;
+    uint32 time = 4;
+    int32 is_del = 5;
+    int32 type = 6;
+    uint64 id = 7;
+    User agreeer = 8;
+    Post post_info = 9;
+    string virtual_image_url = 10;
+    int32 snapshoot_pic_id = 11;
+    string target_scheme = 12;
+}

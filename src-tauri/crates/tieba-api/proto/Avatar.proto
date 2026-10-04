@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message Avatar {
+    string pic = 1;
+    string pos = 2;
+}

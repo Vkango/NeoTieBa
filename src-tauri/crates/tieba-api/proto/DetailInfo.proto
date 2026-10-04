@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message DetailInfo {
+    string text = 1;
+    string url = 2;
+}

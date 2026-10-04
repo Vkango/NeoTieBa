@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "PbPresentList.proto";
+
+message PbPresent {
+    uint32 total = 1;
+    repeated PbPresentList list = 2;
+}

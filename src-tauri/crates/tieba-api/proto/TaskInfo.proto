@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+import "RewardCard.proto";
+import "VoteSchema.proto";
+
+message TaskInfo {
+    int64 task_id = 1;
+    int64 thread_id = 2;
+    string bgimg = 3;
+    string thread_img = 4;
+    int64 start_time = 5;
+    int64 end_time = 6;
+    string thread_img_size = 7;
+    int64 forum_id = 8;
+    string forum_name = 9;
+    string obj_id = 10;
+    VoteSchema vote_schema = 11;
+    RewardCard reward_card = 12;
+    int32 is_god_reply = 13;
+    string floor_god_reply = 14;
+    int32 card_type = 15;
+    string wh_rate = 16;
+    string webview_url = 17;
+    string top_background_img = 18;
+    string theme_color = 19;
+    string webview_data = 20;
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "ChatroomList.proto";
+
+message FrsBottomChatroomBase {
+    repeated ChatroomList room_list = 1;
+    int64 mid_group_id = 2;
+    uint32 display_chatroom_count = 3;
+    uint64 online_nums = 4;
+}

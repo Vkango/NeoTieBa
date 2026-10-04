@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message AddBawuPopInfo {
+    string title = 1;
+    string content = 2;
+    string img_url = 3;
+    string jump_url = 4;
+}

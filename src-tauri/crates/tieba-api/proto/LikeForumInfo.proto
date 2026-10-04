@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message LikeForumInfo {
+    string forum_name = 1;
+    uint64 forum_id = 2;
+}

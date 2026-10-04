@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message ItemPlot {
+    uint32 level = 1;
+    uint32 num = 2;
+}

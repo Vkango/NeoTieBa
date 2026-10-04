@@ -20,7 +20,7 @@
       </div>
       <div class="thread-info">
         <!-- <button @click="dom2img">申必</button> -->
-        <span class="material-symbols-outlined" style="font-size: 16px;">location_on</span>{{ ipAddress }}
+        <span class="material-symbols-outlined" style="font-size: 16px;">location_on</span>{{ ip_address }}
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">share</span>分享
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">thumb_up</span> {{ like }} 赞
 
@@ -60,7 +60,7 @@ import type { ContentElement } from '@/types/common';
 
 // Props和Emits类型定义
 interface Props {
-  ipAddress?: string;
+  ip_address?: string;
   avatar: string;
   embeddedImages?: boolean;
   uid: string | number;
@@ -77,7 +77,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  ipAddress: '未知',
+  ip_address: '未知',
   level: 0
 });
 

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message TabPicDesc {
+    string selected_pic_url = 1;
+    string unselected_pic_url = 2;
+    int32 pic_height = 3;
+    int32 pic_width = 4;
+}

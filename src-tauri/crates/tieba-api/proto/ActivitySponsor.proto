@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message ActivitySponsor {
+    int32 is_sponsor = 1;
+    string sponsor_url = 2;
+}

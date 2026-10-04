@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message ForcusUsers {
+    int64 thread_id = 1;
+    string user_name = 2;
+    int64 user_id = 3;
+    string portrait = 4;
+}

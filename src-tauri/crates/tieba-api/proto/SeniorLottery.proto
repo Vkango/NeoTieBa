@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "AwardInfo.proto";
+import "AwardUser.proto";
+import "LotteryRegular.proto";
+import "LotteryTheme.proto";
+
+message SeniorLottery {
+    LotteryTheme theme = 1;
+    repeated AwardInfo award_info = 2;
+    string myaward = 3;
+    repeated AwardUser luck_users = 4;
+    string act_desc = 5;
+    repeated LotteryRegular act_regular = 6;
+}

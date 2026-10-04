@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message LbsInfo {
+    string lat = 1;
+    string lon = 2;
+    string town = 3;
+}

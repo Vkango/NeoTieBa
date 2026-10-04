@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message Guess {
-    string title = 1;
-    string url = 2;
-}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "FeedContentResource.proto";
+import "PicInfo.proto";
+
+message FeedPicAbstract {
+    repeated PicInfo pics = 1;
+    string pic_scheme = 2;
+    repeated FeedContentResource _abstract = 3;
+}

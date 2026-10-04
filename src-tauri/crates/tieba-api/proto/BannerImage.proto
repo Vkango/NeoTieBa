@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message BannerImage {
+    string img_url = 1;
+    string ahead_url = 2;
+    string title = 3;
+}

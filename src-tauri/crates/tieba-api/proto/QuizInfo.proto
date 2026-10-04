@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "QuizOption.proto";
+
+message QuizInfo {
+    int64 bonus_type = 1;
+    string title = 2;
+    string total_count_icon = 3;
+    string total_count_text = 4;
+    int64 total_count = 5;
+    int64 total_user_count = 6;
+    int64 min_pour_count = 7;
+    int64 quiz_id = 8;
+    int64 browse_user_option = 9;
+    int64 product = 10;
+    repeated QuizOption options = 11;
+    int64 type = 12;
+}

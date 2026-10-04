@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message SpritePBGuide {
+    int64 guide_type = 1;
+    string guide_text = 2;
+    string button_text = 3;
+    string jump_url = 4;
+}

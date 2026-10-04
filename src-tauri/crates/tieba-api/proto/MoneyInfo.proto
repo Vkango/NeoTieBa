@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message MoneyInfo {
+    string icon = 1;
+    string gid = 2;
+    string pid = 3;
+    string title = 4;
+    string money = 5;
+    string discount = 6;
+    int32 _default = 7;
+    string payment_pos_key = 8;
+    string packet_text = 9;
+    string original_cost = 10;
+}

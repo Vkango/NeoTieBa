@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message RecomTagInfo {
+    int32 id = 1;
+    string name = 2;
+    string pic = 3;
+    string first_class = 4;
+}

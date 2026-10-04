@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message ForumFriendWatchingInfo {
+    string forum_avatar = 1;
+    string forum_name = 2;
+    uint32 show_num = 3;
+    string show_type = 4;
+}

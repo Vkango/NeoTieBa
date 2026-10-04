@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message Props {
+    int32 props_id = 1;
+    string props_type = 2;
+    string props_category = 3;
+    int32 left_num = 4;
+    string used_status = 5;
+    int32 num = 6;
+    string end_time = 7;
+    string notice = 8;
+    int32 update_time = 9;
+    string open_status = 10;
+    string expiring_notify = 11;
+    string expired_notify = 12;
+    string title = 13;
+    repeated string _word = 14;
+    repeated string pattern = 15;
+}

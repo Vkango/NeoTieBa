@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message ActionControl {
+    string url = 1;
+    string name = 2;
+    string text_color = 3;
+    string text_color_pressed = 4;
+}

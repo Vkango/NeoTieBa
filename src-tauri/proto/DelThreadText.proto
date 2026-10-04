@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message DelThreadText {
-    int32 text_id = 1;
-    string text_info = 2;
-}

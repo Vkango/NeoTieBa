@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "ThreadInfo.proto";
+
+message HotLiveWithCategory {
+    string entry_name = 1;
+    int32 tab_id = 2;
+    string bitmap_wh_ratio = 3;
+    repeated ThreadInfo live = 4;
+    string label_name = 5;
+    int32 live_tab_type = 6;
+}

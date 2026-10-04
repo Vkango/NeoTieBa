@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-import "ThreadInfo.proto";
-import "User.proto";
-
-message ThreadUser {
-    repeated ThreadInfo thread_list = 1;
-    User user_info = 2;
-}

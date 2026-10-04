@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "ThemeColorInfo.proto";
-
-message QuizCardTopConf {
-    ThemeColorInfo img = 1;
-    string text = 2;
-}

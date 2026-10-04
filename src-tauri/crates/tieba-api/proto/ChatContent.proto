@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ChatContent {
+    string scheme = 1;
+    string btn_text = 2;
+    string bot_uk = 3;
+}

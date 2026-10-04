@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "PbPage/DataReq.proto";
-
-message PbPageReqIdl {
-    DataReq data = 1;
-}

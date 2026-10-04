@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "AlaLiveInfo.proto";
+import "User.proto";
+
+message AlaUserlike {
+    User user = 1;
+    AlaLiveInfo ala_live_info = 2;
+}

@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message CommonLocation {
-    string distance = 1;
-    int64 time = 2;
-}

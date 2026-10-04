@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message ChooseThreadList {
-    int64 tid = 1;
-    string title = 2;
-}

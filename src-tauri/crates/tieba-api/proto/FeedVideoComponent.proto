@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "VideoField.proto";
+
+message FeedVideoComponent {
+    VideoField video_info = 1;
+    string schema = 2;
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "IconUrlInfo.proto";
+import "ThemeColorInfo.proto";
+
+message FestivalTipData {
+    string text = 1;
+    string jump_url = 2;
+    ThemeColorInfo background_color = 3;
+    ThemeColorInfo font_color = 4;
+    IconUrlInfo icon_url = 5;
+}

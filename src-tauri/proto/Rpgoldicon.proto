@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message Rpgoldicon {
-    string key = 1;
-    string value = 2;
-}

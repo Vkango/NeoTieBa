@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message CategoryInfo {
-    int32 category_id = 1;
-    string category_name = 2;
-}

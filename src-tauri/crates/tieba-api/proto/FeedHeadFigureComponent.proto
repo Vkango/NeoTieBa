@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "CustomState.proto";
+import "FeedHeadFigure.proto";
+import "FeedHeadSymbol.proto";
+import "FeedKV.proto";
+
+message FeedHeadFigureComponent {
+    FeedHeadFigure image_data = 1;
+    repeated FeedHeadSymbol main_data = 2;
+    repeated FeedHeadSymbol extra_data = 3;
+    string schema = 4;
+    CustomState custom_state = 5;
+    repeated FeedKV business_info = 6;
+}

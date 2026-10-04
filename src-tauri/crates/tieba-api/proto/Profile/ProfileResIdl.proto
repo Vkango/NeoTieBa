@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "Error.proto";
+import "Profile/DataRes.proto";
+
+message ProfileResIdl {
+    Error error = 1;
+    DataRes data = 2;
+}
