@@ -28,19 +28,45 @@ pub async fn http_request(request: RequestSchema) -> Result<ResponseData, String
     let method = request.method.as_deref().unwrap_or("GET").parse::<reqwest::Method>()
         .map_err(|e| format!("Invalid HTTP method: {e}"))?;
     let mut builder = client.request(method, &request.url);
-    if let Some(headers) = request.headers {
-        for (name, value) in headers {
-            let name = name.parse::<reqwest::header::HeaderName>().map_err(|e| format!("Invalid header name: {e}"))?;
-            builder = builder.header(name, HeaderValue::from_str(&value).map_err(|e| format!("Invalid header value: {e}"))?);
+    // Cookie has a single wire representation: merge the `cookie` field with
+    // any Cookie-named header instead of sending duplicate Cookie headers.
+    let mut cookie = request.cookie.filter(|v| !v.trim().is_empty());
+    let mut headers = request.headers.unwrap_or_default();
+    let cookie_keys: Vec<String> = headers
+        .keys()
+        .filter(|key| key.eq_ignore_ascii_case("cookie"))
+        .cloned()
+        .collect();
+    for key in cookie_keys {
+        if let Some(value) = headers.remove(&key) {
+            if !value.trim().is_empty() {
+                cookie = Some(match cookie.take() {
+                    Some(existing) => format!("{value}; {existing}"),
+                    None => value,
+                });
+            }
         }
     }
-    if let Some(cookie) = request.cookie.filter(|v| !v.trim().is_empty()) { builder = builder.header(COOKIE, cookie); }
+    if let Some(cookie) = cookie { builder = builder.header(COOKIE, cookie); }
+    for (name, value) in headers {
+        let name = name.parse::<reqwest::header::HeaderName>().map_err(|e| format!("Invalid header name: {e}"))?;
+        builder = builder.header(name, HeaderValue::from_str(&value).map_err(|e| format!("Invalid header value: {e}"))?);
+    }
     if let Some(body) = request.body { builder = builder.body(body); }
     let response = builder.send().await.map_err(|e| format!("Request failed: {e}"))?;
     let status = response.status().as_u16();
-    let headers = response.headers().iter().map(|(k,v)| (k.to_string(), v.to_str().unwrap_or("").to_string())).collect();
+    // Join repeated response headers (e.g. multiple Set-Cookie) instead of
+    // letting a HashMap overwrite all but the last one.
+    let mut response_headers: HashMap<String, String> = HashMap::new();
+    for (key, value) in response.headers().iter() {
+        let entry = response_headers.entry(key.to_string()).or_default();
+        if !entry.is_empty() {
+            entry.push_str(", ");
+        }
+        entry.push_str(value.to_str().unwrap_or(""));
+    }
     let text = response.text().await.map_err(|e| format!("Failed to read response body: {e}"))?;
-    Ok(ResponseData { status, text, headers })
+    Ok(ResponseData { status, text, headers: response_headers })
 }
 
 fn build_client(proxy_url: Option<&str>) -> Result<Client, String> {
@@ -158,6 +184,55 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn merges_cookie_sources_and_joins_repeated_response_headers() {
+        timeout(Duration::from_secs(5), async {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let proxy = format!("http://{}", listener.local_addr().unwrap());
+            let server = tokio::spawn(async move {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut header = Vec::new();
+                while !header.ends_with(b"\r\n\r\n") {
+                    header.push(socket.read_u8().await.unwrap());
+                }
+                let header = String::from_utf8(header).unwrap().to_ascii_lowercase();
+                socket
+                    .write_all(
+                        b"HTTP/1.1 200 OK\r\nSet-Cookie: A=1\r\nSet-Cookie: B=2\r\nContent-Length: 2\r\n\r\nOK",
+                    )
+                    .await
+                    .unwrap();
+                header
+            });
+            let response = http_request(RequestSchema {
+                url: "http://neotieba.invalid/".to_string(),
+                method: None,
+                headers: Some(HashMap::from([(
+                    "Cookie".to_string(),
+                    "b=2".to_string(),
+                )])),
+                cookie: Some("a=1".to_string()),
+                body: None,
+                proxy_url: Some(proxy),
+            })
+            .await
+            .unwrap();
+            let request = server.await.unwrap();
+            let cookie_lines: Vec<&str> = request
+                .lines()
+                .filter(|line| line.starts_with("cookie:"))
+                .collect();
+            assert_eq!(cookie_lines, vec!["cookie: b=2; a=1"]);
+            assert_eq!(
+                response.headers.get("set-cookie").map(String::as_str),
+                Some("A=1, B=2")
+            );
+            assert_eq!(response.status, 200);
+        })
+        .await
+        .expect("cookie/header merge test did not complete");
+    }
+
+    #[tokio::test]
     async fn reuses_connection_without_retaining_cookie_headers() {
         timeout(Duration::from_secs(5), async {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -221,6 +296,7 @@ pub async fn fetch_image(url: &str, proxy_url: Option<&str>) -> Result<(String, 
     let client = build_client(proxy_url)?;
     let response = client
         .get(url)
+        .timeout(std::time::Duration::from_secs(60))
         .header(USER_AGENT, "Mozilla/5.0 (NeoTieBa)")
         .header(REFERER, "https://tieba.baidu.com/")
         .send()

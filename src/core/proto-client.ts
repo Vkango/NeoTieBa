@@ -1,5 +1,5 @@
 import type { ProtoEndpointId } from '@/api/proto-endpoints';
-import type { RequestOptions } from '@/core/request';
+import { resolveProxyUrl, type RequestOptions } from '@/core/request';
 import { invoke } from '@tauri-apps/api/core';
 
 export interface ProtoCallOptions extends RequestOptions {
@@ -32,7 +32,7 @@ export async function callProtoEndpoint<TRequest extends object, TResponse>(
     return await invoke<TResponse>('protobuf_call', {
         endpoint: endpointId,
         request: requestData,
-        proxyUrl: options.proxyUrl,
+        proxyUrl: resolveProxyUrl(options.proxyUrl),
         bduss: options.bduss,
         stoken: options.stoken,
     });

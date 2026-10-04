@@ -1,4 +1,4 @@
-import { httpRequest } from '@/core/request';
+import { httpRequest, httpJson, type RequestSchema } from '@/core/request';
 
 export class ApiLogin {
     private BAIDUID = '';
@@ -17,21 +17,27 @@ export class ApiLogin {
         this.isCanceled = value;
     }
 
+    private passportRequest(url: string): RequestSchema {
+        return {
+            url,
+            cookie: this.BAIDUID || undefined,
+            headers: {
+                "Host": "passport.baidu.com",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0",
+                "Accept": "*/*",
+                "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
+                "Connection": "keep-alive",
+                "Referer": "https://tieba.baidu.com/"
+            },
+        };
+    }
+
     async get_token(): Promise<string | null> {
         if (this.isCancelled) return null;
         const timestamp = Math.floor(Date.now() / 1000);
         const url = `https://passport.baidu.com/v2/api/?getapi&token=&tpl=tb&subpro=&apiver=v3&tt=${timestamp}&class=login&gid=9E0F7FB-E8A6-45AE-B0AB-095DDDB59C42&loginversion=v4&logintype=dialogLogin&traceid=&time=${timestamp}&alg=v3`;
-        const headers = {
-            "Host": "passport.baidu.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0",
-            "Accept": "*/*",
-            "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-            "Connection": "keep-alive",
-            "Referer": "https://tieba.baidu.com/",
-            "Cookie": this.BAIDUID
-        };
         try {
-            const response = await httpRequest({ url, headers });
+            const response = await httpRequest(this.passportRequest(url));
             return response.text;
         } catch (error) {
             console.error("get_token error:", error);
@@ -42,17 +48,8 @@ export class ApiLogin {
     async get_pass_id(): Promise<string | null> {
         const timestamp = Math.floor(Date.now() / 1000);
         const url = `https://passport.baidu.com/v2/api/?loginhistory&token=${this.token}&tpl=mn&apiver=v3&tt=${timestamp}&loginverison=v4&gid=9E0F7FB-E8A6-45AE-B0AB-095DDDB59C42&traceid=&callback=bd__cbs__um4fp5`;
-        const headers = {
-            "Host": "passport.baidu.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0",
-            "Accept": "*/*",
-            "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-            "Connection": "keep-alive",
-            "Referer": "https://tieba.baidu.com/",
-            "Cookie": this.BAIDUID
-        };
         try {
-            const response = await httpRequest({ url, headers });
+            const response = await httpRequest(this.passportRequest(url));
             return response.headers?.['set-cookie'] || null;
         } catch (error) {
             console.error("get_pass_id error:", error);
@@ -63,8 +60,7 @@ export class ApiLogin {
     async get_qr_code(): Promise<any> {
         const url = "https://passport.baidu.com/v2/api/getqrcode?lp=pc&qrloginfrom=p";
         try {
-            const response = JSON.parse((await httpRequest({ url })).text);
-            return response;
+            return await httpJson({ url });
         } catch (error) {
             console.error("get_qr_code error:", error);
             return null;
@@ -74,7 +70,7 @@ export class ApiLogin {
     async get_auth_cookie(): Promise<void> {
         if (this.isCancelled) return;
         try {
-            const response = await httpRequest({ url: "https://passport.baidu.com" });
+            const response = await httpRequest(this.passportRequest("https://passport.baidu.com"));
             this.BAIDUID = response.headers?.['set-cookie'] || '';
             const qrResult = await this.get_qr_code();
             if (!qrResult) throw new Error("Failed to get QR code");
@@ -99,17 +95,8 @@ export class ApiLogin {
     async get_scan_status(): Promise<string | null> {
         const timestamp = Math.floor(Date.now() / 1000);
         const url = `https://passport.baidu.com/channel/unicast?channel_id=${this.sign}&tpl=mn&gid=9E0F7FB-E8A6-45AE-B0AB-095DDDB59C42&callback=tangram_guid_1561776159383&apiver=v3&tt=${timestamp}&_=${timestamp}`;
-        const headers = {
-            "Host": "passport.baidu.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0",
-            "Accept": "*/*",
-            "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-            "Connection": "keep-alive",
-            "Referer": "https://tieba.baidu.com/",
-            "Cookie": this.BAIDUID
-        };
         try {
-            const response = await httpRequest({ url, headers });
+            const response = await httpRequest(this.passportRequest(url));
             return response.text;
         } catch (error) {
             console.error("get_scan_status error:", error);
@@ -120,17 +107,8 @@ export class ApiLogin {
     async login_with_bduss(): Promise<string | null> {
         const timestamp = Math.floor(Date.now() / 1000);
         const url = `https://passport.baidu.com/v3/login/main/qrbdusslogin?v=${timestamp}&bduss=${this.bdussd}&qrcode=1&pl=mn&apiver=v3&tt=${timestamp}&traceid=`;
-        const headers = {
-            "Host": "passport.baidu.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0",
-            "Accept": "*/*",
-            "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-            "Connection": "keep-alive",
-            "Referer": "https://tieba.baidu.com/",
-            "Cookie": this.BAIDUID
-        };
         try {
-            const response = await httpRequest({ url, headers });
+            const response = await httpRequest(this.passportRequest(url));
             return response.text;
         } catch (error) {
             console.error("login_with_bduss error:", error);

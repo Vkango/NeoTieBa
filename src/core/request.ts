@@ -31,6 +31,26 @@ export async function httpRequest(schema: RequestSchema): Promise<ResponseSchema
     });
 }
 
+export class RequestError extends Error {
+    constructor(message: string, public readonly status?: number) {
+        super(message);
+        this.name = 'RequestError';
+    }
+}
+
+export async function httpJson<T = any>(schema: RequestSchema): Promise<T> {
+    const response = await httpRequest(schema);
+    const preview = response.text.slice(0, 200);
+    if (response.status < 200 || response.status >= 300) {
+        throw new RequestError(`HTTP ${response.status}: ${preview}`, response.status);
+    }
+    try {
+        return JSON.parse(response.text) as T;
+    } catch {
+        throw new RequestError(`无效的 JSON 响应（HTTP ${response.status}）: ${preview}`, response.status);
+    }
+}
+
 export async function fetchImage(url: string): Promise<string> {
     return invoke<string>('fetch_image_base64', { url, proxyUrl: resolveProxyUrl() });
 }
