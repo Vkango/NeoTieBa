@@ -1,6 +1,7 @@
 use std::{fs, path::{Path, PathBuf}};
 
 fn main() {
+    std::env::set_var("PROTOC", protoc_bin_vendored::protoc_bin_path().unwrap());
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("proto");
     println!("cargo:rerun-if-changed={}", root.display());
     let out = PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("proto");

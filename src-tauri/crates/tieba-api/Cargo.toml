@@ -19,3 +19,4 @@ serde = { version = "1", features = ["derive"] }
 
 [build-dependencies]
 prost-build = "0.13.5"
+protoc-bin-vendored = "3"
