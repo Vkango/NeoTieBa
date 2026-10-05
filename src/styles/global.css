@@ -13,6 +13,7 @@
     -webkit-text-size-adjust: 100%;
     user-select: none;
     --text-color: 0, 0, 0;
+    --primary-color: 59, 130, 246;
     --background-color: 255, 255, 255;
     --wallpaper-overlay: 255, 255, 255;
     --invert: 1;

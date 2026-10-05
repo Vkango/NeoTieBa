@@ -228,6 +228,8 @@ provide('deleteTab', (key: string | number): void => {
   tabStore.removeTab(key);
 });
 
+provide('activeTabKey', computed(() => String(activeTab.value?.key ?? '')));
+
 function generateUniqueId(text: string): number {
   let hash = 0;
   if (text.length === 0) return hash;

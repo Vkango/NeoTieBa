@@ -1,7 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
+import { ref } from 'vue';
+import { seedToAccentPair, type AccentPair } from '@/utils/color-extract';
 
 export type ThemeMode = 'auto' | 'light' | 'dark';
-export type AccentMode = 'forum' | 'custom';
+export type AccentMode = 'forum' | 'wallpaper' | 'custom';
+
 export function readableAccentHex(hex: string): string {
     const value = hex.replace('#', '').trim();
     if (!/^[0-9a-f]{6}$/i.test(value)) return '#3b82f6';
@@ -18,6 +21,49 @@ export function applyAccentColor(hex: string): void {
 
 export const THEME_STORAGE_KEY = 'neotieba-theme';
 
+const DEFAULT_ACCENT_SEED = '#3b82f6';
+const DEFAULT_ACCENT_PAIR: AccentPair = seedToAccentPair(DEFAULT_ACCENT_SEED) ?? { light: DEFAULT_ACCENT_SEED, dark: DEFAULT_ACCENT_SEED };
+
+/** 当前吧页面的主题色覆盖（仅 forum 模式下生效） */
+const forumAccentPair = ref<AccentPair | null>(null);
+/** 全局主题色（壁纸取色 / 自定义种子色） */
+const globalAccentPair = ref<AccentPair | null>(null);
+let accentSource: AccentMode = 'forum';
+/** 当前实际生效的主题色（hex，含 #），未设置任何配色时为空 */
+export const currentAccentHex = ref('');
+
+function activeAccentPair(): AccentPair | null {
+    return accentSource === 'forum' ? forumAccentPair.value : globalAccentPair.value;
+}
+
+export function refreshAccentColor(): void {
+    const pair = activeAccentPair() ?? DEFAULT_ACCENT_PAIR;
+    const dark = document.documentElement.classList.contains('dark');
+    const hex = readableAccentHex((dark ? pair.dark : pair.light).toLowerCase());
+    currentAccentHex.value = hex;
+    applyAccentColor(hex);
+}
+
+export function setAccentSource(mode: AccentMode): void {
+    accentSource = mode;
+    refreshAccentColor();
+}
+
+export function setForumAccentPair(pair: AccentPair | null): void {
+    forumAccentPair.value = pair;
+    refreshAccentColor();
+}
+
+export function setGlobalAccentPair(pair: AccentPair | null): void {
+    globalAccentPair.value = pair;
+    refreshAccentColor();
+}
+
+/** 种子色 → 深浅主题色对（供设置层使用） */
+export function accentPairFromSeed(seed: string): AccentPair | null {
+    return seedToAccentPair(seed);
+}
+
 function isDarkMode(mode: ThemeMode): boolean {
     if (mode === 'dark') return true;
     if (mode === 'light') return false;
@@ -27,6 +73,7 @@ function isDarkMode(mode: ThemeMode): boolean {
 export function applyTheme(mode: ThemeMode): void {
     const dark = isDarkMode(mode);
     document.documentElement.classList.toggle('dark', dark);
+    refreshAccentColor();
     void invoke('set_window_dark_mode', { dark }).catch(() => {
     });
 }

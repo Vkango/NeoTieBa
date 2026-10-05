@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, inject, type Ref } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount, inject, type Ref } from 'vue';
 import { useApiStore } from '@/stores';
 import PinnedThread from '@/components/thread/PinnedThread.vue';
 import Thread from '@/components/thread/Thread.vue';
@@ -8,7 +8,8 @@ import type { BawuGroup } from '@/types/common';
 import { getCurrentUser, type User as ManagedUser } from '@/services/user-manage';
 import domToImage from 'dom-to-image';
 import { useSettingsStore } from '@/stores/settings';
-import { applyAccentColor, readableAccentHex } from '@/styles/theme';
+import { currentAccentHex, setForumAccentPair } from '@/styles/theme';
+import { extractAccentPair } from '@/utils/color-extract';
 import { formatNumber } from '@/utils/helper';
 
 interface Props {
@@ -78,11 +79,6 @@ interface ForumData {
     level_name?: string;
     levelup_score?: number;
     user_level?: number;
-    theme_color?: {
-      dark?: {
-        light_color?: string;
-      };
-    };
   };
   thread_list: ThreadItem[];
   user_list: User[];
@@ -164,11 +160,7 @@ const isGoodOnly = ref<boolean>(false);
 const threadSortType = ref<number>(BAR_SORT_REPLY);
 const threadScopeLabel = computed(() => isGoodOnly.value ? '精华帖子' : '全部帖子');
 const threadSortLabel = computed(() => threadSortType.value === BAR_SORT_CREATE ? '发布时间排序' : '回复时间排序');
-const themeColor = computed(() => {
-  if (settingsStore.accentMode === 'custom') return readableAccentHex(settingsStore.customAccentColor);
-  const color = returnData.value.forum.theme_color?.dark?.light_color?.replace('#', '');
-  return color ? readableAccentHex(color) : 'var(--primary-color)';
-});
+const themeColor = computed(() => currentAccentHex.value || 'var(--primary-color)');
 const forumLevelId = computed(() => Number(returnData.value.forum.level_id ?? returnData.value.forum.user_level ?? 0));
 const isSignedIn = ref<boolean>(false);
 const isFollowed = ref<boolean>(false);
@@ -435,28 +427,9 @@ const loadData = async (): Promise<void> => {
       threadList.value[i].author = userMap.get(threadList.value[i].author_id);
     }
 
-    const rawColor = String(returnData.value.forum.theme_color?.dark?.light_color ?? '').replace('#', '').trim();
-    const isValidHex = /^[0-9a-fA-F]{6}$/.test(rawColor);
-    if (!isValidHex) {
-      if (!returnData.value.forum.theme_color) {
-        returnData.value.forum.theme_color = {};
-      }
-      if (!returnData.value.forum.theme_color.dark) {
-        returnData.value.forum.theme_color.dark = {};
-      }
-      returnData.value.forum.theme_color.dark.light_color = '000000';
-    }
-
-    const hex = isValidHex ? rawColor : '000000';
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    if (settingsStore.accentMode === 'forum') applyAccentColor(hex);
-
-    // 检查亮度
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    if (brightness < 50 && returnData.value.forum.theme_color?.dark) {
-      returnData.value.forum.theme_color.dark.light_color = undefined;
+    // 从吧头像本地提取主题色（仅 forum 模式，异步不阻塞列表渲染）
+    if (settingsStore.accentMode === 'forum') {
+      void loadForumAccent();
     }
   } catch (error) {
     console.error('加载吧数据失败:', error);
@@ -464,6 +437,30 @@ const loadData = async (): Promise<void> => {
     isThreadsLoading.value = false;
   }
 };
+
+let forumAccentGeneration = 0;
+const loadForumAccent = async (): Promise<void> => {
+  const avatar = returnData.value.forum.avatar;
+  if (!avatar) return;
+  const generation = ++forumAccentGeneration;
+  setForumAccentPair(null);
+  const pair = await extractAccentPair(avatar);
+  if (generation !== forumAccentGeneration || !pair) return;
+  setForumAccentPair(pair);
+};
+
+// 吧主题色只在该吧标签页处于激活状态时生效，切走即回退
+const activeTabKey = inject<Ref<string>>('activeTabKey', ref(''));
+watch(() => String(activeTabKey.value) === String(props.key_), (isActive) => {
+  if (isActive) {
+    if (settingsStore.accentMode === 'forum' && returnData.value.forum.avatar) {
+      void loadForumAccent();
+    }
+  } else {
+    forumAccentGeneration++;
+    setForumAccentPair(null);
+  }
+});
 
 const loadForumLevelInfo = async (): Promise<void> => {
   const forumId = returnData.value.forum.id;
@@ -624,6 +621,8 @@ onMounted(async (): Promise<void> => {
 
 onBeforeUnmount((): void => {
   window.removeEventListener('resize', updateNarrowLayout);
+  forumAccentGeneration++;
+  setForumAccentPair(null);
 });
 </script>
 
@@ -812,7 +811,7 @@ onBeforeUnmount((): void => {
                   <div v-if="bawuGroups.length" class="bawu-groups">
                     <div v-for="group in bawuGroups" :key="group.type" class="bawu-group">
                       <h4 class="bawu-group-title">{{ group.type }}<span class="bawu-count">{{ group.members.length
-                          }}</span></h4>
+                      }}</span></h4>
                       <div class="bawu-members">
                         <div v-for="member in group.members" :key="member.id" class="bawu-capsule"
                           @click="onUserNameClicked(member.id)">
@@ -833,8 +832,7 @@ onBeforeUnmount((): void => {
           </div>
 
           <PinnedThread v-for="item in pinnedThreadList" :key="item.id" :title="item.title"
-            @click="handleClick(item.id)"
-            :color="returnData.forum.theme_color?.dark?.light_color ? '#' + returnData.forum.theme_color.dark.light_color : ''" />
+            @click="handleClick(item.id)" :color="themeColor" />
         </div>
 
         <div class="thread-list">

@@ -4,7 +4,8 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { applyTheme as applyThemeMode, onSystemThemeChange, persistTheme, applyAccentColor, type AccentMode } from '@/styles/theme';
+import { applyTheme as applyThemeMode, onSystemThemeChange, persistTheme, setAccentSource, setGlobalAccentPair, accentPairFromSeed, type AccentMode } from '@/styles/theme';
+import { extractAccentPair } from '@/utils/color-extract';
 
 function guessMime(path: string): string {
     const lower = path.toLowerCase();
@@ -65,8 +66,21 @@ export const useSettingsStore = defineStore('settings', () => {
             case 'theme':
                 theme.value = value;
                 break;
-            case 'accent_mode': accentMode.value = value as AccentMode; if (accentMode.value === 'custom') applyAccentColor(customAccentColor.value); break;
-            case 'custom_accent_color': customAccentColor.value = String(value); applyAccentColor(customAccentColor.value); break;
+            case 'accent_mode':
+                accentMode.value = value as AccentMode;
+                if (accentMode.value === 'custom') {
+                    setGlobalAccentPair(accentPairFromSeed(customAccentColor.value));
+                } else if (accentMode.value === 'wallpaper') {
+                    void syncWallpaperAccent();
+                } else {
+                    setGlobalAccentPair(null);
+                }
+                setAccentSource(accentMode.value);
+                break;
+            case 'custom_accent_color':
+                customAccentColor.value = String(value);
+                if (accentMode.value === 'custom') setGlobalAccentPair(accentPairFromSeed(customAccentColor.value));
+                break;
             case 'wallpaper_path':
                 wallpaperPath.value = value;
                 break;
@@ -128,6 +142,22 @@ export const useSettingsStore = defineStore('settings', () => {
 
     function initWallpaper(): void {
         void loadWallpaperUrl();
+    }
+
+    async function syncWallpaperAccent(): Promise<void> {
+        if (accentMode.value !== 'wallpaper') return;
+        try {
+            if (wallpaperEffect.value === 'image' && wallpaperUrl.value) {
+                const pair = await extractAccentPair(wallpaperUrl.value);
+                if (accentMode.value === 'wallpaper') setGlobalAccentPair(pair);
+            } else if (wallpaperEffect.value === 'solid') {
+                setGlobalAccentPair(accentPairFromSeed(wallpaperSolidColor.value));
+            } else {
+                setGlobalAccentPair(null);
+            }
+        } catch {
+            /* 保持当前主题色不变 */
+        }
     }
 
     async function pickWallpaper(): Promise<string> {
@@ -218,6 +248,10 @@ export const useSettingsStore = defineStore('settings', () => {
         }
     }, { flush: 'sync' });
 
+    watch([wallpaperUrl, wallpaperEffect, wallpaperSolidColor], () => {
+        void syncWallpaperAccent();
+    });
+
     function addToBlockList(item: string) {
         if (!blockList.value.includes(item)) {
             blockList.value.push(item);
@@ -263,11 +297,18 @@ export const useSettingsStore = defineStore('settings', () => {
         removeWallpaper,
         initWallpaper,
         loadWallpaperUrl,
+        syncWallpaperAccent,
     };
 }, {
     persist: {
         storage: localStorage,
-        afterHydrate: ({ store }) => { store.mediaBlocks = normalizeMediaBlocks(store.mediaBlocks); store.applyTheme(store.theme); },
+        afterHydrate: ({ store }) => {
+            store.mediaBlocks = normalizeMediaBlocks(store.mediaBlocks);
+            store.applyTheme(store.theme);
+            if (store.accentMode === 'custom') setGlobalAccentPair(accentPairFromSeed(store.customAccentColor));
+            setAccentSource(store.accentMode);
+            void store.syncWallpaperAccent();
+        },
 
         pick: [
             'showUserId', 'onlyAuthor', 'noImage', 'mediaBlocks', 'theme', 'accentMode', 'customAccentColor',
