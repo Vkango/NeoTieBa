@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Rust client primitives for Baidu Tieba protobuf APIs"
 license = "GPL-3.0-only"
-repository = "https://github.com/Vkango/NeoTieBa"
+repository = "https://github.com/Vkango/NeoTieba"
 readme = "README.md"
 keywords = ["tieba", "baidu", "protobuf"]
 

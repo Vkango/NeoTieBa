@@ -14,12 +14,15 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "NeoTieBa",
+        "title": "NeoTieba",
         "width": 1366,
         "height": 800,
         "transparent": true,
         "titleBarStyle": "Overlay",
-        "trafficLightPosition": { "x": 12.5, "y": 22.5 },
+        "trafficLightPosition": {
+          "x": 12.5,
+          "y": 22.5
+        },
         "hiddenTitle": true,
         "decorations": true
       }

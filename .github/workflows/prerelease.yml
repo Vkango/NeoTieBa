@@ -136,7 +136,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: prerelease-${{ github.run_id }}.${{ github.run_attempt }}
-          name: NeoTieBa Pre-release ${{ github.run_number }}.${{ github.run_attempt }}
+          name: NeoTieba Pre-release ${{ github.run_number }}.${{ github.run_attempt }}
           body: |
             <!-- neotieba-build: {"builtAt":"${{ needs.metadata.outputs.built_at }}","commit":"${{ github.sha }}"} -->
             Automated pre-release build from `${{ github.sha }}`.

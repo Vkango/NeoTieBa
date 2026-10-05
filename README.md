@@ -1,20 +1,20 @@
 <p align="center">
-<img height="200" width="200" src="./app-icon.png" alt="NeoTieBa 应用图标"/>
+<img height="200" width="200" src="./app-icon.png" alt="NeoTieba 应用图标"/>
 </p>
 <div align="center">
 
 
-# NeoTieBa
+# NeoTieba
 
 吾等在此，静候君归
 
 <span></span>
 
-![Version](https://img.shields.io/badge/🐢-龟速更新-red.svg) ![STARS](https://img.shields.io/github/stars/Vkango/NeoTieBa?style=round-square&logo=github&color=yellow) ![FORKS](https://img.shields.io/github/forks/Vkango/NeoTieBa?style=round-square) ![Build](https://github.com/Vkango/NeoTieBa/actions/workflows/prerelease.yml/badge.svg?branch=main)
+![Version](https://img.shields.io/badge/🐢-龟速更新-red.svg) ![STARS](https://img.shields.io/github/stars/Vkango/NeoTieba?style=round-square&logo=github&color=yellow) ![FORKS](https://img.shields.io/github/forks/Vkango/NeoTieba?style=round-square) ![Build](https://github.com/Vkango/NeoTieba/actions/workflows/prerelease.yml/badge.svg?branch=main)
 
 基于 `Tauri2.0` + `Vue3` + `TypeScript` 构建的 **非官方** 贴吧客户端, 适用于桌面端应用, 缓速更新中……
 
-NeoTieBa 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支持.
+NeoTieba 以开放的态度开发, 欢迎提交 PR 以及相关探索. 感谢支持.
 
 
 

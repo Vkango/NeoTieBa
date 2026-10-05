@@ -1,7 +1,7 @@
 use reqwest::header::{HeaderValue, COOKIE, REFERER, USER_AGENT};
 use reqwest::{Client, Proxy};
-use serde::Serialize;
 use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use tauri::command;
@@ -25,7 +25,11 @@ pub struct RequestSchema {
 
 pub async fn http_request(request: RequestSchema) -> Result<ResponseData, String> {
     let client = build_client(request.proxy_url.as_deref())?;
-    let method = request.method.as_deref().unwrap_or("GET").parse::<reqwest::Method>()
+    let method = request
+        .method
+        .as_deref()
+        .unwrap_or("GET")
+        .parse::<reqwest::Method>()
         .map_err(|e| format!("Invalid HTTP method: {e}"))?;
     let mut builder = client.request(method, &request.url);
     // Cookie has a single wire representation: merge the `cookie` field with
@@ -47,13 +51,25 @@ pub async fn http_request(request: RequestSchema) -> Result<ResponseData, String
             }
         }
     }
-    if let Some(cookie) = cookie { builder = builder.header(COOKIE, cookie); }
-    for (name, value) in headers {
-        let name = name.parse::<reqwest::header::HeaderName>().map_err(|e| format!("Invalid header name: {e}"))?;
-        builder = builder.header(name, HeaderValue::from_str(&value).map_err(|e| format!("Invalid header value: {e}"))?);
+    if let Some(cookie) = cookie {
+        builder = builder.header(COOKIE, cookie);
     }
-    if let Some(body) = request.body { builder = builder.body(body); }
-    let response = builder.send().await.map_err(|e| format!("Request failed: {e}"))?;
+    for (name, value) in headers {
+        let name = name
+            .parse::<reqwest::header::HeaderName>()
+            .map_err(|e| format!("Invalid header name: {e}"))?;
+        builder = builder.header(
+            name,
+            HeaderValue::from_str(&value).map_err(|e| format!("Invalid header value: {e}"))?,
+        );
+    }
+    if let Some(body) = request.body {
+        builder = builder.body(body);
+    }
+    let response = builder
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
     let status = response.status().as_u16();
     // Join repeated response headers (e.g. multiple Set-Cookie) instead of
     // letting a HashMap overwrite all but the last one.
@@ -65,8 +81,15 @@ pub async fn http_request(request: RequestSchema) -> Result<ResponseData, String
         }
         entry.push_str(value.to_str().unwrap_or(""));
     }
-    let text = response.text().await.map_err(|e| format!("Failed to read response body: {e}"))?;
-    Ok(ResponseData { status, text, headers: response_headers })
+    let text = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read response body: {e}"))?;
+    Ok(ResponseData {
+        status,
+        text,
+        headers: response_headers,
+    })
 }
 
 fn build_client(proxy_url: Option<&str>) -> Result<Client, String> {
@@ -297,7 +320,7 @@ pub async fn fetch_image(url: &str, proxy_url: Option<&str>) -> Result<(String, 
     let response = client
         .get(url)
         .timeout(std::time::Duration::from_secs(60))
-        .header(USER_AGENT, "Mozilla/5.0 (NeoTieBa)")
+        .header(USER_AGENT, "Mozilla/5.0 (NeoTieba)")
         .header(REFERER, "https://tieba.baidu.com/")
         .send()
         .await

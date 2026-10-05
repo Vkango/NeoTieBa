@@ -86,28 +86,28 @@ const pluginSettings: Ref<MenuSettingItem[]> = ref([{
 pluginSettings.value = [];
 
 const currentSettingItems = computed<InfoItem[]>(() => [
- { title: 'NeoTieBa', icon: 'rocket', desc: `${__APP_VERSION__} · 构建 ${new Date(__BUILD_TIME__).toLocaleString('zh-CN')} · ${__BUILD_COMMIT__.slice(0, 8)}`, id: 7 },
- { title: '更新历史', icon: 'history', desc: '查看 GitHub Releases' },
- { title: '联系', icon: 'hub', desc: '查看项目地址 (GitHub)' },
- { title: '作者', icon: 'person', desc: 'Vkango' },
- { title: '警告', icon: 'warning', desc: '仅供学习交流使用，出现的任何后果作者概不负责。' },
- { title: '检查更新', icon: 'update', desc: updateDesc.value },
- ...(latestReleaseUrl.value ? [{ title: '查看发布 / 下载', icon: 'download', desc: '打开最新发布页面，选择适用的安装包' }] : []),
+  { title: 'NeoTieba', icon: 'rocket', desc: `${__APP_VERSION__} · 构建 ${new Date(__BUILD_TIME__).toLocaleString('zh-CN')} · ${__BUILD_COMMIT__.slice(0, 8)}`, id: 7 },
+  { title: '更新历史', icon: 'history', desc: '查看 GitHub Releases' },
+  { title: '联系', icon: 'hub', desc: '查看项目地址 (GitHub)' },
+  { title: '作者', icon: 'person', desc: 'Vkango' },
+  { title: '警告', icon: 'warning', desc: '仅供学习交流使用，出现的任何后果作者概不负责。' },
+  { title: '检查更新', icon: 'update', desc: updateDesc.value },
+  ...(latestReleaseUrl.value ? [{ title: '查看发布 / 下载', icon: 'download', desc: '打开最新发布页面，选择适用的安装包' }] : []),
 ]);
 async function openAboutItem(title: string) {
- actionError.value = '';
- try {
-  if (title === '检查更新') {
-   if (checkingUpdates.value) return;
-   checkingUpdates.value = true; updateDesc.value = '检查中...'; latestReleaseUrl.value = '';
-   try { const result = await checkForUpdates(); updateDesc.value = result.message; latestReleaseUrl.value = result.url; }
-   catch (error) { updateDesc.value = `检查失败：${String(error)}`; }
-   finally { checkingUpdates.value = false; }
-   return;
-  }
-  const urls: Record<string, string> = { '更新历史': 'https://github.com/Vkango/NeoTieBa/releases', '联系': 'https://github.com/Vkango/NeoTieBa', '作者': 'https://github.com/Vkango', '查看发布 / 下载': latestReleaseUrl.value };
-  if (urls[title]) await openUrl(urls[title]);
- } catch (error) { actionError.value = String(error); }
+  actionError.value = '';
+  try {
+    if (title === '检查更新') {
+      if (checkingUpdates.value) return;
+      checkingUpdates.value = true; updateDesc.value = '检查中...'; latestReleaseUrl.value = '';
+      try { const result = await checkForUpdates(); updateDesc.value = result.message; latestReleaseUrl.value = result.url; }
+      catch (error) { updateDesc.value = `检查失败：${String(error)}`; }
+      finally { checkingUpdates.value = false; }
+      return;
+    }
+    const urls: Record<string, string> = { '更新历史': 'https://github.com/Vkango/NeoTieba/releases', '联系': 'https://github.com/Vkango/NeoTieba', '作者': 'https://github.com/Vkango', '查看发布 / 下载': latestReleaseUrl.value };
+    if (urls[title]) await openUrl(urls[title]);
+  } catch (error) { actionError.value = String(error); }
 }
 
 const mediaSettings = computed<SettingItem[]>(() => (['avatars', 'videos', 'images', 'audio'] as MediaKind[]).map(kind => ({ id: `media_${kind}`, icon: 'block', title: `禁用${({ avatars: '头像', videos: '视频', images: '帖子配图', audio: '语音' })[kind]}`, type: 'toggle' as const, desc: '启用无图模式时生效', value: settingsStore.mediaPolicy[kind] })));
@@ -297,7 +297,8 @@ const onScroll = (_target: HTMLElement): void => {
               @click="openUserManage">
 
               <div v-if="currentUser" style="display: flex; gap: 10px; text-align: left; width: 100%;">
-                <RemoteImage kind="avatars" class="avatar" :src="currentUser.avatar || ''" referrerpolicy="no-referrer" />
+                <RemoteImage kind="avatars" class="avatar" :src="currentUser.avatar || ''"
+                  referrerpolicy="no-referrer" />
                 <div style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
                   <div
                     style="font-weight: bold; color: rgb(var(--text-color)); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -347,7 +348,8 @@ const onScroll = (_target: HTMLElement): void => {
 
         <!-- 设置内容区域 -->
         <div style="width: 100%;">
-          <p v-if="actionError || settingsStore.settingsError || proxyError" role="alert">{{ actionError || settingsStore.settingsError || proxyError }}</p>
+          <p v-if="actionError || settingsStore.settingsError || proxyError" role="alert">{{ actionError ||
+            settingsStore.settingsError || proxyError }}</p>
           <!-- 显示设置 -->
           <div v-if="currentPage === 0" class="settings-content">
             <div style="display: flex; text-align: left; gap: 10px; align-items: center; margin-bottom: 20px;">
@@ -355,24 +357,32 @@ const onScroll = (_target: HTMLElement): void => {
             </div>
             <div class="setting-section">
               <template v-for="setting in displaySettings" :key="setting.id">
-              <Item :title="setting.title" :desc="setting.desc"
-                :icon="setting.icon" :type="setting.type" :value="'value' in setting ? setting.value : undefined"
-                @update:value="updateSetting(setting.id, $event)" :options="'options' in setting ? setting.options : []"
-                :placeholder="'placeholder' in setting ? setting.placeholder : undefined"
-                :min="'min' in setting ? setting.min : undefined" :max="'max' in setting ? setting.max : undefined"
-                :step="'step' in setting ? setting.step : undefined" @click="handleSettingAction(setting)" />
-              <div v-if="setting.id === 'no_image' && settingsStore.noImage" class="media-setting-group" aria-label="无图模式禁用选项">
-                <Item v-for="mediaSetting in mediaSettings" :key="mediaSetting.id" :title="mediaSetting.title" :desc="mediaSetting.desc"
-                  :icon="mediaSetting.icon" :type="mediaSetting.type" :value="'value' in mediaSetting ? mediaSetting.value : undefined"
-                  @update:value="updateSetting(mediaSetting.id, $event)" />
-              </div>
-              <div v-if="setting.id === 'wallpaper_effect' && backgroundSettings.length" class="media-setting-group" aria-label="背景模式设置">
-                <Item v-for="backgroundSetting in backgroundSettings" :key="backgroundSetting.id" :title="backgroundSetting.title" :desc="backgroundSetting.desc"
-                  :icon="backgroundSetting.icon" :type="backgroundSetting.type" :value="'value' in backgroundSetting ? backgroundSetting.value : undefined"
-                  @update:value="updateSetting(backgroundSetting.id, $event)"
-                  :min="'min' in backgroundSetting ? backgroundSetting.min : undefined" :max="'max' in backgroundSetting ? backgroundSetting.max : undefined"
-                  :step="'step' in backgroundSetting ? backgroundSetting.step : undefined" @click="handleSettingAction(backgroundSetting)" />
-              </div>
+                <Item :title="setting.title" :desc="setting.desc" :icon="setting.icon" :type="setting.type"
+                  :value="'value' in setting ? setting.value : undefined"
+                  @update:value="updateSetting(setting.id, $event)"
+                  :options="'options' in setting ? setting.options : []"
+                  :placeholder="'placeholder' in setting ? setting.placeholder : undefined"
+                  :min="'min' in setting ? setting.min : undefined" :max="'max' in setting ? setting.max : undefined"
+                  :step="'step' in setting ? setting.step : undefined" @click="handleSettingAction(setting)" />
+                <div v-if="setting.id === 'no_image' && settingsStore.noImage" class="media-setting-group"
+                  aria-label="无图模式禁用选项">
+                  <Item v-for="mediaSetting in mediaSettings" :key="mediaSetting.id" :title="mediaSetting.title"
+                    :desc="mediaSetting.desc" :icon="mediaSetting.icon" :type="mediaSetting.type"
+                    :value="'value' in mediaSetting ? mediaSetting.value : undefined"
+                    @update:value="updateSetting(mediaSetting.id, $event)" />
+                </div>
+                <div v-if="setting.id === 'wallpaper_effect' && backgroundSettings.length" class="media-setting-group"
+                  aria-label="背景模式设置">
+                  <Item v-for="backgroundSetting in backgroundSettings" :key="backgroundSetting.id"
+                    :title="backgroundSetting.title" :desc="backgroundSetting.desc" :icon="backgroundSetting.icon"
+                    :type="backgroundSetting.type"
+                    :value="'value' in backgroundSetting ? backgroundSetting.value : undefined"
+                    @update:value="updateSetting(backgroundSetting.id, $event)"
+                    :min="'min' in backgroundSetting ? backgroundSetting.min : undefined"
+                    :max="'max' in backgroundSetting ? backgroundSetting.max : undefined"
+                    :step="'step' in backgroundSetting ? backgroundSetting.step : undefined"
+                    @click="handleSettingAction(backgroundSetting)" />
+                </div>
               </template>
 
             </div>
@@ -420,12 +430,26 @@ const onScroll = (_target: HTMLElement): void => {
 </template>
 
 <style scoped>
+.media-setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 24px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(var(--text-color), 0.12);
+}
 
-.media-setting-group { display: flex; flex-direction: column; gap: 8px; margin-left: 24px; padding-left: 12px; border-left: 2px solid rgba(var(--text-color), 0.12); }
+.tauri-logo-dark {
+  display: none;
+}
 
-.tauri-logo-dark { display: none; }
-:global(:root.dark .tauri-logo-light) { display: none; }
-:global(:root.dark .tauri-logo-dark) { display: block; }
+:global(:root.dark .tauri-logo-light) {
+  display: none;
+}
+
+:global(:root.dark .tauri-logo-dark) {
+  display: block;
+}
 
 .filter-button.selected {
   background-color: rgba(var(--text-color), 0.05);
