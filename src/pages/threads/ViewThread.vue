@@ -62,8 +62,8 @@ interface ThreadData {
     thread: {
       title: string;
       author?: User;
-      collectStatus?: number;
-      collectMarkPid?: string;
+      collect_status?: number;
+      collect_mark_pid?: string;
     };
     forum: {
       name: string;
@@ -72,9 +72,9 @@ interface ThreadData {
     user_list: User[];
     post_list: Post[];
     page: {
-      hasMore: boolean | number;
-      totalPage?: number;
-      newTotalPage?: number;
+      has_more: boolean | number;
+      total_page?: number;
+      new_total_page?: number;
     };
   };
 }
@@ -304,7 +304,7 @@ const favouritePostId = ref('');
 const favouriteAccountId = ref('');
 const totalPages = computed(() => {
   const page = returnData.value.data?.page;
-  const total = Number(page?.totalPage || page?.newTotalPage || 0);
+  const total = Number(page?.total_page || page?.new_total_page || 0);
   return Number.isInteger(total) && total > 0 ? total : undefined;
 });
 const threadTitle = ref<string>("");
@@ -390,8 +390,8 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
       if (firstFloor) threadAuthorId.value = String(firstFloor.author_id);
     }
     if (!isFavouriteLoading.value) {
-      isFavourite.value = Number(thread.collectStatus) === 2;
-      favouritePostId.value = thread.collectMarkPid || '';
+      isFavourite.value = Number(thread.collect_status) === 2;
+      favouritePostId.value = thread.collect_mark_pid || '';
       favouriteAccountId.value = user?.userId ?? '';
     }
     if (!prepend || replace) returnData.value = response;
@@ -470,8 +470,8 @@ const toggleFavourite = async (cancelOnly = false) => {
     if (!user.bduss) throw new Error('请先登录再收藏');
     if (favouriteAccountId.value !== user.userId) {
       const response = await api.get_post(String(props.tid), 1, 30, 0, false, false, user.bduss, 10, user.stoken);
-      isFavourite.value = Number(response.data?.thread?.collectStatus) === 2;
-      favouritePostId.value = response.data?.thread?.collectMarkPid || '';
+      isFavourite.value = Number(response.data?.thread?.collect_status) === 2;
+      favouritePostId.value = response.data?.thread?.collect_mark_pid || '';
       favouriteAccountId.value = user.userId;
     }
     const post = positionPost;
@@ -527,7 +527,7 @@ const navigateToFloor = async (id: string, edge?: 'start' | 'end') => {
     const index = threadList.value.findIndex(post => String(post.id) === id);
     if (edge === 'start' && index === 0 && firstLoadedPage.value > 1) {
       await loadData(firstLoadedPage.value - 1, false, onlyThreadAuthor.value, true);
-    } else if (edge === 'end' && index === threadList.value.length - 1 && returnData.value.data?.page?.hasMore) {
+    } else if (edge === 'end' && index === threadList.value.length - 1 && returnData.value.data?.page?.has_more) {
       await loadData(currentPage.value + 1);
     }
     await nextTick();
@@ -594,7 +594,7 @@ onBeforeUnmount(() => {
 const onScroll = (target: HTMLElement): void => {
   const { scrollTop, clientHeight, scrollHeight } = target;
   if (scrollTop + clientHeight + 20 >= scrollHeight) {
-    if (isLoading.value || isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value || isJumpOpen.value || !returnData.value.data?.page?.hasMore) return;
+    if (isLoading.value || isThreadsLoading.value || isFavouriteLoading.value || isFloorNavigating.value || isJumpOpen.value || !returnData.value.data?.page?.has_more) return;
     nextPage();
   }
 };
