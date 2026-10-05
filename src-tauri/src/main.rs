@@ -12,8 +12,6 @@ use cookie_manager::{
 };
 use file_io::{copy_file_to_install_dir, read_file, read_file_bytes, write_file};
 use request::{fetch_image, http_request, test_connection, RequestSchema};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use tauri::Manager;
 #[cfg(not(target_os = "macos"))]
 use tauri_plugin_decorum::WebviewWindowExt;
@@ -24,10 +22,95 @@ use base64::{engine::general_purpose, Engine as _};
 use tauri::command;
 
 // src-tauri/src/main.rs
-use tauri::{AppHandle, Emitter, Runtime, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use url::Url;
 #[cfg(target_os = "macos")]
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+
+use std::sync::{Mutex, OnceLock};
+
+// Browser login flow state: remembers the credentials present when the login
+// window opened, so a stale session can be told apart from a fresh login.
+#[derive(Default)]
+struct BrowserLoginState {
+    baseline: Option<(String, String)>,
+    settled: bool,
+}
+
+fn login_state() -> &'static Mutex<BrowserLoginState> {
+    static STATE: OnceLock<Mutex<BrowserLoginState>> = OnceLock::new();
+    STATE.get_or_init(|| Mutex::new(BrowserLoginState::default()))
+}
+
+fn is_tieba_url(url: &Url) -> bool {
+    url.host_str().is_some_and(|host| {
+        host.eq_ignore_ascii_case("tieba.baidu.com")
+            || host.to_ascii_lowercase().ends_with(".tieba.baidu.com")
+    })
+}
+
+async fn complete_login<R: Runtime>(
+    app: AppHandle<R>,
+    login_window: Option<WebviewWindow<R>>,
+    bduss: String,
+    stoken: String,
+) -> Result<(), String> {
+    {
+        let mut state = login_state().lock().unwrap();
+        if state.settled {
+            return Ok(());
+        }
+        state.settled = true;
+    }
+    let main = app
+        .get_webview_window("main")
+        .ok_or_else(|| "无法找到主窗口".to_string())?;
+    main.emit(
+        "browser-login-cookies",
+        serde_json::json!({
+            "bduss": bduss, "stoken": stoken,
+        }),
+    )
+    .map_err(|e| e.to_string())?;
+
+    // The app persists the credentials itself; clean the shared jar so the
+    // next login starts logged-out where the platform allows it.
+    if let Some(login_window) = login_window {
+        if let Err(error) = cookie_manager::clear_baidu_cookies(login_window.clone()).await {
+            eprintln!("[login] post-login cookie cleanup failed: {}", error);
+        }
+        let _ = login_window.close();
+    }
+    Ok(())
+}
+
+// Runs when the login window is destroyed. If the user closed it right after
+// logging in, the fresh credentials are still in the shared cookie jar and
+// are picked up from the main window.
+fn finalize_closed_login<R: Runtime>(app: AppHandle<R>) {
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.emit("browser-login-window-closed", ());
+    }
+    tauri::async_runtime::spawn(async move {
+        let (baseline, settled) = {
+            let state = login_state().lock().unwrap();
+            (state.baseline.clone(), state.settled)
+        };
+        if settled {
+            return;
+        }
+        let Some(main) = app.get_webview_window("main") else {
+            return;
+        };
+        let Ok(Some((bduss, stoken))) = cookie_manager::read_baidu_auth(main).await else {
+            return;
+        };
+        if baseline.as_ref() != Some(&(bduss.clone(), stoken.clone())) {
+            eprintln!("[login] login window closed after a fresh login, recovering credentials");
+            let _ = complete_login(app, None, bduss, stoken).await;
+        }
+    });
+}
 
 #[tauri::command]
 async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
@@ -38,7 +121,6 @@ async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     let url = Url::parse("https://passport.baidu.com/v2/?login&u=https%3A%2F%2Ftieba.baidu.com")
         .map_err(|e| format!("无效的URL: {}", e))?;
 
-    // Clear the native cookie store before any login requests can recreate cookies.
     let window = WebviewWindowBuilder::new(
         &app,
         "login_window",
@@ -50,63 +132,96 @@ async fn open_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     .build()
     .map_err(|e| format!("创建窗口失败: {}", e))?;
 
-    let cancelled = Arc::new(AtomicBool::new(false));
-    let destroyed = cancelled.clone();
+    // Best effort: clear the native cookie store before the login page loads
+    // so it starts logged-out where the platform allows it. Clearing is NOT
+    // reliable on every webview backend.
+    if let Err(error) = cookie_manager::clear_baidu_cookies(window.clone()).await {
+        eprintln!("[login] cookie cleanup failed: {}", error);
+    }
+
+    // Capture whatever credentials survived the cleanup; login detection
+    // below only ever accepts credentials DIFFERENT from these, so a stale
+    // session can never be mistaken for a completed login.
+    let baseline = cookie_manager::read_baidu_auth(window.clone()).await?;
+    {
+        let mut state = login_state().lock().unwrap();
+        state.baseline = baseline;
+        state.settled = false;
+    }
+
+    let close_app = app.clone();
     window.on_window_event(move |event| {
         if matches!(event, tauri::WindowEvent::Destroyed) {
-            destroyed.store(true, Ordering::Relaxed);
+            finalize_closed_login(close_app.clone());
         }
     });
-    if let Err(error) = cookie_manager::clear_baidu_cookies(window.clone()).await {
-        let _ = window.close();
-        return Err(error);
-    }
+
     if let Err(error) = window.navigate(url) {
         let _ = window.close();
         return Err(format!("打开登录页失败: {}", error));
     }
+
+    // Auto-complete once the page has actually landed on tieba.baidu.com
+    // (passport redirects there after a successful login) with credentials
+    // that differ from the ones captured at open time.
+    let poll_app = app.clone();
     tauri::async_runtime::spawn(async move {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(300);
-        let result = async {
-            loop {
-                if cancelled.load(Ordering::Relaxed) {
-                    return Ok(());
-                }
-                if let Some((bduss, stoken)) =
-                    cookie_manager::read_baidu_auth(window.clone()).await?
-                {
-                    if cancelled.load(Ordering::Relaxed) {
-                        return Ok(());
-                    }
-                    let main = app
-                        .get_webview_window("main")
-                        .ok_or_else(|| "无法找到主窗口".to_string())?;
-                    main.emit(
-                        "browser-login-cookies",
-                        serde_json::json!({
-                            "bduss": bduss, "stoken": stoken,
-                        }),
-                    )
-                    .map_err(|e| e.to_string())?;
-                    let _ = window.close();
-                    return Ok::<(), String>(());
-                }
-                if tokio::time::Instant::now() >= deadline {
-                    return Err("登录超时，请重新打开登录窗口".to_string());
-                }
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        loop {
+            if login_state().lock().unwrap().settled {
+                return;
             }
-        }
-        .await;
-        if let Err(error) = result {
-            if !cancelled.load(Ordering::Relaxed) {
-                if let Some(main) = app.get_webview_window("main") {
-                    let _ = main.emit("browser-login-error", error);
+            let Some(login_window) = poll_app.get_webview_window("login_window") else {
+                return;
+            };
+            let auth = match cookie_manager::read_baidu_auth(login_window.clone()).await {
+                Ok(auth) => auth,
+                Err(_) => None,
+            };
+            if let Some((bduss, stoken)) = auth {
+                let unchanged = {
+                    let state = login_state().lock().unwrap();
+                    state.baseline.as_ref() == Some(&(bduss.clone(), stoken.clone()))
+                };
+                let on_tieba = login_window
+                    .url()
+                    .map(|url| is_tieba_url(&url))
+                    .unwrap_or(false);
+                if !unchanged && on_tieba {
+                    eprintln!("[login] fresh credentials detected on tieba.baidu.com");
+                    let _ = complete_login(poll_app, Some(login_window), bduss, stoken).await;
+                    return;
                 }
-                let _ = window.close();
             }
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     });
+    Ok(())
+}
+
+/// Reads BDUSS/STOKEN from the login window after the user explicitly
+/// confirmed they finished logging in (e.g. re-using the same account, where
+/// the credentials did not change and auto-detection stays silent).
+#[tauri::command]
+async fn finish_browser_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    let window = app
+        .get_webview_window("login_window")
+        .ok_or_else(|| "登录窗口未打开".to_string())?;
+
+    let (bduss, stoken) = cookie_manager::read_baidu_auth(window.clone())
+        .await?
+        .ok_or_else(|| "未检测到登录凭据, 请先在登录窗口完成登录".to_string())?;
+
+    complete_login(app, Some(window), bduss, stoken).await
+}
+
+#[tauri::command]
+async fn cancel_browser_login<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("login_window") {
+        // Mark settled first so closing the window cannot recover the
+        // credentials from the jar afterwards.
+        login_state().lock().unwrap().settled = true;
+        let _ = window.close();
+    }
     Ok(())
 }
 
@@ -215,6 +330,8 @@ fn main() {
             write_file,
             fetch_image_base64,
             open_login,
+            finish_browser_login,
+            cancel_browser_login,
             get_cookies,
             get_cookie,
             set_cookie,

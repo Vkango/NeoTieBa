@@ -155,6 +155,20 @@
             </Transition>
         </div>
     </Transition>
+
+    <!-- 浏览器登录完成提示条 (登录窗口打开期间始终可见) -->
+    <Transition name="modal">
+        <div v-if="browserLoginActive" class="login-finish-bar">
+            <span class="material-symbols-outlined">public</span>
+            <span class="login-finish-text">请在登录窗口中登录百度账号</span>
+            <RippleButton class="dialog-btn confirm" @click="finishBrowserLogin">
+                完成登录
+            </RippleButton>
+            <RippleButton class="dialog-btn cancel" @click="cancelBrowserLogin">
+                取消
+            </RippleButton>
+        </div>
+    </Transition>
 </template>
 
 <script setup lang="ts">
@@ -179,6 +193,7 @@ const emit = defineEmits(['close', 'qrLogin', 'userChanged']);
 const user_list = ref<User[]>([]);
 const showCookieDialog = ref(false);
 const deleteConfirmUser = ref<User | null>(null);
+const browserLoginActive = ref(false);
 const currentView = ref('main'); // 'main', 'qr', 'cookie'
 const cookieForm = ref({
     bduss: '',
@@ -353,10 +368,39 @@ const cookieLogin = async () => {
 const browserLogin = async () => {
     try {
         await invoke('open_login');
+        browserLoginActive.value = true;
     } catch (error: any) {
         console.error('打开浏览器登录失败:', error);
         alert('打开登录窗口失败：' + error);
     }
+};
+
+const finishBrowserLogin = async () => {
+    try {
+        await invoke('finish_browser_login');
+        browserLoginActive.value = false;
+    } catch (error: any) {
+        console.error('完成浏览器登录失败:', error);
+        if (sendNotification) {
+            await sendNotification(
+                `登录失败`,
+                '<span class="material-symbols-outlined" style="font-size: 17px;">person</span>用户登录',
+                Tip,
+                null,
+                { Tip: `${error}` },
+                5000
+            );
+        }
+    }
+};
+
+const cancelBrowserLogin = async () => {
+    try {
+        await invoke('cancel_browser_login');
+    } catch (error: any) {
+        console.error('取消浏览器登录失败:', error);
+    }
+    browserLoginActive.value = false;
 };
 
 const handleBrowserLoginSuccess = async (cookieData: any) => {
@@ -443,6 +487,7 @@ const handleBrowserLoginSuccess = async (cookieData: any) => {
 // 事件监听器引用
 let unlistenBrowserLogin: (() => void) | null = null;
 let unlistenBrowserError: (() => void) | null = null;
+let unlistenBrowserClosed: (() => void) | null = null;
 
 // 初始加载和事件监听
 onMounted(async () => {
@@ -467,6 +512,11 @@ onMounted(async () => {
             );
         }
     });
+
+    // 登录窗口被关闭(手动或登录完成)时隐藏"完成登录"提示条
+    unlistenBrowserClosed = await listen('browser-login-window-closed', () => {
+        browserLoginActive.value = false;
+    });
 });
 
 // 清理事件监听
@@ -476,6 +526,9 @@ onBeforeUnmount(() => {
     }
     if (unlistenBrowserError) {
         unlistenBrowserError();
+    }
+    if (unlistenBrowserClosed) {
+        unlistenBrowserClosed();
     }
 });
 </script>
@@ -864,6 +917,37 @@ onBeforeUnmount(() => {
 .dialog-btn.danger {
     background-color: rgb(255, 59, 48);
     color: white;
+}
+
+/* 浏览器登录完成提示条 */
+.login-finish-bar {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 2100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background-color: rgb(var(--background-color));
+    color: rgb(var(--text-color));
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.login-finish-bar .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.login-finish-text {
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.login-finish-bar .dialog-btn {
+    flex: none;
+    padding: 8px 14px;
+    font-size: 14px;
 }
 
 .modal-enter-active,

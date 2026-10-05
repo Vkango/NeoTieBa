@@ -57,24 +57,142 @@ async fn remove_cookies<R: Runtime>(
     cookies: Vec<Cookie<'static>>,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
+        // Keep deleting the remaining cookies even when one delete fails;
+        // clear_baidu_cookies verifies the result instead of trusting this.
+        let mut last_error = None;
         for cookie in cookies {
-            window
-                .delete_cookie(cookie)
-                .map_err(|e| format!("Failed to delete cookie: {}", e))?;
+            if let Err(e) = window.delete_cookie(cookie) {
+                eprintln!("[login] delete_cookie failed: {}", e);
+                last_error = Some(format!("Failed to delete cookie: {}", e));
+            }
         }
-        Ok(())
+        match last_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
+fn cookie_identity(cookie: &Cookie<'_>) -> String {
+    format!(
+        "{} @ domain='{}' path='{}'",
+        cookie.name(),
+        cookie.domain().unwrap_or(""),
+        cookie.path().unwrap_or("/")
+    )
+}
+
+fn log_cookies(label: &str, cookies: &[Cookie<'_>]) {
+    eprintln!("[login] {}: {} cookie(s)", label, cookies.len());
+    for cookie in cookies {
+        // Never log cookie values: BDUSS/STOKEN are credentials.
+        eprintln!(
+            "[login]   {} value_len={}",
+            cookie_identity(cookie),
+            cookie.value().len()
+        );
+    }
+}
+
+/// WebView2 may return the domain with or without a leading dot; cover both
+/// spellings when overwriting, since cookie identity matching is exact.
+fn domain_variants(domain: &str) -> Vec<String> {
+    let flipped = match domain.strip_prefix('.') {
+        Some(stripped) if !stripped.is_empty() => stripped.to_string(),
+        Some(_) => return vec![domain.to_string()],
+        None => format!(".{}", domain),
+    };
+    vec![domain.to_string(), flipped]
+}
+
+/// Build an expired cookie with the same identity so `AddOrUpdateCookie`
+/// evicts the stored one even when `DeleteCookie` fails to match. The `cookie`
+/// crate strips a leading dot from the domain, so identical effective
+/// identities are de-duplicated here.
+fn expired_twin(cookie: &Cookie<'_>) -> Vec<Cookie<'static>> {
+    let mut twins: Vec<Cookie<'static>> = Vec::new();
+    for domain in domain_variants(cookie.domain().unwrap_or_default()) {
+        let twin = Cookie::build((cookie.name().to_string(), cookie.value().to_string()))
+            .domain(domain)
+            .path(cookie.path().unwrap_or("/").to_string())
+            .http_only(cookie.http_only().unwrap_or(false))
+            .secure(cookie.secure().unwrap_or(false))
+            .expires(tauri::webview::cookie::time::OffsetDateTime::UNIX_EPOCH)
+            .build();
+        if !twins
+            .iter()
+            .any(|existing| existing.domain() == twin.domain())
+        {
+            twins.push(twin);
+        }
+    }
+    twins
+}
+
+async fn expire_cookies<R: Runtime>(
+    window: WebviewWindow<R>,
+    cookies: Vec<Cookie<'static>>,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut last_error = None;
+        for cookie in &cookies {
+            for twin in expired_twin(cookie) {
+                if let Err(e) = window.set_cookie(twin) {
+                    eprintln!(
+                        "[login] expire-overwrite of {} failed: {}",
+                        cookie_identity(cookie),
+                        e
+                    );
+                    last_error = Some(format!("Failed to expire cookie: {}", e));
+                }
+            }
+        }
+        match last_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Best-effort removal of every Baidu cookie from the shared webview jar.
+/// Some webviews (e.g. WebView2 through wry) cannot match stored cookies for
+/// deletion, so this can silently fail; callers must never rely on it.
+/// Browser login is confirmed manually, which keeps leftovers harmless.
 pub async fn clear_baidu_cookies<R: Runtime>(window: WebviewWindow<R>) -> Result<(), String> {
     let cookies = read_native_cookies(window.clone()).await?;
-    remove_cookies(
-        window,
-        cookies.into_iter().filter(is_baidu_cookie).collect(),
-    )
-    .await
+    let targets: Vec<Cookie<'static>> = cookies.into_iter().filter(is_baidu_cookie).collect();
+    log_cookies("clearing baidu cookies", &targets);
+
+    if targets.is_empty() {
+        return Ok(());
+    }
+    if let Err(error) = remove_cookies(window.clone(), targets.clone()).await {
+        eprintln!("[login] cookie cleanup: {}", error);
+    }
+    if let Err(error) = expire_cookies(window.clone(), targets).await {
+        eprintln!("[login] cookie cleanup: {}", error);
+    }
+
+    let remaining = read_native_cookies(window.clone()).await?;
+    let leftover: Vec<String> = remaining
+        .iter()
+        .filter(|cookie| is_baidu_cookie(cookie))
+        .map(cookie_identity)
+        .collect();
+    if leftover.is_empty() {
+        eprintln!("[login] cookie cleanup: baidu jar is clean");
+    } else {
+        eprintln!(
+            "[login] cookie cleanup left {} cookie(s) behind: {:?}",
+            leftover.len(),
+            leftover
+        );
+    }
+    Ok(())
 }
 
 fn domain_matches(cookie: &Cookie<'_>, host: &str) -> bool {
@@ -317,5 +435,39 @@ mod tests {
             &auth_cookie("BDUSS", "session", ".baidu.com"),
             "evilbaidu.com"
         ));
+    }
+
+    #[test]
+    fn domain_variants_cover_both_dot_spellings() {
+        assert_eq!(
+            domain_variants("baidu.com"),
+            vec!["baidu.com".to_string(), ".baidu.com".to_string()]
+        );
+        assert_eq!(
+            domain_variants(".baidu.com"),
+            vec![".baidu.com".to_string(), "baidu.com".to_string()]
+        );
+        assert_eq!(domain_variants("."), vec![".".to_string()]);
+    }
+
+    #[test]
+    fn expired_twin_keeps_identity_and_is_expired() {
+        let mut source = auth_cookie("BDUSS", "session", "tieba.baidu.com");
+        source.set_path("/w");
+        let twins = expired_twin(&source);
+        // The cookie crate strips the leading dot, so both domain spellings
+        // collapse into one effective identity.
+        assert_eq!(twins.len(), 1);
+        let twin = &twins[0];
+        assert_eq!(twin.name(), "BDUSS");
+        assert_eq!(twin.value(), "session");
+        assert_eq!(twin.path(), Some("/w"));
+        assert!(twin.http_only().unwrap_or(false));
+        assert!(twin.secure().unwrap_or(false));
+        assert!(
+            twin.expires_datetime().is_some_and(
+                |expiry| expiry < tauri::webview::cookie::time::OffsetDateTime::now_utc()
+            )
+        );
     }
 }
