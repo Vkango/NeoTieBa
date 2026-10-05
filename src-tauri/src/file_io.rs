@@ -23,14 +23,23 @@ pub fn read_file_bytes(path: &str) -> Result<Vec<u8>, String> {
     std::fs::read(Path::new(path)).map_err(|error| format!("Failed to read {}: {}", path, error))
 }
 
+/// Copies a user-picked file into the app's data directory and returns the
+/// absolute destination path.
+///
+/// A directory next to the executable would be unwritable: inside the signed
+/// `.app` bundle on macOS, and in the install directory on Windows.
 #[command]
-pub fn copy_file_to_install_dir(src: &str, file_name: &str) -> Result<String, String> {
-    let exe_path =
-        std::env::current_exe().map_err(|e| format!("Failed to resolve current exe: {}", e))?;
-    let exe_dir = exe_path
-        .parent()
-        .ok_or_else(|| "current exe has no parent dir".to_string())?;
-    let dst = exe_dir.join("data").join(file_name);
+pub fn copy_file_to_install_dir(
+    app: AppHandle,
+    src: &str,
+    file_name: &str,
+) -> Result<String, String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("Failed to resolve app data directory: {}", error))?;
+
+    let dst = app_data_dir.join("data").join(file_name);
     if let Some(parent) = dst.parent() {
         fs::create_dir_all(parent)
             .map_err(|error| format!("Failed to create {}: {}", parent.display(), error))?;
