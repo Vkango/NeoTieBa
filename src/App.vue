@@ -131,7 +131,7 @@ const {
   openSearchInBar,
   openFavourite,
   openHistory,
-  openLocalThread
+  openLibrary
 } = useTabNavigation();
 
 watch(
@@ -595,7 +595,7 @@ onMounted(async (): Promise<void> => {
           <component @deactivated="onDeactivated(tab.key)" :is="tab.component" :key="tab.renderKey || tab.key"
             v-if="tab.if" v-bind="tab.props" @openThread="openThread" @openUser="openUser" @openBar="openBar"
             @openSearchInBar="handleOpenSearchInBar" @openFavourite="openFavourite" @openHistory="openHistory"
-            @openLocalThread="openLocalThread" @userChanged="handleUserChanged" />
+            @openLibrary="openLibrary" @userChanged="handleUserChanged" />
         </keep-alive>
       </div>
     </div>
@@ -903,6 +903,18 @@ input {
   opacity: 1;
 }
 
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, bottom 0.3s ease;
+
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  bottom: 5px;
+}
+
 .fade-notify-enter-active,
 .fade-notify-leave-active,
 .fade-notify-move {
@@ -1034,7 +1046,6 @@ button {
   font-weight: 500;
   font-family: inherit;
   color: #0f0f0f;
-  background-color: #ffffff;
   transition: border-color 0.25s;
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
   cursor: pointer;

@@ -9,6 +9,5 @@ export interface OpenSearchInBarPayload {
 
 export interface OpenThreadOptions {
   local?: boolean;
-  local_dir?: string;
   title?: string;
 }

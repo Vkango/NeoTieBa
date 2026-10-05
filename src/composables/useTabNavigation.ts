@@ -1,10 +1,10 @@
 import Favourite from '@/pages/user/Favourite.vue';
 import History from '@/pages/user/History.vue';
+import LocalThreads from '@/pages/user/LocalThreads.vue';
 import SearchInBar from '@/pages/search/SearchInBar.vue';
 import User from '@/pages/user/User.vue';
 import ViewBarThreads from '@/pages/threads/ViewBarThreads.vue';
 import ViewThread from '@/pages/threads/ViewThread.vue';
-import { read_file } from '@/core/file-io';
 import type { TabItem } from '@/types/common';
 import type {
   OpenBarPayload,
@@ -43,7 +43,7 @@ export function useTabNavigation() {
       props: {
         tid: id,
         key_: key,
-        ...(options.local ? { local: true, local_dir: options.local_dir } : {})
+        ...(options.local ? { local: true } : {})
       },
       origin: loadingOrigin('/assets/loading.svg', options.title || '正在加载')
     });
@@ -112,16 +112,17 @@ export function useTabNavigation() {
     });
   };
 
-  const openLocalThread = async (file: string): Promise<void> => {
-    let tid = 0;
-    try {
-      const ret = JSON.parse(await read_file(`${file}/page1.json`));
-      tid = ret.thread.id;
-    } catch {
-      throw new Error('目录无效');
-    }
-
-    openThread(tid, { local: true, local_dir: file, title: file });
+  const openLibrary = (): void => {
+    const key = generateUniqueId('LocalThreads');
+    tabStore.addTab({
+      key: String(key),
+      icon: '/assets/inbox.svg',
+      title: '归档',
+      component: LocalThreads,
+      props: { key_: key },
+      icon_invert: true,
+      origin: loadingOrigin('/assets/inbox.svg', '归档')
+    });
   };
 
   return {
@@ -131,6 +132,6 @@ export function useTabNavigation() {
     openSearchInBar,
     openFavourite,
     openHistory,
-    openLocalThread
+    openLibrary
   };
 }

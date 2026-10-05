@@ -15,7 +15,8 @@
 
       </div>
       <div class="thread-preview">
-        <div class="thread-content" v-html="content" style="user-select: text;" @click="handleClick">
+        <div class="thread-content" v-html="content" style="user-select: text;" @click="handleClick"
+          @error.capture="archiveFallback">
         </div>
         <div class="thread-info">
           <!-- <button @click="dom2img">申必</button> -->
@@ -52,6 +53,8 @@ import { getTimeInterval, processContentElements } from '@/utils/helper';
 import { useSendToast, useImageViewer } from '@/composables/useGlobalProvides';
 import { useApi } from '@/composables/useApi';
 import { useUserStore } from '@/stores/user';
+import { archiveViewSubPost } from '@/core/archive';
+import { useOfflineMedia, useArchiveFallback } from '@/composables/useOfflineMedia';
 
 // 类型定义
 interface Props {
@@ -67,6 +70,7 @@ interface Props {
   pid: string | number;
   floor: number;
   level?: number;
+  local?: boolean;
 }
 
 interface Emits {
@@ -106,12 +110,14 @@ const sendToast = useSendToast();
 const openImageViewer = useImageViewer();
 const api = useApi();
 const userStore = useUserStore();
+const offlineMedia = useOfflineMedia();
+const archiveFallback = useArchiveFallback();
 
 // State
 const subpost_list: Ref<SubPostItem[]> = ref<SubPostItem[]>([]);
 const currentPage: Ref<number> = ref<number>(1);
 const isThreadsLoading: Ref<boolean> = ref<boolean>(false);
-const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value));
+const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value, offlineMedia));
 const create_time1: Ref<string> = ref<string>('');
 let pageInfo: PageInfo | null = null;
 
@@ -161,10 +167,21 @@ const handleClick = (event: MouseEvent): void => {
 const loadData = async (): Promise<void> => {
   try {
     isThreadsLoading.value = true;
-    const res = await api.viewSubPost(props.tid, props.pid, currentPage.value, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '');
+    let res: Record<string, any>;
+    if (props.local) {
+      try {
+        res = await archiveViewSubPost(props.tid, props.pid, currentPage.value);
+      } catch (error) {
+        // 楼中楼未归档（保存时未开启楼中楼等）：按设置联网补取。
+        if (!settings.archiveOnlineFallback) throw error;
+        console.info(`楼中楼 ${props.pid} 第 ${currentPage.value} 页未归档，联网获取`, error);
+        res = await api.viewSubPost(props.tid, props.pid, currentPage.value, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '');
+      }
+    } else {
+      res = await api.viewSubPost(props.tid, props.pid, currentPage.value, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '');
+    }
     subpost_list.value = [...subpost_list.value, ...res.subpost_list];
     pageInfo = res.page;
-    console.log(pageInfo);
   } catch (error) {
     console.error('加载楼中楼失败:', error);
   } finally {

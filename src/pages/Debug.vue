@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { inject, getCurrentInstance, ref, onMounted, type Component } from 'vue';
 import Tip from '@/components/notification/Tip.vue';
-import { open } from '@tauri-apps/plugin-dialog';
 
 type NotificationHandler = (
   title: string,
@@ -19,9 +18,6 @@ const sendToast = inject<ToastHandler>('sendToast');
 const updateTabMeta = inject<(info: { key: unknown; title: string; icon: string; icon_invert?: boolean }) => void>('updateTabMeta');
 const instance = getCurrentInstance();
 
-const emit = defineEmits<{
-  (e: 'openLocalThread', path: string | null): void;
-}>();
 const props = defineProps<{
   key_: string | number;
 }>();
@@ -44,21 +40,6 @@ const notify = () => {
     60000
   )
 };
-
-const openFile = async () => {
-
-  const file = await open({
-    multiple: false,
-    directory: true,
-    // filters: [
-    //   {
-    //     name: 'tiezi-transfer',
-    //     extensions: ['json'],
-    //   },
-    // ],
-  });
-  emit('openLocalThread', file);
-}
 
 const permissionInfo = ref([{
   name: '获取当前用户Cookies',
@@ -93,7 +74,6 @@ const permissionInfo = ref([{
     <button @click="throw Error('跌我错了');">throw</button>
     <button @click="sendToast?.('更新收藏成功', 3000)">toast</button>
     <button @click="() => { if (isDrawerOpen) isDrawerOpen.state = true }">打开抽屉</button>
-    <button @click="openFile()">打开文件</button>
   </Container>
 
   <Drawer ctitle="插件属性" width="450px" :top_position="false">

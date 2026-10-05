@@ -315,6 +315,62 @@ mod tests {
     }
 }
 
+pub async fn fetch_bytes(
+    url: &str,
+    proxy_url: Option<&str>,
+    referer: &str,
+    max_bytes: Option<u64>,
+) -> Result<(String, Vec<u8>), String> {
+    let client = build_client(proxy_url)?;
+    let response = client
+        .get(url)
+        .timeout(std::time::Duration::from_secs(120))
+        .header(USER_AGENT, "Mozilla/5.0 (NeoTieba)")
+        .header(REFERER, referer)
+        .send()
+        .await
+        .map_err(|error| format!("Failed to fetch {}: {}", url, error))?
+        .error_for_status()
+        .map_err(|error| format!("Request for {} failed: {}", url, error))?;
+
+    if let Some(max_bytes) = max_bytes {
+        if let Some(length) = response.content_length() {
+            if length > max_bytes {
+                return Err(format!(
+                    "{} is {} bytes, exceeding the {} byte limit",
+                    url, length, max_bytes
+                ));
+            }
+        }
+    }
+
+    let mime = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(';').next())
+        .unwrap_or("application/octet-stream")
+        .trim()
+        .to_string();
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("Failed to read body of {}: {}", url, error))?
+        .to_vec();
+    if let Some(max_bytes) = max_bytes {
+        if bytes.len() as u64 > max_bytes {
+            return Err(format!(
+                "{} is {} bytes, exceeding the {} byte limit",
+                url,
+                bytes.len(),
+                max_bytes
+            ));
+        }
+    }
+
+    Ok((mime, bytes))
+}
+
 pub async fn fetch_image(url: &str, proxy_url: Option<&str>) -> Result<(String, Vec<u8>), String> {
     let client = build_client(proxy_url)?;
     let response = client

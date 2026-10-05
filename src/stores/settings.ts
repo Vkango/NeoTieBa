@@ -21,11 +21,45 @@ function guessMime(path: string): string {
 
 export type WallpaperEffect = 'image' | 'acrylic' | 'mica' | 'solid';
 export const WALLPAPER_EFFECT_OPTIONS: Array<{ label: string; value: WallpaperEffect }> = [
-    { label: '图片', value: 'image' },
-    { label: 'Acrylic（亚克力）', value: 'acrylic' },
-    { label: 'Mica', value: 'mica' },
-    { label: '纯色', value: 'solid' },
+  { label: '图片', value: 'image' },
+  { label: 'Acrylic（亚克力）', value: 'acrylic' },
+  { label: 'Mica（云母）', value: 'mica' },
+  { label: '纯色', value: 'solid' },
 ];
+
+/** 预先编辑的帖子保存默认选项（保存对话框每次打开时以此为初值）。 */
+export interface ThreadSaveDefaults {
+    onlyAuthor: boolean;
+    saveImages: boolean;
+    saveVideoAudio: boolean;
+    saveSubposts: boolean;
+    saveAvatars: boolean;
+    pageRange: string;
+}
+
+export function defaultThreadSaveDefaults(): ThreadSaveDefaults {
+    return {
+        onlyAuthor: false,
+        saveImages: true,
+        saveVideoAudio: false,
+        saveSubposts: false,
+        saveAvatars: false,
+        pageRange: '',
+    };
+}
+
+export function normalizeThreadSaveDefaults(value: Partial<ThreadSaveDefaults> | null | undefined): ThreadSaveDefaults {
+    const base = defaultThreadSaveDefaults();
+    if (!value || typeof value !== 'object') return base;
+    return {
+        onlyAuthor: Boolean(value.onlyAuthor),
+        saveImages: value.saveImages === undefined ? base.saveImages : Boolean(value.saveImages),
+        saveVideoAudio: Boolean(value.saveVideoAudio),
+        saveSubposts: Boolean(value.saveSubposts),
+        saveAvatars: Boolean(value.saveAvatars),
+        pageRange: typeof value.pageRange === 'string' ? value.pageRange : '',
+    };
+}
 
 const isMacOS = typeof navigator !== 'undefined'
     && (/Macintosh|Mac OS X/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform));
@@ -52,6 +86,8 @@ export const useSettingsStore = defineStore('settings', () => {
     const proxyUrl = ref('');
     const enableAutoSign = ref(false);
     const blockList = ref<string[]>([]);
+    const threadSaveDefaults = ref<ThreadSaveDefaults>(defaultThreadSaveDefaults());
+    const archiveOnlineFallback = ref(true);
     function updateDisplaySetting(key: string, value: any) {
         switch (key) {
             case 'show_user_id':
@@ -285,6 +321,9 @@ export const useSettingsStore = defineStore('settings', () => {
         // 插件设置
         enableAutoSign,
         blockList,
+        // 帖子保存
+        threadSaveDefaults,
+        archiveOnlineFallback,
         // Actions
         updateDisplaySetting,
         updateNetworkSetting,
@@ -304,6 +343,7 @@ export const useSettingsStore = defineStore('settings', () => {
         storage: localStorage,
         afterHydrate: ({ store }) => {
             store.mediaBlocks = normalizeMediaBlocks(store.mediaBlocks);
+            store.threadSaveDefaults = normalizeThreadSaveDefaults(store.threadSaveDefaults);
             store.applyTheme(store.theme);
             if (store.accentMode === 'custom') setGlobalAccentPair(accentPairFromSeed(store.customAccentColor));
             setAccentSource(store.accentMode);
@@ -314,6 +354,7 @@ export const useSettingsStore = defineStore('settings', () => {
             'showUserId', 'onlyAuthor', 'noImage', 'mediaBlocks', 'theme', 'accentMode', 'customAccentColor',
             'wallpaperPath', 'wallpaperAccent', 'wallpaperBlur', 'wallpaperEffect', 'wallpaperSolidColor',
             'useProxy', 'proxyUrl', 'enableAutoSign', 'blockList',
+            'threadSaveDefaults', 'archiveOnlineFallback',
         ],
     },
 });

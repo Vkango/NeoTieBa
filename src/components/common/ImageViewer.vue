@@ -84,11 +84,14 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { fetchImage } from '@/core/request';
 import { normalizeMediaUrl } from '@/utils/settings-policy';
 import { useSettingsStore } from '@/stores/settings';
+import { isArchiveUrl } from '@/composables/useOfflineMedia';
 const settings = useSettingsStore();
 import RangeSlider from './RangeSlider.vue';
 
 const props = defineProps<{
     imageSrc: string;
+    /** 原始远程 URL：归档副本缺失时按设置回退联网加载。 */
+    fallbackSrc?: string;
     visible?: boolean;
     embedded?: boolean;
     contentWidth?: number;
@@ -147,6 +150,7 @@ const imageBlocked = computed(() => /^https?:|^\/\//.test(props.imageSrc) && set
 const resolvedImageSrc = ref(imageBlocked.value ? '' : props.imageSrc);
 let imageGeneration = 0;
 const proxyAttempted = ref(false);
+const fallbackAttempted = ref(false);
 
 // Context Menu State
 const contextMenu = ref({
@@ -227,18 +231,34 @@ watch(() => [props.imageSrc, imageBlocked.value], () => {
     imageGeneration++;
     resolvedImageSrc.value = imageBlocked.value ? '' : props.imageSrc;
     proxyAttempted.value = false;
+    fallbackAttempted.value = false;
 });
 
 const normalizeImageUrl = normalizeMediaUrl;
 
 async function handleImageError(): Promise<void> {
     if (imageBlocked.value) return;
-    if (proxyAttempted.value || !props.imageSrc || props.imageSrc.startsWith('data:')) {
+    const source = props.imageSrc;
+    if (source.startsWith('data:')) {
+        imageFailed.value = true;
+        return;
+    }
+    // 归档副本缺失（如未保存图片/头像）：按设置换回原始远程 URL 联网加载。
+    if (isArchiveUrl(source)) {
+        if (props.fallbackSrc && settings.archiveOnlineFallback && !fallbackAttempted.value) {
+            fallbackAttempted.value = true;
+            proxyAttempted.value = false;
+            resolvedImageSrc.value = normalizeImageUrl(props.fallbackSrc);
+            return;
+        }
+        imageFailed.value = true;
+        return;
+    }
+    if (proxyAttempted.value || !source) {
         imageFailed.value = true;
         return;
     }
     proxyAttempted.value = true;
-    const source = props.imageSrc;
     const generation = imageGeneration;
     try {
         const result = await fetchImage(normalizeImageUrl(source));
@@ -252,6 +272,7 @@ async function handleImageError(): Promise<void> {
 
 watch(() => props.imageSrc, () => {
     imageFailed.value = false;
+    fallbackAttempted.value = false;
     naturalWidth.value = 0;
     naturalHeight.value = 0;
     handleMouseUp();

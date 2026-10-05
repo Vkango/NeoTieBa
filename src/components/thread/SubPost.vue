@@ -6,7 +6,7 @@
       <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small></div>
     </div>
     <div class="subpost-preview">
-      <div class="thread-content" @click="handleClick" v-html="content">
+      <div class="thread-content" @click="handleClick" @error.capture="archiveFallback" v-html="content">
       </div>
     </div>
   </div>
@@ -19,8 +19,11 @@ const settings = useSettingsStore();
 const blocked = computed(() => ({ avatars: settings.isMediaBlocked('avatars'), images: settings.isMediaBlocked('images'), videos: settings.isMediaBlocked('videos'), audio: settings.isMediaBlocked('audio') }));
 
 import { processContentElements } from '@/utils/helper';
+import { useOfflineMedia, useArchiveFallback } from '@/composables/useOfflineMedia';
 import type { ContentElement } from '@/types/common';
-const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value));
+const offlineMedia = useOfflineMedia();
+const archiveFallback = useArchiveFallback();
+const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value, offlineMedia));
 const emit = defineEmits(['openUser', 'selectImage'])
 const handleClick = (event: any) => {
   if (event.target.classList.contains('thread-reply-img')) {

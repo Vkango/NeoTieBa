@@ -77,7 +77,7 @@ fn decode<T: DeserializeOwned>(
     serde_json::from_value(snake(request)).map_err(|e| format!("invalid protobuf request: {e}"))
 }
 
-fn bounded_decode_json<T: Message + serde::Serialize + Default + Send + 'static>(
+pub(crate) fn bounded_decode_json<T: Message + serde::Serialize + Default + Send + 'static>(
     bytes: Vec<u8>,
 ) -> Result<Value, String> {
     let handle = thread::Builder::new()

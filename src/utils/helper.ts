@@ -29,7 +29,12 @@ export function getTimeInterval(previousTimestamp: number): string {
     }
 }
 
-export function processContentElements(elements: ContentElement[], dismissMedia = false, blocked: MediaBlocks = { avatars: false, images: false, videos: false, audio: false }): string {
+export function processContentElements(
+    elements: ContentElement[],
+    dismissMedia = false,
+    blocked: MediaBlocks = { avatars: false, images: false, videos: false, audio: false },
+    resolveUrl: (url: string) => string = (url: string) => url
+): string {
     let content = '';
     elements.forEach((ele, index) => {
         switch (ele.type) {
@@ -62,8 +67,11 @@ export function processContentElements(elements: ContentElement[], dismissMedia 
                     const imgSrc = ele.bigCdnSrc || ele.big_cdn_src || ele.bigSrc || ele.big_src
                         || ele.originSrc || ele.origin_src;
                     const fullSrc = imgSrc;
+                    // data-remote-src keeps the ORIGINAL remote URL so that the
+                    // archive fallback handler can swap it in when the archived
+                    // copy is missing (e.g. avatars excluded from the archive).
                     content += (index !== 0 ? '<br>' : '') +
-                        `<img class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${imgSrc}" data-full-src="${fullSrc}" referrerpolicy="no-referrer">`;
+                        `<img class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${imgSrc ? resolveUrl(imgSrc) : imgSrc}" data-full-src="${fullSrc}" data-remote-src="${fullSrc}" referrerpolicy="no-referrer">`;
                 }
                 break;
             case 4: // at
@@ -75,11 +83,11 @@ export function processContentElements(elements: ContentElement[], dismissMedia 
                 if (!dismissMedia) {
                     const prefix = (index !== 0 && elements[index - 1]?.type !== 0 && elements[index - 1]?.text !== '\n') ? '<br>' : '';
                     content += prefix +
-                        `<video class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${ele.link}" referrerpolicy="no-referrer" controls></video>`;
+                        `<video class="thread-reply-img" style="max-height: 450px; max-width: 300px; border-radius: 5px;" src="${resolveUrl(ele.link || '')}" data-remote-src="${ele.link || ''}" referrerpolicy="no-referrer" controls></video>`;
                 }
                 break;
             case 10: // voice
-                content += blocked.audio ? '<span class="media-placeholder">[语音已禁用]</span>' : dismissMedia ? '' : `<audio src="${ele.link || ele.voiceUrl || ele.src || ''}" controls preload="none"></audio>`;
+                content += blocked.audio ? '<span class="media-placeholder">[语音已禁用]</span>' : dismissMedia ? '' : `<audio src="${resolveUrl(ele.link || ele.voiceUrl || ele.src || '')}" data-remote-src="${ele.link || ele.voiceUrl || ele.src || ''}" controls preload="none"></audio>`;
                 break;
             case 18: // tag
             case 40: // search_words

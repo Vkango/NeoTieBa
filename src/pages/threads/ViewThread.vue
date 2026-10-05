@@ -1,10 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, onMounted, onBeforeUnmount, onActivated, watch, inject, type Ref } from 'vue';
+import { computed, nextTick, ref, onMounted, onBeforeUnmount, onActivated, watch, inject, provide, type Ref } from 'vue';
 import { useTabStore } from '@/stores/tabs';
 import { useApiStore, useSettingsStore, useUserStore } from '@/stores';
 import Container from '@/components/common/Container.vue';
 import { getCurrentUser } from '@/services/user-manage';
-import { read_file } from '@/core/file-io';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import {
+    archiveMediaUrl,
+    archiveReadMeta,
+    archiveReadPage,
+    threadSaveStart,
+    threadSaveStatus,
+    type ArchiveSummary,
+    type ThreadSaveProgress
+} from '@/core/archive';
+import { resolveProxyUrl } from '@/core/request';
+import type { ThreadSaveDefaults } from '@/stores/settings';
+import ThreadSaveDialog from '@/components/common/ThreadSaveDialog.vue';
 import ImageViewer from '@/components/common/ImageViewer.vue';
 
 import Reply from '@/components/thread/Reply.vue';
@@ -27,7 +39,6 @@ interface Props {
   tid: string | number;
   key_: string | number;
   local?: boolean;
-  local_dir?: string;
   compact?: boolean;
 }
 
@@ -93,6 +104,7 @@ interface SubPostInfo {
   floor: number;
   is_lz: boolean;
   level?: number;
+  local?: boolean;
 }
 
 // Props & Emits
@@ -359,6 +371,65 @@ const handleShare = async () => {
 const apiStore = useApiStore();
 const api = apiStore.getApi();
 
+// ---------------------------------------------------------------------------
+// 帖子归档：保存对话框、进度事件、离线媒体解析
+// ---------------------------------------------------------------------------
+const archiveMeta = ref<ArchiveSummary | null>(null);
+const isSaveOpen = ref(false);
+const isSaving = ref(false);
+let unlistenSave: UnlistenFn | undefined;
+
+// 本地模式下把远程媒体 URL 映射到 tar 归档内的副本（archive:// 协议）。
+const offlineResolver = (url: string): string =>
+  props.local && /^https?:|^\/\//.test(url) ? archiveMediaUrl(String(props.tid), url) : url;
+provide('offlineMedia', props.local ? offlineResolver : undefined);
+
+const refreshArchiveMeta = async (): Promise<void> => {
+  archiveMeta.value = await archiveReadMeta(String(props.tid)).catch(() => null);
+};
+
+const openSaveDialog = (): void => {
+  isSaveOpen.value = true;
+  void refreshArchiveMeta();
+};
+
+const startSave = async (options: ThreadSaveDefaults): Promise<void> => {
+  if (isSaving.value) return;
+  const user = userStore.currentUser;
+  try {
+    await threadSaveStart(
+      String(props.tid),
+      { ...options, pageRange: options.pageRange.trim() || undefined },
+      user?.bduss ?? '',
+      user?.stoken ?? '',
+      resolveProxyUrl()
+    );
+    // 本次使用的选项回写为默认项，设置页与对话框的下一次预填保持一致。
+    settings.threadSaveDefaults = { ...options };
+    isSaveOpen.value = false;
+    isSaving.value = true;
+    sendToast?.('已开始保存', 2500);
+  } catch (error) {
+    sendToast?.(error instanceof Error ? error.message : String(error), 3000);
+  }
+};
+
+const handleSaveEvent = (payload: ThreadSaveProgress): void => {
+  if (String(payload.tid) !== String(props.tid)) return;
+  if (payload.phase === 'done') {
+    sendToast?.(payload.message, 3000);
+    isSaving.value = false;
+    void refreshArchiveMeta();
+    if (props.local) void loadData(currentPage.value, true, onlyThreadAuthor.value);
+  } else if (payload.phase === 'error') {
+    sendToast?.(`保存失败：${payload.message}`, 4000);
+    isSaving.value = false;
+  } else if (payload.phase === 'cancelled') {
+    sendToast?.(payload.message, 2500);
+    isSaving.value = false;
+  }
+};
+
 // Commit page/filter changes only after success so failures preserve the current view.
 const loadData = async (page = currentPage.value, replace = false, onlyAuthor = onlyThreadAuthor.value, prepend = false): Promise<boolean> => {
   if (isThreadsLoading.value && !isLoading.value) return false;
@@ -368,10 +439,16 @@ const loadData = async (page = currentPage.value, replace = false, onlyAuthor = 
     const user = userStore.currentUser;
     if (!props.local) {
       response = await api.get_post(String(props.tid), page, 30, 0, onlyAuthor, false, user?.bduss ?? '', 10, user?.stoken ?? '');
-    } else if (props.local_dir) {
-      response = JSON.parse(await read_file(props.local_dir + '/page' + page + '.json'));
     } else {
-      throw new Error('缺少本地帖子目录');
+      try {
+        response = JSON.parse(await archiveReadPage(String(props.tid), page, archiveMeta.value?.onlyAuthor ?? false));
+      } catch (error) {
+        // 该页未归档（如保存时未包含此页 / 页码范围外）：按设置联网补取。
+        if (!settings.archiveOnlineFallback) throw error;
+        console.info(`第 ${page} 页未归档，联网获取`, error);
+        sendToast?.(`第 ${page} 页未归档，已联网加载`, 2000);
+        response = await api.get_post(String(props.tid), page, 30, 0, onlyAuthor, false, user?.bduss ?? '', 10, user?.stoken ?? '');
+      }
     }
     if (response.error?.errorno) throw new Error(response.error.errmsg || '帖子加载失败');
     const data = response.data;
@@ -578,6 +655,11 @@ onMounted(async () => {
     });
     viewObserver.observe(viewElement.value);
   }
+  unlistenSave = await listen<ThreadSaveProgress>('thread-save-progress', event => handleSaveEvent(event.payload));
+  if (props.local) {
+    await refreshArchiveMeta();
+    isSaving.value = await threadSaveStatus(String(props.tid)).catch(() => false);
+  }
   isLoading.value = true;
   await loadData();
   isLoading.value = false;
@@ -588,6 +670,8 @@ onBeforeUnmount(() => {
   clearTimeout(layoutTimer);
   viewObserver?.disconnect();
   cancelAnimationFrame(readingFrame);
+  unlistenSave?.();
+  unlistenSave = undefined;
 });
 
 // 滚动处理
@@ -626,7 +710,8 @@ const ViewAllReplie = (data: SubPostInfo): void => {
     :class="{ compact: props.compact || galleryOpen, 'gallery-open': galleryOpen, 'context-collapsed': contextCollapsed, resizing }"
     :style="{ '--context-width': contextWidth + 'px' }" @keydown.esc="isJumpOpen = false">
     <section class="gallery-stage" aria-label="帖子图片" :aria-hidden="!galleryOpen" :inert="!galleryOpen || undefined">
-      <ImageViewer v-if="galleryOpen && selectedImage" :image-src="selectedImage.src"
+      <ImageViewer v-if="galleryOpen && selectedImage" :image-src="offlineResolver(selectedImage.src)"
+        :fallback-src="selectedImage.src"
         :content-width="Math.max(1, viewWidth - contextWidth - 10)" visible embedded>
         <template #gallery-controls>
           <button type="button" class="gallery-button" :disabled="selectedImageIndex <= 0" @click="stepGallery(-1)"
@@ -634,7 +719,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
             <span class="material-symbols-outlined">chevron_left</span>
           </button>
           <span class="image-position" aria-live="polite">{{ selectedImageIndex + 1 }} / {{ galleryImages.length
-            }}<small>第 {{ selectedImage.floor }} 楼</small></span>
+          }}<small>第 {{ selectedImage.floor }} 楼</small></span>
           <button type="button" class="gallery-button" :disabled="selectedImageIndex >= galleryImages.length - 1"
             @click="stepGallery(1)" title="下一张" aria-label="下一张">
             <span class="material-symbols-outlined">chevron_right</span>
@@ -692,19 +777,25 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                     @click="handleShare" title="生成长截图">
                     <span class="material-symbols-outlined" style="font-size: 20px;">share</span>
                   </RippleButton>
+                  <RippleButton style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none;"
+                    @click="openSaveDialog" :title="props.local ? '继续保存本帖归档' : '保存帖子'" :disabled="isSaving">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">{{ props.local ?
+                      'content_paste_search' : 'save' }}</span>
+                  </RippleButton>
                 </div>
               </h3>
               <div v-for="item in visibleThreadList" :key="item.id" :ref="element => setPostElement(item.id, element)"
                 class="post-anchor"
                 :class="{ 'gallery-selected': galleryOpen && String(item.id) === selectedImage?.postId }">
-                <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))" @register-images="registerReplyImages($event, String(item.id))"
+                <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))"
+                  @register-images="registerReplyImages($event, String(item.id))"
                   :like="Number(item.agree?.agree_num || 0) - Number(item.agree?.disagree_num || 0)"
                   :user_name="item.author?.name_show || item.author?.name || '匿名用户'" :uid="item.author_id"
                   @openUser="onUserNameClicked($event)" :avatar="item.author?.portrait || 'default'"
                   :thread_content="item.content?.length === 0 || !Array.isArray(item.content) ? [{ type: 0, text: threadTitle }] : item.content"
-                  :create_time="item.time" :reply_num="Number(item.sub_post_number || 0)" :tid="String(tid)" :pid="String(item.id)"
-                  :floor="item.floor" :is_lz="String(item.author_id) === threadAuthorId"
-                  :level="item.author?.level_id || 0" :ip_address="item.author?.ip_address || ''"
+                  :create_time="item.time" :reply_num="Number(item.sub_post_number || 0)" :tid="String(tid)"
+                  :pid="String(item.id)" :floor="item.floor" :is_lz="String(item.author_id) === threadAuthorId"
+                  :level="item.author?.level_id || 0" :ip_address="item.author?.ip_address || ''" :local="props.local"
                   @viewAllReplies="ViewAllReplie">
                 </Reply>
               </div>
@@ -753,7 +844,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
         :favourite="isFavourite" :favourite-here="isFavourite && favouritePostId === activePostId"
         @gallery="toggleGallery" @navigate="navigateToFloor" @jump="openJump" @only-author="toggleOnlyAuthor"
         @bookmark="toggleFavourite()" @remove-bookmark="toggleFavourite(true)" />
-      <Transition name="fade1">
+      <Transition name="fade">
         <div v-if="isJumpOpen" class="jump-overlay" @click.self="!isThreadsLoading && (isJumpOpen = false)">
           <section class="jump-card" role="dialog" aria-modal="true" :aria-labelledby="'jump-title-' + props.key_">
             <form @submit.prevent="jumpToPage">
@@ -773,6 +864,8 @@ const ViewAllReplie = (data: SubPostInfo): void => {
           </section>
         </div>
       </Transition>
+      <ThreadSaveDialog v-model:open="isSaveOpen" :title="props.local ? '继续保存本帖归档' : '保存帖子'"
+        :archive-meta="archiveMeta" :busy="isSaving" @start="startSave" />
     </section>
   </div>
 </template>
@@ -1081,7 +1174,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.4);
+  /* background: rgba(0, 0, 0, 0.4); */
 }
 
 .jump-card {

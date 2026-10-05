@@ -85,11 +85,11 @@ const handleClick = (id: string | number): void => {
       <div class="bgr" v-if="!isLoading">
         <div class="list-title">我的收藏</div>
         <div style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
-          <ThreadLite :uid="item.author.user_id" @click="handleClick(item.thread_id)" v-for="item in threadList" :thread_title="item.title"
-            :media="item.media" :user_name="item.author.name_show || item.author.name"
+          <ThreadLite :uid="item.author.user_id" @click="handleClick(item.thread_id)" v-for="item in threadList"
+            :thread_title="item.title" :media="item.media" :user_name="item.author.name_show || item.author.name"
             :avatar="item.author.user_portrait" :create_time="item.last_time"
             :style="{ opacity: item.is_deleted ? 0.5 : 1 }"
-            :msg="item.is_deleted ? '贴子已被删除' : `${item.forum_name} 吧 | ${item.post_no_msg === '' ? '无更新' : item.post_no_msg}`">
+            :msg="item.is_deleted ? '贴子已被删除' : `${item.forum_name}吧 | ${item.post_no_msg === '' ? '无更新' : item.post_no_msg}`">
           </ThreadLite>
         </div>
       </div>

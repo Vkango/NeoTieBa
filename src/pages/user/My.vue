@@ -17,6 +17,7 @@ const props = defineProps<Props>();
 interface Emits {
   (e: 'openFavourite'): void;
   (e: 'openHistory'): void;
+  (e: 'openLibrary'): void;
   (e: 'openUser', uid: string): void;
   (e: 'openThread', id: string | number): void;
   (e: 'setTabInfo', info: { key: string | number; title: string; icon: string }): void;
@@ -187,6 +188,11 @@ const history = (): void => {
             </div>
           </RippleButton>
           <RippleButton class="my-btn">
+            <div class="button-content" @click="emit('openLibrary')"><span
+                class="material-symbols-outlined">inventory_2</span>归档
+            </div>
+          </RippleButton>
+          <RippleButton class="my-btn">
             <div class="button-content" @click="emit('openUser', uid)"><span
                 class="material-symbols-outlined">gesture</span>主页</div>
           </RippleButton>
@@ -226,17 +232,17 @@ const history = (): void => {
           </div>
           <TransitionGroup name="fade1">
             <div class="reply-list" v-if="atReplyPage">
-              <UserReply :uid="item.replyer.id" @openThread="onThreadClicked(item.thread_id)" v-for="item in returnData2" msg=""
-                :user_name="item.replyer.name || item.replyer.name_show"
+              <UserReply :uid="item.replyer.id" @openThread="onThreadClicked(item.thread_id)"
+                v-for="item in returnData2" msg="" :user_name="item.replyer.name || item.replyer.name_show"
                 :thread_title="replaceEmoticonsWithImages(item.content)" :avatar="item.replyer.portrait"
                 :media="[{ postContent: [{ type: 0, text: replaceEmoticonsWithImages(item.quote_content) }], createTime: String(item.time) }]"
                 :create_time="0" :threadId="item.thread_id">
               </UserReply>
             </div>
             <div class="at-list" v-if="!atReplyPage">
-              <UserReply :uid="item.replyer.id" @openThread="onThreadClicked(item.thread_id)" v-for="item in returnData3" msg=""
-                :user_name="item.replyer.name || item.replyer.name_show" :thread_title="item.content"
-                :avatar="item.replyer.portrait"
+              <UserReply :uid="item.replyer.id" @openThread="onThreadClicked(item.thread_id)"
+                v-for="item in returnData3" msg="" :user_name="item.replyer.name || item.replyer.name_show"
+                :thread_title="item.content" :avatar="item.replyer.portrait"
                 :media="[{ postContent: [{ type: 0, text: item.title }], createTime: item.time }]" :create_time="0"
                 :threadId="item.thread_id">
               </UserReply>

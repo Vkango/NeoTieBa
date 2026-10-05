@@ -4,6 +4,8 @@ mod cookie_manager;
 mod file_io;
 mod protobuf_api;
 mod request;
+mod thread_archive;
+mod thread_save;
 use protobuf_api::protobuf_call;
 
 use cookie_manager::{
@@ -12,6 +14,11 @@ use cookie_manager::{
 };
 use file_io::{copy_file_to_install_dir, read_file, read_file_bytes, write_file};
 use request::{fetch_image, http_request, test_connection, RequestSchema};
+use thread_archive::{
+    archive_delete, archive_list, archive_media_lookup, archive_read_floor, archive_read_meta,
+    archive_read_page,
+};
+use thread_save::{thread_save_cancel, thread_save_start, thread_save_status, SaveJobs};
 use tauri::Manager;
 #[cfg(not(target_os = "macos"))]
 use tauri_plugin_decorum::WebviewWindowExt;
@@ -302,13 +309,84 @@ async fn fetch_image_base64(url: &str, proxy_url: Option<String>) -> Result<Stri
     ))
 }
 
+/// Resolves `(tid, member)` from an archive media request URI.
+///
+/// The webview may deliver the custom scheme in several shapes depending on
+/// platform and Tauri/wry version:
+/// - `archive://{tid}/media/{hash}`                     (tid in the host)
+/// - `archive://localhost/{tid}/media/{hash}`           (tid in the path)
+/// - `http://archive.localhost/{tid}/media/{hash}`      (Windows mapping)
+/// So the tid is probed in both positions and validated numerically.
+fn parse_archive_uri(uri: &str) -> Option<(String, String)> {
+    let url = Url::parse(uri).ok()?;
+    let host = url.host_str().unwrap_or("");
+    let host = host.split(':').next().unwrap_or(host);
+    let segments: Vec<&str> = url
+        .path()
+        .split('/')
+        .filter(|part| !part.is_empty())
+        .collect();
+    if let [dir, file] = segments[..] {
+        if thread_archive::validate_tid(host).is_ok() {
+            return Some((host.to_string(), format!("{dir}/{file}")));
+        }
+    }
+    if let [tid, dir, file] = segments[..] {
+        if thread_archive::validate_tid(tid).is_ok() {
+            return Some((tid.to_string(), format!("{dir}/{file}")));
+        }
+    }
+    None
+}
+
+/// Serves media blobs from saved-thread tar archives to the webview.
+fn handle_archive_media_request(app: &tauri::AppHandle, uri: &str) -> tauri::http::Response<Vec<u8>> {
+    let not_found = |message: String| {
+        tauri::http::Response::builder()
+            .status(404)
+            .header("content-type", "text/plain; charset=utf-8")
+            .body(message.into_bytes())
+            .unwrap_or_else(|_| tauri::http::Response::new(Vec::new()))
+    };
+
+    let Some((tid, member)) = parse_archive_uri(uri) else {
+        eprintln!("[archive] unparseable media request: {uri}");
+        return not_found(format!("invalid archive request: {uri}"));
+    };
+
+    if !member.starts_with("media/")
+        || member.contains("..")
+        || member.contains('\\')
+        || !member[6..].bytes().all(|b| b.is_ascii_hexdigit())
+    {
+        eprintln!("[archive] invalid member {member:?} for tid {tid}");
+        return not_found(format!("invalid archive member: {member}"));
+    }
+
+    match thread_archive::read_member_by_tid(app, &tid, &member) {
+        Ok(Some(bytes)) => {
+            let mime = thread_archive::sniff_mime(&bytes);
+            tauri::http::Response::builder()
+                .status(200)
+                .header("content-type", mime)
+                .header("cache-control", "max-age=31536000, immutable")
+                .header("access-control-allow-origin", "*")
+                .body(bytes)
+                .unwrap_or_else(|_| not_found("response build failed".to_string()))
+        }
+        Ok(None) => not_found(format!("media not found: {tid}/{member}")),
+        Err(error) => not_found(error),
+    }
+}
+
 fn main() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_clipboard_x::init())
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        .manage(SaveJobs::default());
 
     // decorum's macOS traffic-light positioning currently dereferences a
     // null NSView on recent macOS versions during window creation.
@@ -316,6 +394,15 @@ fn main() {
     {
         builder = builder.plugin(tauri_plugin_decorum::init());
     }
+
+    builder = builder.register_asynchronous_uri_scheme_protocol("archive", |_ctx, request, responder| {
+        let uri = request.uri().to_string();
+        let app = _ctx.app_handle().clone();
+        tauri::async_runtime::spawn(async move {
+            let response = handle_archive_media_request(&app, &uri);
+            responder.respond(response);
+        });
+    });
 
     builder
         .invoke_handler(tauri::generate_handler![
@@ -339,7 +426,16 @@ fn main() {
             clear_cookies,
             get_baidu_auth_cookies,
             get_cookies_string,
-            protobuf_call
+            protobuf_call,
+            archive_read_meta,
+            archive_read_page,
+            archive_read_floor,
+            archive_list,
+            archive_delete,
+            archive_media_lookup,
+            thread_save_start,
+            thread_save_cancel,
+            thread_save_status
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
@@ -359,4 +455,55 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod archive_uri_tests {
+    use super::parse_archive_uri;
+
+    const TID: &str = "9047774506";
+    const HASH: &str = "d009f987a8aeafd49b47dbec34eb7f17e55a523c";
+
+    #[test]
+    fn parses_every_delivered_uri_shape() {
+        // tid in the host (custom scheme)
+        assert_eq!(
+            parse_archive_uri(&format!("archive://{TID}/media/{HASH}")),
+            Some((TID.to_string(), format!("media/{HASH}")))
+        );
+        // Windows WebView2 mapping: http://archive.localhost/{tid}/media/{hash}
+        assert_eq!(
+            parse_archive_uri(&format!("http://archive.localhost/{TID}/media/{HASH}")),
+            Some((TID.to_string(), format!("media/{HASH}")))
+        );
+        // Tauri/wry may route custom schemes via a generic host: the tid then
+        // rides in the path (this shape previously produced "invalid tid").
+        assert_eq!(
+            parse_archive_uri(&format!("archive://localhost/{TID}/media/{HASH}")),
+            Some((TID.to_string(), format!("media/{HASH}")))
+        );
+        assert_eq!(
+            parse_archive_uri(&format!("http://localhost/{TID}/media/{HASH}")),
+            Some((TID.to_string(), format!("media/{HASH}")))
+        );
+    }
+
+    #[test]
+    fn rejects_requests_without_a_usable_tid() {
+        assert_eq!(parse_archive_uri("archive://localhost/media/abc"), None);
+        assert_eq!(parse_archive_uri("http://archive.localhost/media/abc"), None);
+        assert_eq!(parse_archive_uri("not a url"), None);
+        assert_eq!(parse_archive_uri("http://archive.localhost/"), None);
+    }
+
+    #[test]
+    fn prefers_tid_in_path_when_host_is_not_numeric() {
+        // A numeric-looking host must not be mistaken for the tid when the
+        // path carries the real one, and vice versa: the numeric probe order
+        // keeps the host form working.
+        assert_eq!(
+            parse_archive_uri(&format!("archive://{TID}/media/{HASH}")),
+            Some((TID.to_string(), format!("media/{HASH}")))
+        );
+    }
 }

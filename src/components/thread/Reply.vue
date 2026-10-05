@@ -54,6 +54,8 @@ import { useApiStore } from '@/stores';
 import { fetchImage } from '@/core/request';
 import { normalizeMediaUrl } from '@/utils/settings-policy';
 import { watch } from 'vue';
+import { archiveViewSubPost } from '@/core/archive';
+import { useOfflineMedia, useArchiveFallback, isArchiveUrl } from '@/composables/useOfflineMedia';
 import SubPost from './SubPost.vue';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
 import type { ContentElement } from '@/types/common';
@@ -74,6 +76,7 @@ interface Props {
   pid: string | number;
   floor: number;
   level?: number;
+  local?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -89,7 +92,9 @@ const emit = defineEmits<{
 }>();
 
 const openImageViewer = inject<((url: string) => void) | undefined>('openImageViewer');
-const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value));
+const offlineMedia = useOfflineMedia();
+const archiveFallback = useArchiveFallback();
+const content = computed(() => processContentElements(props.thread_content as ContentElement[], false, blocked.value, offlineMedia));
 const contentElement = ref<HTMLElement | null>(null);
 const subpost_list = ref<any[]>([])
 
@@ -127,6 +132,12 @@ const handleImageError = async (event: Event): Promise<void> => {
   const image = event.target as HTMLImageElement;
   if (blocked.value.images || !image.isConnected) return;
   if (!image.classList.contains('thread-reply-img') || image.dataset.proxyAttempted) return;
+  // 归档副本缺失时优先联网回退（恢复原始 URL），远程加载再失败才走代理。
+  if (isArchiveUrl(image.getAttribute('src') || '')) {
+    archiveFallback(event);
+    return;
+  }
+  if (offlineMedia(image.getAttribute('data-full-src') || '') !== (image.getAttribute('data-full-src') || '')) return;
   image.dataset.proxyAttempted = 'true';
   const source = image.getAttribute('data-full-src') || image.src;
   const url = normalizeMediaUrl(source);
@@ -145,6 +156,7 @@ async function preloadBigCdnImages(): Promise<void> {
   await Promise.all(Array.from(images).map(async (image) => {
     const source = image.getAttribute('data-full-src');
     if (!source || source.startsWith('data:')) return;
+    if (offlineMedia(source) !== source) return;
     const url = normalizeMediaUrl(source);
     try {
       const result = await fetchImage(url);
@@ -160,14 +172,30 @@ watch(content, () => { void preloadBigCdnImages(); });
 onMounted(async () => {
   await preloadBigCdnImages();
   if (props.reply_num > 0) {
-    const apiStore = useApiStore();
-    const Api = apiStore.getApi();
-    Api.viewSubPost(props.tid, props.pid, 1, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '').then((res: any) => {
+    const loadSubPost = (async () => {
+      if (props.local) {
+        try {
+          return await archiveViewSubPost(props.tid, props.pid, 1);
+        } catch (error) {
+          // 楼中楼未归档（保存时未开启楼中楼等）：按设置联网补取。
+          if (!settings.archiveOnlineFallback) throw error;
+          console.info(`楼中楼 ${props.pid} 未归档，联网获取`, error);
+          const apiStore = useApiStore();
+          return apiStore.getApi().viewSubPost(props.tid, props.pid, 1, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '');
+        }
+      }
+      const apiStore = useApiStore();
+      const Api = apiStore.getApi();
+      return Api.viewSubPost(props.tid, props.pid, 1, userStore.currentUser?.bduss ?? '', userStore.currentUser?.stoken ?? '');
+    })();
+    loadSubPost.then((res: any) => {
       subpost_list.value = res.subpost_list;
       registerSubpostImages(subpost_list.value);
       if (subpost_list.value.length > 5) {
         subpost_list.value = subpost_list.value.slice(0, 5);
       }
+    }).catch((error: unknown) => {
+      console.warn('楼中楼加载失败:', error);
     });
   }
 })

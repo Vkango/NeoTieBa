@@ -60,6 +60,10 @@ const generalSettingItems = ref<MenuSettingItem[]>([{
   icon: '/assets/network_check.svg',
   id: 1,
 }, {
+  title: '保存',
+  icon: '/assets/inbox.svg',
+  id: 8,
+}, {
   title: '关于',
   icon: '/assets/info.svg',
   id: 2,
@@ -171,6 +175,19 @@ const networkSettings: ComputedRef<SettingItem[]> = computed(() => [
   { id: 'devtools', icon: 'bug_report', title: '打开开发者工具', type: 'button', desc: '打开 DevTools 调试窗口', action: 'devtools' },
 ]);
 
+// 帖子保存设置：预先编辑默认保存选项 + 离线查看回退策略
+// 注意：ts_ 后的 id 部分必须与 ThreadSaveDefaults 的属性名（camelCase）一致，
+// updateSetting 直接按 id.slice(3) 写入 store。
+const threadSaveSettings: ComputedRef<SettingItem[]> = computed(() => [
+  { id: 'ts_onlyAuthor', icon: 'person', title: '只保存楼主', type: 'toggle', desc: '保存时只抓取楼主楼层（服务器侧过滤，页码按只看楼主计）', value: settingsStore.threadSaveDefaults.onlyAuthor },
+  { id: 'ts_saveImages', icon: 'image', title: '保存图片', type: 'toggle', desc: '将帖子配图离线存入归档', value: settingsStore.threadSaveDefaults.saveImages },
+  { id: 'ts_saveVideoAudio', icon: 'movie', title: '保存视频和音频', type: 'toggle', desc: '体积较大，单文件超过 100MB 自动跳过', value: settingsStore.threadSaveDefaults.saveVideoAudio },
+  { id: 'ts_saveSubposts', icon: 'forum', title: '保存楼中楼', type: 'toggle', desc: '抓取全部楼中楼回复，其图片遵循以上媒体选项', value: settingsStore.threadSaveDefaults.saveSubposts },
+  { id: 'ts_saveAvatars', icon: 'account_circle', title: '保存用户头像和吧头像', type: 'toggle', desc: '不保存可显著减小归档体积，配合下方联网回退在线时仍可显示', value: settingsStore.threadSaveDefaults.saveAvatars },
+  { id: 'ts_pageRange', icon: 'filter_alt', title: '默认页码范围', type: 'input', desc: '例如 1,2,1-5；留空保存全部', value: settingsStore.threadSaveDefaults.pageRange, placeholder: '留空保存全部' },
+  { id: 'archive_online_fallback', icon: 'cloud_download', title: '未保存的内容联网获取', type: 'toggle', desc: '查看已保存帖子时，未归档的页面、楼中楼或媒体（如未保存头像）将自动尝试联网加载', value: settingsStore.archiveOnlineFallback },
+]);
+
 // Computed
 const currentUser: ComputedRef<User | undefined> = computed(() => {
   return user.value.find((u: User) => u.current);
@@ -211,6 +228,13 @@ const handleUserChanged = async (): Promise<void> => {
 
 const updateSetting = (id: string, value: string | boolean | number): void => {
   if (id.startsWith('media_')) { settingsStore.mediaBlocks = { ...settingsStore.mediaPolicy, [id.slice(5)]: Boolean(value) }; return; }
+  if (id.startsWith('ts_')) {
+    const key = id.slice(3) as keyof typeof settingsStore.threadSaveDefaults;
+    if (key === 'pageRange') { settingsStore.threadSaveDefaults.pageRange = String(value); return; }
+    settingsStore.threadSaveDefaults[key] = Boolean(value);
+    return;
+  }
+  if (id === 'archive_online_fallback') { settingsStore.archiveOnlineFallback = Boolean(value); return; }
   if (['show_user_id', 'only_author', 'no_image', 'theme', 'accent_mode', 'custom_accent_color', 'wallpaper_path', 'wallpaper_accent', 'wallpaper_blur', 'wallpaper_effect', 'wallpaper_solid_color'].includes(id)) {
     settingsStore.updateDisplaySetting(id, value);
     return;
@@ -399,6 +423,19 @@ const onScroll = (_target: HTMLElement): void => {
                 @update:value="updateSetting(setting.id, $event)" :options="'options' in setting ? setting.options : []"
                 :placeholder="'placeholder' in setting ? setting.placeholder : undefined"
                 @click="handleSettingAction(setting)" />
+            </div>
+          </div>
+
+          <!-- 保存设置 -->
+          <div v-if="currentPage === 8" class="settings-content">
+            <div style="display: flex; text-align: left; gap: 10px; align-items: center; margin-bottom: 20px;">
+              <div style="font-size: 25px; font-weight: bold;">保存</div>
+            </div>
+            <div class="setting-section">
+              <Item v-for="setting in threadSaveSettings" :key="setting.id" :title="setting.title" :desc="setting.desc"
+                :icon="setting.icon" :type="setting.type" :value="'value' in setting ? setting.value : undefined"
+                @update:value="updateSetting(setting.id, $event)"
+                :placeholder="'placeholder' in setting ? setting.placeholder : undefined" />
             </div>
           </div>
 
