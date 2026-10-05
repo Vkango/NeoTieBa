@@ -7,6 +7,9 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readText } from '@tauri-apps/plugin-clipboard-manager';
 import pluginManager from '@/plugin/plugin-manager';
 import { clipboardService } from "@/services/clipboard-service";
+// 图标字体随应用打包（原因见 global.css 的 .material-symbols-outlined）。
+// 需在 global.css 之前导入：那里声明的 font-family 依赖此处的 @font-face。
+import '@fontsource/material-symbols-outlined/400.css';
 import "@/styles/global.css";
 import { applyTheme, getStoredTheme } from "@/styles/theme";
 
