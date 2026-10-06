@@ -2,7 +2,7 @@
 import { onMounted, ref, computed, inject, type ComputedRef, type Ref } from 'vue';
 import { getUserList, type User } from '@/services/user-manage';
 import type { SettingItem, MenuSettingItem, InfoItem } from '@/types/settings';
-import { useSettingsStore } from '@/stores/settings';
+import { useSettingsStore, type ThreadSaveDefaults } from '@/stores/settings';
 import { checkForUpdates } from '@/services/update-check';
 import { validateProxy } from '@/utils/settings-policy';
 import type { MediaKind } from '@/utils/settings-policy';
@@ -185,8 +185,12 @@ const threadSaveSettings: ComputedRef<SettingItem[]> = computed(() => [
   { id: 'ts_saveImages', icon: 'image', title: '保存图片', type: 'toggle', desc: '将帖子配图离线存入归档', value: settingsStore.threadSaveDefaults.saveImages },
   { id: 'ts_saveVideoAudio', icon: 'movie', title: '保存视频和音频', type: 'toggle', desc: '体积较大，单文件超过 100MB 自动跳过', value: settingsStore.threadSaveDefaults.saveVideoAudio },
   { id: 'ts_saveSubposts', icon: 'forum', title: '保存楼中楼', type: 'toggle', desc: '抓取全部楼中楼回复，其图片遵循以上媒体选项', value: settingsStore.threadSaveDefaults.saveSubposts },
-  { id: 'ts_saveAvatars', icon: 'account_circle', title: '保存用户头像和吧头像', type: 'toggle', desc: '不保存可显著减小归档体积，配合下方联网回退在线时仍可显示', value: settingsStore.threadSaveDefaults.saveAvatars },
+  { id: 'ts_saveAvatars', icon: 'account_circle', title: '保存用户头像和吧头像', type: 'toggle', desc: '不保存可显著减小归档体积，配合下方联网回退在线时仍可显示。除非要完全离线，否则不建议打开。', value: settingsStore.threadSaveDefaults.saveAvatars },
   { id: 'ts_pageRange', icon: 'filter_alt', title: '默认页码范围', type: 'input', desc: '例如 1,2,1-5；留空保存全部', value: settingsStore.threadSaveDefaults.pageRange, placeholder: '留空保存全部' },
+  { id: 'ts_pageConcurrency', icon: 'view_agenda', title: '页面并发数', type: 'slider', desc: '同时拉取的帖子页数，1 为串行（1-8），推荐设置为 1，过多可能会触发风控。', value: settingsStore.threadSaveDefaults.pageConcurrency, min: 1, max: 8, step: 1 },
+  { id: 'ts_floorConcurrency', icon: 'layers', title: '楼中楼并发数', type: 'slider', desc: '同时抓取的楼中楼数量，1 为串行（1-8）。', value: settingsStore.threadSaveDefaults.floorConcurrency, min: 1, max: 8, step: 1 },
+  { id: 'ts_mediaConcurrency', icon: 'burst_mode', title: '媒体并发数', type: 'slider', desc: '同时下载的图片/视频数量，1 为串行（1-16）。', value: settingsStore.threadSaveDefaults.mediaConcurrency, min: 1, max: 16, step: 1 },
+  { id: 'ts_retryCount', icon: 'refresh', title: '失败重试次数', type: 'slider', desc: '网络请求失败后自动重试的次数（0-5）', value: settingsStore.threadSaveDefaults.retryCount, min: 0, max: 5, step: 1 },
   { id: 'archive_online_fallback', icon: 'cloud_download', title: '未保存的内容联网获取', type: 'toggle', desc: '查看已保存帖子时，未归档的页面、楼中楼或媒体（如未保存头像）将自动尝试联网加载', value: settingsStore.archiveOnlineFallback },
 ]);
 
@@ -231,9 +235,14 @@ const handleUserChanged = async (): Promise<void> => {
 const updateSetting = (id: string, value: string | boolean | number): void => {
   if (id.startsWith('media_')) { settingsStore.mediaBlocks = { ...settingsStore.mediaPolicy, [id.slice(5)]: Boolean(value) }; return; }
   if (id.startsWith('ts_')) {
-    const key = id.slice(3) as keyof typeof settingsStore.threadSaveDefaults;
-    if (key === 'pageRange') { settingsStore.threadSaveDefaults.pageRange = String(value); return; }
-    settingsStore.threadSaveDefaults[key] = Boolean(value);
+    if (id === 'ts_pageRange') { settingsStore.threadSaveDefaults.pageRange = String(value); return; }
+    const numericKeys: ReadonlyArray<keyof ThreadSaveDefaults> = ['pageConcurrency', 'floorConcurrency', 'mediaConcurrency', 'retryCount'];
+    const key = id.slice(3) as keyof ThreadSaveDefaults;
+    if (numericKeys.includes(key)) {
+      settingsStore.threadSaveDefaults[key] = Number(value) as never;
+      return;
+    }
+    settingsStore.threadSaveDefaults[key as Exclude<keyof ThreadSaveDefaults, 'pageRange' | 'pageConcurrency' | 'floorConcurrency' | 'mediaConcurrency' | 'retryCount'>] = Boolean(value);
     return;
   }
   if (id === 'archive_online_fallback') { settingsStore.archiveOnlineFallback = Boolean(value); return; }
@@ -447,7 +456,9 @@ const onScroll = (_target: HTMLElement): void => {
               <Item v-for="setting in threadSaveSettings" :key="setting.id" :title="setting.title" :desc="setting.desc"
                 :icon="setting.icon" :type="setting.type" :value="'value' in setting ? setting.value : undefined"
                 @update:value="updateSetting(setting.id, $event)"
-                :placeholder="'placeholder' in setting ? setting.placeholder : undefined" />
+                :placeholder="'placeholder' in setting ? setting.placeholder : undefined"
+                :min="'min' in setting ? setting.min : undefined" :max="'max' in setting ? setting.max : undefined"
+                :step="'step' in setting ? setting.step : undefined" />
             </div>
           </div>
 

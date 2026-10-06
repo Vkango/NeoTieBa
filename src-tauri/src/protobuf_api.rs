@@ -1,7 +1,6 @@
 use prost::Message;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use std::thread;
 use tieba_api::proto::{bar_page, floor, profile, thread_page, user_post};
 use tieba_api::TiebaClient;
 
@@ -77,20 +76,29 @@ fn decode<T: DeserializeOwned>(
     serde_json::from_value(snake(request)).map_err(|e| format!("invalid protobuf request: {e}"))
 }
 
-pub(crate) fn bounded_decode_json<T: Message + serde::Serialize + Default + Send + 'static>(
+/// Decodes a protobuf response on a dedicated thread with a large stack:
+/// `serde_json::to_value` recurses over deeply nested protobuf structs and
+/// overflows the small default tokio blocking-pool stacks in debug builds.
+/// The worker reports its result through a oneshot channel, so the async
+/// caller never blocks a tokio runtime worker.
+pub(crate) async fn bounded_decode_json<T: Message + serde::Serialize + Default + Send + 'static>(
     bytes: Vec<u8>,
 ) -> Result<Value, String> {
-    let handle = thread::Builder::new()
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    std::thread::Builder::new()
+        .name("protobuf-decode".to_string())
         .stack_size(64 * 1024 * 1024)
         .spawn(move || {
             let value = T::decode(bytes.as_slice())
-                .map_err(|e| format!("failed to decode protobuf response: {e}"))?;
-            serde_json::to_value(value)
-                .map_err(|e| format!("failed to serialize protobuf response: {e}"))
+                .map_err(|e| format!("failed to decode protobuf response: {e}"))
+                .and_then(|value| {
+                    serde_json::to_value(value)
+                        .map_err(|e| format!("failed to serialize protobuf response: {e}"))
+                });
+            let _ = tx.send(value);
         })
         .map_err(|e| format!("failed to start serializer: {e}"))?;
-    handle
-        .join()
+    rx.await
         .map_err(|_| "protobuf response exceeded serialization depth".to_string())?
 }
 
@@ -122,7 +130,7 @@ pub async fn protobuf_call(
             if bytes.len() > 32 * 1024 * 1024 {
                 return Err("protobuf response is larger than 32 MiB".into());
             }
-            return bounded_decode_json::<$res>(bytes);
+            return bounded_decode_json::<$res>(bytes).await;
         }};
     }
     match endpoint.as_str() {

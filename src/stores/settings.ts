@@ -35,6 +35,14 @@ export interface ThreadSaveDefaults {
     saveSubposts: boolean;
     saveAvatars: boolean;
     pageRange: string;
+    /** 页面拉取并发数（1 = 串行）。 */
+    pageConcurrency: number;
+    /** 楼中楼拉取并发数（1 = 串行）。 */
+    floorConcurrency: number;
+    /** 媒体下载并发数（1 = 串行）。 */
+    mediaConcurrency: number;
+    /** 网络请求失败重试次数。 */
+    retryCount: number;
 }
 
 export function defaultThreadSaveDefaults(): ThreadSaveDefaults {
@@ -45,8 +53,18 @@ export function defaultThreadSaveDefaults(): ThreadSaveDefaults {
         saveSubposts: false,
         saveAvatars: false,
         pageRange: '',
+        pageConcurrency: 2,
+        floorConcurrency: 3,
+        mediaConcurrency: 4,
+        retryCount: 2,
     };
 }
+
+const clampInt = (value: unknown, fallback: number, min: number, max: number): number => {
+    const parsed = Math.round(Number(value));
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+};
 
 export function normalizeThreadSaveDefaults(value: Partial<ThreadSaveDefaults> | null | undefined): ThreadSaveDefaults {
     const base = defaultThreadSaveDefaults();
@@ -58,6 +76,10 @@ export function normalizeThreadSaveDefaults(value: Partial<ThreadSaveDefaults> |
         saveSubposts: Boolean(value.saveSubposts),
         saveAvatars: Boolean(value.saveAvatars),
         pageRange: typeof value.pageRange === 'string' ? value.pageRange : '',
+        pageConcurrency: clampInt(value.pageConcurrency, base.pageConcurrency, 1, 8),
+        floorConcurrency: clampInt(value.floorConcurrency, base.floorConcurrency, 1, 8),
+        mediaConcurrency: clampInt(value.mediaConcurrency, base.mediaConcurrency, 1, 16),
+        retryCount: clampInt(value.retryCount, base.retryCount, 0, 5),
     };
 }
 

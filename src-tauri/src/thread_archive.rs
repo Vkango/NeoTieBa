@@ -1,4 +1,4 @@
-﻿//! Per-thread tar archives for offline thread storage.
+//! Per-thread tar archives for offline thread storage.
 //!
 //! Layout (`app_data_dir/saved_threads/{tid}.tar`), GNU tar format, append-only:
 //! - `meta.json`             – ThreadMeta, rewritten as a duplicate entry (last entry wins)
@@ -153,6 +153,22 @@ fn path_lock(path: &Path) -> Arc<Mutex<()>> {
         .clone()
 }
 
+/// Separate lock table for meta.json read-modify-write sequences. Must always
+/// be acquired BEFORE `path_lock` (lock order: meta_lock -> path_lock) so that
+/// concurrent writers never interleave a read and a rewrite of meta.json.
+fn meta_locks() -> &'static Mutex<HashMap<PathBuf, Arc<Mutex<()>>>> {
+    static LOCKS: OnceLock<Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>> = OnceLock::new();
+    LOCKS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn meta_lock(path: &Path) -> Arc<Mutex<()>> {
+    let mut locks = meta_locks().lock().unwrap_or_else(|p| p.into_inner());
+    locks
+        .entry(path.to_path_buf())
+        .or_insert_with(|| Arc::new(Mutex::new(())))
+        .clone()
+}
+
 struct CacheEntry {
     len: u64,
     index: Arc<Index>,
@@ -267,7 +283,13 @@ fn index_for_file(file: &File, path: &Path, len: u64) -> Result<Arc<Index>, Stri
     index_cache()
         .lock()
         .unwrap_or_else(|p| p.into_inner())
-        .insert(path.to_path_buf(), CacheEntry { len, index: index.clone() });
+        .insert(
+            path.to_path_buf(),
+            CacheEntry {
+                len,
+                index: index.clone(),
+            },
+        );
     Ok(index)
 }
 
@@ -360,25 +382,6 @@ fn read_member_at(path: &Path, name: &str) -> Result<Option<Vec<u8>>, String> {
     }
 }
 
-fn has_member_at(path: &Path, name: &str) -> Result<bool, String> {
-    let lock = path_lock(path);
-    let _guard = lock.lock().unwrap_or_else(|p| p.into_inner());
-    let file = match File::open(path) {
-        Ok(file) => file,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
-        Err(error) => return Err(format!("Failed to open {}: {error}", path.display())),
-    };
-    let len = file
-        .metadata()
-        .map_err(|e| format!("Failed to stat {}: {e}", path.display()))?
-        .len();
-    if len == 0 {
-        return Ok(false);
-    }
-    let index = index_for_file(&file, path, len)?;
-    Ok(index.contains_key(name))
-}
-
 fn member_names_at(path: &Path, prefix: &str) -> Result<Vec<String>, String> {
     let lock = path_lock(path);
     let _guard = lock.lock().unwrap_or_else(|p| p.into_inner());
@@ -423,10 +426,14 @@ pub fn write_meta_at(path: &Path, meta: &ThreadMeta) -> Result<(), String> {
 }
 
 /// Reads the current meta, applies `mutate`, and appends the updated entry.
+/// The whole read-modify-write runs under the per-path meta lock so parallel
+/// callers (concurrent page/floor/media workers) never lose updates.
 pub fn update_meta_at(
     path: &Path,
     mutate: impl FnOnce(&mut ThreadMeta),
 ) -> Result<ThreadMeta, String> {
+    let lock = meta_lock(path);
+    let _guard = lock.lock().unwrap_or_else(|p| p.into_inner());
     let mut meta = read_meta_at(path)?.unwrap_or_default();
     mutate(&mut meta);
     write_meta_at(path, &meta)?;
@@ -437,17 +444,33 @@ pub fn update_meta_at(
 // Tauri-facing helpers (used by thread_save and the media protocol handler)
 // ---------------------------------------------------------------------------
 
-pub fn append_member<R: Runtime>(app: &AppHandle<R>, tid: &str, name: &str, data: &[u8]) -> Result<(), String> {
+pub fn append_member<R: Runtime>(
+    app: &AppHandle<R>,
+    tid: &str,
+    name: &str,
+    data: &[u8],
+) -> Result<(), String> {
     let path = archive_path(app, tid)?;
     append_members_at(&path, &[(name.to_string(), data.to_vec())])
 }
 
-pub fn has_member<R: Runtime>(app: &AppHandle<R>, tid: &str, name: &str) -> Result<bool, String> {
-    has_member_at(&archive_path(app, tid)?, name)
+pub fn read_member_by_tid<R: Runtime>(
+    app: &AppHandle<R>,
+    tid: &str,
+    name: &str,
+) -> Result<Option<Vec<u8>>, String> {
+    read_member_at(&archive_path(app, tid)?, name)
 }
 
-pub fn read_member_by_tid<R: Runtime>(app: &AppHandle<R>, tid: &str, name: &str) -> Result<Option<Vec<u8>>, String> {
-    read_member_at(&archive_path(app, tid)?, name)
+/// Lists the names of all members under `prefix` (e.g. `media/`) in one
+/// archive. Used by the save worker to prefetch the already-stored media set
+/// instead of probing member by member.
+pub fn member_names_by_tid<R: Runtime>(
+    app: &AppHandle<R>,
+    tid: &str,
+    prefix: &str,
+) -> Result<Vec<String>, String> {
+    member_names_at(&archive_path(app, tid)?, prefix)
 }
 
 // ---------------------------------------------------------------------------
@@ -472,7 +495,8 @@ pub fn sniff_mime(bytes: &[u8]) -> &'static str {
         } else {
             "video/mp4"
         }
-    } else if bytes.starts_with(b"ID3") || (bytes.len() > 2 && bytes[0] == 0xFF && (bytes[1] & 0xE6) == 0xE2)
+    } else if bytes.starts_with(b"ID3")
+        || (bytes.len() > 2 && bytes[0] == 0xFF && (bytes[1] & 0xE6) == 0xE2)
     {
         "audio/mpeg"
     } else if bytes.starts_with(b"fLaC") {
@@ -493,7 +517,10 @@ pub fn sniff_mime(bytes: &[u8]) -> &'static str {
 // ---------------------------------------------------------------------------
 
 #[command]
-pub fn archive_read_meta<R: Runtime>(app: AppHandle<R>, tid: String) -> Result<Option<ArchiveSummary>, String> {
+pub fn archive_read_meta<R: Runtime>(
+    app: AppHandle<R>,
+    tid: String,
+) -> Result<Option<ArchiveSummary>, String> {
     let path = archive_path(&app, &tid)?;
     let Some(meta) = read_meta_at(&path)? else {
         return Ok(None);
@@ -530,12 +557,18 @@ pub fn archive_read_floor<R: Runtime>(
     match read_member_at(&path, &name)? {
         Some(bytes) => String::from_utf8(bytes)
             .map_err(|e| format!("Floor {pid} page {pn} of thread {tid} is not valid UTF-8: {e}")),
-        None => Err(format!("Thread {tid} has no archived floor {pid} page {pn}")),
+        None => Err(format!(
+            "Thread {tid} has no archived floor {pid} page {pn}"
+        )),
     }
 }
 
 /// Assembles the summary (counts + on-disk size) for one archive file.
-fn summarize_archive(path: &Path, meta: ThreadMeta, file_size: u64) -> Result<ArchiveSummary, String> {
+fn summarize_archive(
+    path: &Path,
+    meta: ThreadMeta,
+    file_size: u64,
+) -> Result<ArchiveSummary, String> {
     Ok(ArchiveSummary {
         page_count: member_names_at(path, &format!("{PAGES_DIR}/"))?.len() as u32,
         page_count_lz: member_names_at(path, &format!("{PAGES_LZ_DIR}/"))?.len() as u32,
@@ -580,7 +613,11 @@ pub fn archive_delete<R: Runtime>(app: AppHandle<R>, tid: String) -> Result<(), 
 }
 
 #[command]
-pub fn archive_media_lookup<R: Runtime>(app: AppHandle<R>, tid: String, url: String) -> Result<Vec<u8>, String> {
+pub fn archive_media_lookup<R: Runtime>(
+    app: AppHandle<R>,
+    tid: String,
+    url: String,
+) -> Result<Vec<u8>, String> {
     let member = media_member(&url);
     read_member_by_tid(&app, &tid, &member)?
         .ok_or_else(|| format!("Thread {tid} has no archived media for {url}"))
@@ -660,12 +697,12 @@ mod tests {
         cleanup(&path);
         let meta = update_meta_at(&path, |meta| {
             meta.tid = "123".into();
-            meta.title = "标题".into();
+            meta.title = "����".into();
             meta.saved_pages.push(1);
             meta.updated_at = 42;
         })
         .unwrap();
-        assert_eq!(meta.title, "标题");
+        assert_eq!(meta.title, "����");
         let reloaded = read_meta_at(&path).unwrap().unwrap();
         assert_eq!(reloaded.saved_pages, vec![1]);
         assert_eq!(reloaded.tid, "123");
@@ -679,10 +716,7 @@ mod tests {
             format!("media/{}", sha1_hex(b"https://imgsrc.baidu.com/a.jpg"))
         );
         assert_ne!(media_member("a"), media_member("b"));
-        assert_eq!(
-            sha1_hex(b"abc"),
-            "a9993e364706816aba3e25717850c26c9cd0d89d"
-        );
+        assert_eq!(sha1_hex(b"abc"), "a9993e364706816aba3e25717850c26c9cd0d89d");
     }
 
     #[test]
@@ -707,7 +741,6 @@ mod tests {
         fs::write(&path, b"").unwrap();
         assert!(read_meta_at(&path).unwrap().is_none());
         assert_eq!(read_member_at(&path, "meta.json").unwrap(), None);
-        assert!(!has_member_at(&path, "meta.json").unwrap());
         assert!(member_names_at(&path, "pages/").unwrap().is_empty());
         cleanup(&path);
     }
@@ -718,7 +751,6 @@ mod tests {
         cleanup(&path);
         assert!(read_meta_at(&path).unwrap().is_none());
         assert_eq!(read_member_at(&path, "meta.json").unwrap(), None);
-        assert!(!has_member_at(&path, "meta.json").unwrap());
         assert!(member_names_at(&path, "pages/").unwrap().is_empty());
         // Writing into a missing file recreates it.
         update_meta_at(&path, |meta| meta.tid = "9".into()).unwrap();

@@ -35,6 +35,14 @@ export interface ThreadSaveOptions {
     saveAvatars: boolean;
     pageRange?: string;
     maxMediaBytes?: number;
+    /** 并发拉取页数（1 = 串行），范围 1-8。 */
+    pageConcurrency?: number;
+    /** 并发拉取楼中楼数（1 = 串行），范围 1-8。 */
+    floorConcurrency?: number;
+    /** 并发下载媒体数（1 = 串行），范围 1-16。 */
+    mediaConcurrency?: number;
+    /** 网络请求失败重试次数，范围 0-5。 */
+    retryCount?: number;
 }
 
 export interface ThreadSaveProgress {

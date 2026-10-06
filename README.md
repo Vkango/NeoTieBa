@@ -10,7 +10,7 @@
 
 <span></span>
 
-![Version](https://img.shields.io/badge/🐢-龟速更新-red.svg) ![STARS](https://img.shields.io/github/stars/Vkango/NeoTieba?style=round-square&logo=github&color=yellow) ![FORKS](https://img.shields.io/github/forks/Vkango/NeoTieba?style=round-square) ![Build](https://github.com/Vkango/NeoTieba/actions/workflows/prerelease.yml/badge.svg?branch=main)
+![Version](https://img.shields.io/badge/🐢-龟速更新-red.svg) ![STARS](https://img.shields.io/github/stars/Vkango/NeoTieba?style=round-square&logo=github&color=yellow) ![FORKS](https://img.shields.io/github/forks/Vkango/NeoTieba?style=round-square&logo=github) ![Build](https://github.com/Vkango/NeoTieba/actions/workflows/prerelease.yml/badge.svg?branch=main) ![TestBuild](https://github.com/Vkango/NeoTieba/actions/workflows/test-build.yml/badge.svg?branch=main)
 
 基于 `Tauri2.0` + `Vue3` + `TypeScript` 构建的 **非官方** 贴吧客户端, 适用于桌面端应用, 缓速更新中……
 
@@ -119,13 +119,13 @@ TiebaDesktop, 优秀的第三方贴吧桌面客户端: [clb-128258/TiebaDesktop:
 
 本项目参考了以下项目 (或页面) 提供的源码: 
 
-| [贴吧 Lite](https://github.com/HuanCheng65/TiebaLite)        | [TiebaDesktop](https://github.com/clb-128258/TiebaDesktop)   | [tbclient.protobuf](https://github.com/n0099/tbclient.protobuf) |
-| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [aiotieba](https://github.com/lumina37/aiotieba)             | [解读keep-alive](https://www.cnblogs.com/shanfeng1000/p/16692266.html) | [Material Symbols](https://fonts.google.com/icons)           |
-| [Vue](https://vuejs.org)                                     | [Vite](https://vite.dev)                                     | [Tauri](https://tauri.app)                                   |
-| [Pinia](https://pinia.vuejs.org)                             | [TypeScript](https://www.typescriptlang.org)                 | [Tokio](https://tokio.rs)                                    |
-| [pinia-plugin-persistedstate](https://github.com/cwahls/pinia-plugin-persistedstate) | [esbuild](https://esbuild.github.io)                         | [Reqwest](https://github.com/seanmonstar/reqwest)            |
-| [CryptoJS](https://github.com/brix/crypto-js)                | [vue-tsc](https://github.com/vuejs/language-tools)           | [Serde](https://serde.rs)                                    |
-| [DOMPurify](https://github.com/cure53/DOMPurify)             | [unplugin-auto-import](https://github.com/antfu/unplugin-auto-import) | [Prost](https://github.com/tokio-rs/prost)                   |
-| [html-to-image](https://github.com/bubkoo/html-to-image)     | [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components) | [thiserror](https://github.com/dtolnay/thiserror)            |
-| [Tauri API](https://tauri.app)                               | [memmap2](https://docs.rs/memmap2/latest/memmap2/)           | [window-vibrancy](https://github.com/tauri-apps/window-vibrancy) |
+|    [贴吧 Lite](https://github.com/HuanCheng65/TiebaLite)     |  [TiebaDesktop](https://github.com/clb-128258/TiebaDesktop)  | [tbclient.protobuf](https://github.com/n0099/tbclient.protobuf) |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|       [aiotieba](https://github.com/lumina37/aiotieba)       | [解读keep-alive](https://www.cnblogs.com/shanfeng1000/p/16692266.html) |      [Material Symbols](https://fonts.google.com/icons)      |
+|                   [Vue](https://vuejs.org)                   |                   [Vite](https://vite.dev)                   |                  [Tauri](https://tauri.app)                  |
+|               [Pinia](https://pinia.vuejs.org)               |         [TypeScript](https://www.typescriptlang.org)         |                  [Tokio](https://tokio.rs)                   |
+| [pinia-plugin-persistedstate](https://github.com/cwahls/pinia-plugin-persistedstate) |             [esbuild](https://esbuild.github.io)             |      [Reqwest](https://github.com/seanmonstar/reqwest)       |
+|        [CryptoJS](https://github.com/brix/crypto-js)         |      [vue-tsc](https://github.com/vuejs/language-tools)      |                  [Serde](https://serde.rs)                   |
+|       [DOMPurify](https://github.com/cure53/DOMPurify)       | [unplugin-auto-import](https://github.com/antfu/unplugin-auto-import) |          [Prost](https://github.com/tokio-rs/prost)          |
+|   [html-to-image](https://github.com/bubkoo/html-to-image)   | [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components) |      [thiserror](https://github.com/dtolnay/thiserror)       |
+|                [Tauri API](https://tauri.app)                |      [memmap2](https://docs.rs/memmap2/latest/memmap2/)      | [window-vibrancy](https://github.com/tauri-apps/window-vibrancy) |

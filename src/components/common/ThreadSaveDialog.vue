@@ -74,6 +74,15 @@ const submit = (): void => {
           </div>
           <label :for="rangeId" class="save-range-label">只保存以下页（例如 1,2,1-5；留空保存全部）</label>
           <input :id="rangeId" v-model="form.pageRange" type="text" autocomplete="off" placeholder="留空保存全部" />
+          <details class="save-advanced">
+            <summary>高级选项（并发与重试）</summary>
+            <div class="save-advanced-grid">
+              <label>页面并发<input v-model.number="form.pageConcurrency" type="number" min="1" max="8" step="1" /></label>
+              <label>楼中楼并发<input v-model.number="form.floorConcurrency" type="number" min="1" max="8" step="1" /></label>
+              <label>媒体并发<input v-model.number="form.mediaConcurrency" type="number" min="1" max="16" step="1" /></label>
+              <label>失败重试<input v-model.number="form.retryCount" type="number" min="0" max="5" step="1" /></label>
+            </div>
+          </details>
           <div class="save-buttons">
             <RippleButton type="button" @click="close">取消</RippleButton>
             <RippleButton type="submit" :disabled="props.busy">{{ props.busy ? '保存中…' : props.confirmText }}
@@ -156,6 +165,44 @@ const submit = (): void => {
   font-size: 13px;
   opacity: 0.7;
   margin-bottom: 8px;
+}
+
+.save-advanced {
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.save-advanced summary {
+  cursor: pointer;
+  opacity: 0.7;
+  user-select: none;
+}
+
+.save-advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.save-advanced-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.save-advanced-grid input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--text-color), 0.25);
+  background: rgba(var(--text-color), 0.05);
+  color: rgb(var(--text-color));
+  font: inherit;
 }
 
 .save-dialog input[type="text"] {

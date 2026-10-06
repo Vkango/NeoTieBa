@@ -6,15 +6,20 @@
 use crate::protobuf_api::bounded_decode_json;
 use crate::request::fetch_bytes;
 use crate::thread_archive::{
-    self, floor_member, media_member, now_unix, page_member, update_meta_at, validate_tid,
+    self, append_members_at, floor_member, media_member, member_names_by_tid, now_unix,
+    page_member, update_meta_at, validate_tid,
 };
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::future::Future;
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tauri::{command, AppHandle, Emitter, Runtime, State};
+use tokio::sync::Semaphore;
+use tokio::task::JoinSet;
 use tieba_api::proto::{floor, thread_page};
 use tieba_api::TiebaClient;
 
@@ -23,6 +28,17 @@ const PB_FLOOR_URL: &str = "https://tiebac.baidu.com/c/f/pb/floor?cmd=302002";
 const MAX_FLOOR_PAGES: u32 = 50;
 const DEFAULT_MAX_MEDIA_BYTES: u64 = 100 * 1024 * 1024;
 const AVATAR_BASE: &str = "https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/";
+
+// Concurrency limits (user-configurable per save, clamped defensively since
+// options arrive from the webview).
+const MAX_PAGE_CONCURRENCY: u32 = 8;
+const MAX_FLOOR_CONCURRENCY: u32 = 8;
+const MAX_MEDIA_CONCURRENCY: u32 = 16;
+const MAX_RETRY_COUNT: u32 = 5;
+const RETRY_BASE_DELAY_MS: u64 = 1000;
+/// Media meta counters are flushed to meta.json in batches of this size so
+/// parallel downloads don't rewrite meta.json after every single blob.
+const MEDIA_META_FLUSH_INTERVAL: u32 = 20;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase", default)]
@@ -35,6 +51,14 @@ pub struct SaveOptions {
     /// `"1,2,1-5"` style page list; None/empty means all pages.
     pub page_range: Option<String>,
     pub max_media_bytes: u64,
+    /// Parallel fetches for thread pages (1 = serial).
+    pub page_concurrency: u32,
+    /// Parallel fetches for 楼中楼 threads (1 = serial).
+    pub floor_concurrency: u32,
+    /// Parallel media downloads (1 = serial).
+    pub media_concurrency: u32,
+    /// Extra attempts per network request (linear 1s/2s/... backoff).
+    pub retry_count: u32,
 }
 
 impl Default for SaveOptions {
@@ -47,7 +71,22 @@ impl Default for SaveOptions {
             save_avatars: false,
             page_range: None,
             max_media_bytes: DEFAULT_MAX_MEDIA_BYTES,
+            page_concurrency: 2,
+            floor_concurrency: 3,
+            media_concurrency: 4,
+            retry_count: 2,
         }
+    }
+}
+
+impl SaveOptions {
+    /// Clamps user-provided concurrency/retry values into safe ranges.
+    fn normalized(mut self) -> Self {
+        self.page_concurrency = self.page_concurrency.clamp(1, MAX_PAGE_CONCURRENCY);
+        self.floor_concurrency = self.floor_concurrency.clamp(1, MAX_FLOOR_CONCURRENCY);
+        self.media_concurrency = self.media_concurrency.clamp(1, MAX_MEDIA_CONCURRENCY);
+        self.retry_count = self.retry_count.clamp(0, MAX_RETRY_COUNT);
+        self
     }
 }
 
@@ -175,38 +214,126 @@ async fn fetch_pb_json<TRes: prost::Message + serde::Serialize + Default + Send 
         .post_protobuf(url, request, "file", cookie)
         .await
         .map_err(|e| e.to_string())?;
-    bounded_decode_json::<TRes>(bytes)
+    bounded_decode_json::<TRes>(bytes).await
 }
 
 /// Thin wrapper binding the protobuf endpoints to their request/response types.
-struct PbApi<'a> {
-    client: &'a TiebaClient,
-    cookie: Option<&'a str>,
-    bduss: Option<&'a str>,
-    stoken: Option<&'a str>,
+/// Holds an `Arc` client and owned credentials so it can be cloned into the
+/// concurrent page/floor workers.
+#[derive(Clone)]
+struct PbApi {
+    client: Arc<TiebaClient>,
+    cookie: Option<String>,
+    bduss: Option<String>,
+    stoken: Option<String>,
 }
 
-impl PbApi<'_> {
+impl PbApi {
     async fn fetch_page(&self, tid: i64, pn: u32, only_author: bool) -> Result<Value, String> {
-        let request = page_request(tid, pn, only_author, self.bduss, self.stoken);
+        let request = page_request(tid, pn, only_author, self.bduss.as_deref(), self.stoken.as_deref());
         fetch_pb_json::<thread_page::PbPageResIdl>(
-            self.client,
+            &self.client,
             PB_PAGE_URL,
             &request.encode_to_vec(),
-            self.cookie,
+            self.cookie.as_deref(),
         )
         .await
     }
 
     async fn fetch_floor(&self, tid: i64, pid: i64, pn: u32) -> Result<Value, String> {
-        let request = floor_request(tid, pid, pn, self.bduss, self.stoken);
+        let request = floor_request(tid, pid, pn, self.bduss.as_deref(), self.stoken.as_deref());
         fetch_pb_json::<floor::PbFloorResIdl>(
-            self.client,
+            &self.client,
             PB_FLOOR_URL,
             &request.encode_to_vec(),
-            self.cookie,
+            self.cookie.as_deref(),
         )
         .await
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Concurrency helpers
+// ---------------------------------------------------------------------------
+
+/// Retries an async operation up to `retries` extra times with a linear
+/// backoff (1s, 2s, ...). Cancellation short-circuits the backoff.
+async fn with_retry<T, Fut, F, G>(retries: u32, cancelled: G, mut op: F) -> Result<T, String>
+where
+    Fut: Future<Output = Result<T, String>>,
+    F: FnMut() -> Fut,
+    G: Fn() -> bool,
+{
+    let mut attempt: u32 = 0;
+    loop {
+        match op().await {
+            Ok(value) => return Ok(value),
+            Err(error) => {
+                if attempt >= retries || cancelled() {
+                    return Err(error);
+                }
+                attempt += 1;
+                tokio::time::sleep(Duration::from_millis(RETRY_BASE_DELAY_MS * attempt as u64)).await;
+            }
+        }
+    }
+}
+
+/// Runs `task` over every item with at most `concurrency` futures in flight.
+/// New work stops being scheduled once `cancelled()` is true, and once the
+/// in-flight tasks drain out a `__cancelled__` error is returned; in-flight
+/// work is aborted as soon as `on_done` yields an error (fail-fast, mirroring
+/// the old serial "one page failed, save aborted" semantics).
+async fn map_bounded<T, R, Fut, F, G>(
+    items: Vec<T>,
+    concurrency: usize,
+    cancelled: G,
+    task: F,
+    mut on_done: impl FnMut(R) -> Result<(), String>,
+) -> Result<(), String>
+where
+    T: Send + 'static,
+    R: Send + 'static,
+    Fut: Future<Output = Result<R, String>> + Send + 'static,
+    F: Fn(T) -> Fut + Send + Sync + 'static,
+    G: Fn() -> bool + Send,
+{
+    let semaphore = Arc::new(Semaphore::new(concurrency.max(1)));
+    let task = Arc::new(task);
+    let mut pending = items.into_iter();
+    let mut set: JoinSet<Result<R, String>> = JoinSet::new();
+
+    loop {
+        while !cancelled() && semaphore.available_permits() > 0 {
+            let Some(item) = pending.next() else {
+                break;
+            };
+            let permit = semaphore
+                .clone()
+                .acquire_owned()
+                .await
+                .map_err(|_| "并发信号量已关闭".to_string())?;
+            let task = task.clone();
+            set.spawn(async move {
+                let _permit = permit;
+                task(item).await
+            });
+        }
+        let Some(completion) = set.join_next().await else {
+            // Nothing in flight: either everything finished or cancel stopped
+            // the scheduler with items left unprocessed.
+            return if cancelled() && pending.next().is_some() {
+                Err("__cancelled__".to_string())
+            } else {
+                Ok(())
+            };
+        };
+        let result = completion.map_err(|e| format!("保存任务异常退出: {e}"))??;
+        on_done(result)?;
+        if cancelled() {
+            set.abort_all();
+            return Err("__cancelled__".to_string());
+        }
     }
 }
 
@@ -260,16 +387,6 @@ enum MediaKind {
     Image,
     VideoAudio,
     Avatar,
-}
-
-impl MediaKind {
-    fn label(self) -> &'static str {
-        match self {
-            MediaKind::Image => "图片",
-            MediaKind::VideoAudio => "视频/音频",
-            MediaKind::Avatar => "头像",
-        }
-    }
 }
 
 const IMAGE_KEYS: &[&str] = &[
@@ -395,15 +512,50 @@ fn scan_page_json(
 // Save job
 // ---------------------------------------------------------------------------
 
-struct CrawlContext<R: Runtime> {
-    app: AppHandle<R>,
+struct CrawlContext {
     options: SaveOptions,
     cancel: Arc<AtomicBool>,
 }
 
-impl<R: Runtime> CrawlContext<R> {
+impl CrawlContext {
     fn cancelled(&self) -> bool {
         self.cancel.load(Ordering::Relaxed)
+    }
+}
+
+/// Floor tasks and media URLs discovered while scanning pages. Shared behind a
+/// mutex between the concurrent page/floor workers; critical sections never
+/// await, so the std mutex is fine.
+#[derive(Default)]
+struct ScanCollector {
+    floor_seen: HashSet<String>,
+    floor_tasks: Vec<(String, i64, u32)>,
+    media_urls: Vec<(String, MediaKind)>,
+}
+
+impl ScanCollector {
+    fn new(floor_seen: HashSet<String>) -> Self {
+        Self {
+            floor_seen,
+            floor_tasks: Vec::new(),
+            media_urls: Vec::new(),
+        }
+    }
+
+    fn scan_page(&mut self, page_data: &Value, options: &SaveOptions) {
+        scan_page_json(
+            page_data,
+            options,
+            &mut self.floor_seen,
+            &mut self.floor_tasks,
+            &mut self.media_urls,
+        );
+    }
+
+    fn collect_media(&mut self, page_data: &Value, options: &SaveOptions) {
+        if options.save_images || options.save_video_audio || options.save_avatars {
+            collect_media(page_data, options, &mut self.media_urls);
+        }
     }
 }
 
@@ -423,36 +575,6 @@ fn json_i64(value: &Value, pointer: &str) -> Option<i64> {
     })
 }
 
-/// Downloads one media URL (unless its blob is already archived) and appends
-/// it to the archive. Returns Ok(false) when skipped, Ok(true) when stored.
-async fn store_media<R: Runtime>(
-    ctx: &CrawlContext<R>,
-    tid: &str,
-    url: &str,
-) -> Result<bool, String> {
-    let member = media_member(url);
-    if thread_archive::has_member(&ctx.app, tid, &member)? {
-        return Ok(false);
-    }
-    let (mime, bytes) = fetch_bytes(
-        url,
-        None,
-        "https://tieba.baidu.com/",
-        Some(ctx.options.max_media_bytes),
-    )
-    .await?;
-    if bytes.is_empty() {
-        return Ok(false);
-    }
-    let _ = mime;
-    thread_archive::append_member(&ctx.app, tid, &member, &bytes)?;
-    update_meta_at(&thread_archive::archive_path(&ctx.app, tid)?, |meta| {
-        meta.media_count += 1;
-        meta.media_bytes += bytes.len() as u64;
-    })?;
-    Ok(true)
-}
-
 #[allow(clippy::too_many_lines)]
 async fn run_save<R: Runtime>(
     app: AppHandle<R>,
@@ -465,16 +587,15 @@ async fn run_save<R: Runtime>(
 ) -> Result<String, String> {
     validate_tid(&tid)?;
     let archive = thread_archive::archive_path(&app, &tid)?;
-    let client = TiebaClient::new(proxy_url.as_deref()).map_err(|e| e.to_string())?;
+    let client = Arc::new(TiebaClient::new(proxy_url.as_deref()).map_err(|e| e.to_string())?);
     let cookie = cookie_header(bduss.as_deref(), stoken.as_deref());
     let api = PbApi {
-        client: &client,
-        cookie: cookie.as_deref(),
-        bduss: bduss.as_deref(),
-        stoken: stoken.as_deref(),
+        client,
+        cookie,
+        bduss,
+        stoken,
     };
     let ctx = CrawlContext {
-        app: app.clone(),
         options,
         cancel,
     };
@@ -555,17 +676,16 @@ async fn run_save<R: Runtime>(
         progress(&app, &tid, "pages", 0, 0, "所有目标页均已保存".into());
     }
 
-    let mut floor_tasks: Vec<(String, i64, u32)> = Vec::new();
-    let mut floor_seen: HashSet<String> = thread_archive::read_meta_at(&archive)?
+    let floor_seen: HashSet<String> = thread_archive::read_meta_at(&archive)?
         .map(|m| m.saved_floors)
         .unwrap_or_default()
         .into_iter()
         .collect();
-    let mut media_urls: Vec<(String, MediaKind)> = Vec::new();
-    let mut media_seen: HashSet<String> = HashSet::new();
+    let collector = Arc::new(Mutex::new(ScanCollector::new(floor_seen)));
 
     // 增量保存支持：已归档的页面也按当前选项重扫一遍，补收集楼中楼与媒体
     // （例如首次只保存了图片，二次增量再开启头像/楼中楼/视频）。
+    // 纯本地读取，保持串行即可。
     for page in target_pages
         .iter()
         .copied()
@@ -584,158 +704,306 @@ async fn run_save<R: Runtime>(
         let Some(page_data) = value.pointer("/data") else {
             continue;
         };
-        scan_page_json(
-            &page_data,
-            &ctx.options,
-            &mut floor_seen,
-            &mut floor_tasks,
-            &mut media_urls,
-        );
+        collector.lock().unwrap_or_else(|p| p.into_inner()).scan_page(page_data, &ctx.options);
     }
 
-    for (index, page) in todo_pages.iter().enumerate() {
-        if ctx.cancelled() {
-            return Err("__cancelled__".to_string());
-        }
-        let value = if *page == 1 {
-            first.clone()
-        } else {
-            api.fetch_page(tid_num, *page, ctx.options.only_author)
-                .await?
-        };
-        let page_data = value
-            .pointer("/data")
-            .cloned()
-            .ok_or_else(|| format!("第 {page} 页响应缺少 data 字段"))?;
-
-        scan_page_json(
-            &page_data,
-            &ctx.options,
-            &mut floor_seen,
-            &mut floor_tasks,
-            &mut media_urls,
-        );
-
-        let json = serde_json::to_vec(&value).map_err(|e| e.to_string())?;
-        thread_archive::append_member(
-            &app,
-            &tid,
-            &page_member(*page, ctx.options.only_author),
-            &json,
-        )?;
-        update_meta_at(&archive, |meta| {
-            let list = if ctx.options.only_author {
-                &mut meta.saved_pages_lz
-            } else {
-                &mut meta.saved_pages
-            };
-            if !list.contains(page) {
-                list.push(*page);
-            }
-            meta.has_subposts = meta.has_subposts || !floor_tasks.is_empty();
-            meta.updated_at = now_unix();
-        })?;
-        progress(
-            &app,
-            &tid,
-            "pages",
-            (index + 1) as u32,
-            total,
-            format!("已保存第 {page} 页 ({title})"),
-        );
+    // ---- Phase 1: pages (concurrent fetches, bounded by page_concurrency) ----
+    let pages_total = total;
+    if pages_total > 0 {
+        let pages_done = AtomicU32::new(0);
+        let first_page = first.clone();
+        let task_api = api.clone();
+        let task_collector = collector.clone();
+        let task_options = ctx.options.clone();
+        let task_cancel = ctx.cancel.clone();
+        map_bounded(
+            todo_pages.clone(),
+            ctx.options.page_concurrency as usize,
+            || ctx.cancelled(),
+            move |page: u32| {
+                let api = task_api.clone();
+                let collector = task_collector.clone();
+                let options = task_options.clone();
+                let cancel = task_cancel.clone();
+                let first_page = first_page.clone();
+                async move {
+                    let value = if page == 1 {
+                        first_page
+                    } else {
+                        with_retry(
+                            options.retry_count,
+                            || cancel.load(Ordering::Relaxed),
+                            || api.fetch_page(tid_num, page, options.only_author),
+                        )
+                        .await?
+                    };
+                    let page_data = value
+                        .pointer("/data")
+                        .cloned()
+                        .ok_or_else(|| format!("第 {page} 页响应缺少 data 字段"))?;
+                    collector
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .scan_page(&page_data, &options);
+                    Ok::<(u32, Value), String>((page, value))
+                }
+            },
+            |(page, value)| {
+                let json = serde_json::to_vec(&value).map_err(|e| e.to_string())?;
+                thread_archive::append_member(
+                    &app,
+                    &tid,
+                    &page_member(page, ctx.options.only_author),
+                    &json,
+                )?;
+                update_meta_at(&archive, |meta| {
+                    let list = if ctx.options.only_author {
+                        &mut meta.saved_pages_lz
+                    } else {
+                        &mut meta.saved_pages
+                    };
+                    if !list.contains(&page) {
+                        list.push(page);
+                    }
+                    list.sort_unstable();
+                    meta.updated_at = now_unix();
+                })?;
+                let done = pages_done.fetch_add(1, Ordering::Relaxed) + 1;
+                progress(
+                    &app,
+                    &tid,
+                    "pages",
+                    done,
+                    pages_total,
+                    format!("已保存第 {page} 页 ({title})"),
+                );
+                Ok(())
+            },
+        )
+        .await?;
     }
 
-    // ---- Phase 2: floors (楼中楼) ----
+    // has_subposts is derived from the full scan once, after all pages landed.
+    let found_floors = !collector
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .floor_tasks
+        .is_empty();
+    update_meta_at(&archive, |meta| {
+        meta.has_subposts = meta.has_subposts || found_floors;
+        meta.updated_at = now_unix();
+    })?;
+
+    // ---- Phase 2: floors (楼中楼, concurrent per-floor workers) ----
+    let floor_tasks: Vec<(String, i64, u32)> = collector
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .floor_tasks
+        .clone();
     let floor_total = floor_tasks.len() as u32;
-    for (index, (pid_str, pid, sub_post_number)) in floor_tasks.iter().enumerate() {
-        if ctx.cancelled() {
-            return Err("__cancelled__".to_string());
-        }
-        let mut fetched: u32 = 0;
-        let mut pn: u32 = 0;
-        loop {
-            if ctx.cancelled() {
-                return Err("__cancelled__".to_string());
-            }
-            pn += 1;
-            if pn > MAX_FLOOR_PAGES || fetched >= *sub_post_number {
-                break;
-            }
-            let value = api.fetch_floor(tid_num, *pid, pn).await?;
-            let page_data = value
-                .pointer("/data")
-                .cloned()
-                .ok_or_else(|| format!("楼中楼 {pid} 第 {pn} 页响应缺少 data 字段"))?;
-            let count = page_data
-                .get("subpost_list")
-                .and_then(Value::as_array)
-                .map(|list| list.len() as u32)
-                .unwrap_or(0);
-            if count == 0 {
-                break;
-            }
-            if ctx.options.save_images || ctx.options.save_video_audio || ctx.options.save_avatars {
-                collect_media(&page_data, &ctx.options, &mut media_urls);
-            }
-            let json = serde_json::to_vec(&value).map_err(|e| e.to_string())?;
-            thread_archive::append_member(&app, &tid, &floor_member(pid_str, pn), &json)?;
-            fetched += count;
-        }
-        let member_dir = "floors";
-        update_meta_at(&archive, |meta| {
-            if !meta.saved_floors.contains(pid_str) {
-                meta.saved_floors.push(pid_str.clone());
-            }
-            meta.has_subposts = true;
-            let _ = member_dir;
-            meta.updated_at = now_unix();
-        })?;
-        progress(
-            &app,
-            &tid,
-            "floors",
-            (index + 1) as u32,
-            floor_total,
-            format!("已保存楼中楼 {pid_str} ({}/{})", index + 1, floor_total),
-        );
+    if floor_total > 0 {
+        let floors_done = AtomicU32::new(0);
+        let task_api = api.clone();
+        let task_collector = collector.clone();
+        let task_options = ctx.options.clone();
+        let task_cancel = ctx.cancel.clone();
+        map_bounded(
+            floor_tasks,
+            ctx.options.floor_concurrency as usize,
+            || ctx.cancelled(),
+            move |(pid_str, pid, sub_post_number): (String, i64, u32)| {
+                let api = task_api.clone();
+                let collector = task_collector.clone();
+                let options = task_options.clone();
+                let cancel = task_cancel.clone();
+                async move {
+                    let mut fetched: u32 = 0;
+                    let mut pages: Vec<(String, Vec<u8>)> = Vec::new();
+                    let mut pn: u32 = 0;
+                    loop {
+                        if cancel.load(Ordering::Relaxed) {
+                            return Err("__cancelled__".to_string());
+                        }
+                        pn += 1;
+                        if pn > MAX_FLOOR_PAGES || fetched >= sub_post_number {
+                            break;
+                        }
+                        let value = with_retry(
+                            options.retry_count,
+                            || cancel.load(Ordering::Relaxed),
+                            || api.fetch_floor(tid_num, pid, pn),
+                        )
+                        .await?;
+                        let page_data = value
+                            .pointer("/data")
+                            .cloned()
+                            .ok_or_else(|| format!("楼中楼 {pid} 第 {pn} 页响应缺少 data 字段"))?;
+                        let count = page_data
+                            .get("subpost_list")
+                            .and_then(Value::as_array)
+                            .map(|list| list.len() as u32)
+                            .unwrap_or(0);
+                        if count == 0 {
+                            break;
+                        }
+                        collector
+                            .lock()
+                            .unwrap_or_else(|p| p.into_inner())
+                            .collect_media(&page_data, &options);
+                        let json = serde_json::to_vec(&value).map_err(|e| e.to_string())?;
+                        pages.push((floor_member(&pid_str, pn), json));
+                        fetched += count;
+                    }
+                    Ok::<(String, Vec<(String, Vec<u8>)>), String>((pid_str, pages))
+                }
+            },
+            |(pid_str, pages)| {
+                // One batched append per floor: a single lock + fsync instead
+                // of one per floor page.
+                if !pages.is_empty() {
+                    append_members_at(&archive, &pages)?;
+                }
+                update_meta_at(&archive, |meta| {
+                    if !meta.saved_floors.contains(&pid_str) {
+                        meta.saved_floors.push(pid_str.clone());
+                    }
+                    meta.has_subposts = true;
+                    meta.updated_at = now_unix();
+                })?;
+                let done = floors_done.fetch_add(1, Ordering::Relaxed) + 1;
+                progress(
+                    &app,
+                    &tid,
+                    "floors",
+                    done,
+                    floor_total,
+                    format!("已保存楼中楼 {pid_str} ({}/{})", done, floor_total),
+                );
+                Ok(())
+            },
+        )
+        .await?;
     }
 
-    // ---- Phase 3: media ----
-    // De-duplicate by URL, skipping blobs that are already archived.
+    // ---- Phase 3: media (concurrent downloads) ----
+    // De-duplicate by URL; prefetch the already-archived media member names
+    // once so per-item has_member probes (each rebuilding the tar index) are
+    // replaced by a single scan + in-memory set lookup.
     let mut queue: Vec<(String, MediaKind)> = Vec::new();
-    for (url, kind) in media_urls {
+    let mut media_seen: HashSet<String> = HashSet::new();
+    for (url, kind) in collector.lock().unwrap_or_else(|p| p.into_inner()).media_urls.drain(..) {
         if media_seen.insert(url.clone()) {
             queue.push((url, kind));
         }
     }
+    let archived_media: HashSet<String> = member_names_by_tid(&app, &tid, "media/")?
+        .into_iter()
+        .collect();
+    queue.retain(|(url, _)| !archived_media.contains(&media_member(url)));
+
     let media_total = queue.len() as u32;
-    let mut stored: u32 = 0;
-    let mut failed: u32 = 0;
-    for (index, (url, kind)) in queue.iter().enumerate() {
-        if ctx.cancelled() {
-            return Err("__cancelled__".to_string());
+    let stored = AtomicU32::new(0);
+    let failed = Arc::new(AtomicU32::new(0));
+    let media_done = AtomicU32::new(0);
+    // Unflushed media counters; batched into meta.json every
+    // MEDIA_META_FLUSH_INTERVAL items (and once at the end).
+    let pending_count = AtomicU32::new(0);
+    let pending_bytes = AtomicU64::new(0);
+    let flush_meta = |count: u32, bytes: u64| -> Result<(), String> {
+        if count == 0 {
+            return Ok(());
         }
-        match store_media(&ctx, &tid, url).await {
-            Ok(true) => {
-                stored += 1;
-                if stored.is_multiple_of(5) || index as u32 + 1 == media_total {
+        update_meta_at(&archive, |meta| {
+            meta.media_count += count;
+            meta.media_bytes += bytes;
+        })?;
+        Ok(())
+    };
+
+    if media_total > 0 {
+        let task_cancel = ctx.cancel.clone();
+        let task_failed = failed.clone();
+        let task_app = app.clone();
+        let task_tid = tid.clone();
+        let max_bytes = ctx.options.max_media_bytes;
+        let retries = ctx.options.retry_count;
+        map_bounded(
+            queue,
+            ctx.options.media_concurrency as usize,
+            || ctx.cancelled(),
+            move |(url, _kind): (String, MediaKind)| {
+                let cancel = task_cancel.clone();
+                let failed = task_failed.clone();
+                let app = task_app.clone();
+                let tid = task_tid.clone();
+                async move {
+                    if cancel.load(Ordering::Relaxed) {
+                        return Err("__cancelled__".to_string());
+                    }
+                    let bytes = match with_retry(
+                        retries,
+                        || cancel.load(Ordering::Relaxed),
+                        || {
+                            let url = url.clone();
+                            async move {
+                                fetch_bytes(&url, None, "https://tieba.baidu.com/", Some(max_bytes))
+                                    .await
+                                    .map(|(_, bytes)| bytes)
+                            }
+                        },
+                    )
+                    .await
+                    {
+                        Ok(bytes) => bytes,
+                        Err(error) => {
+                            // Fetch failures are counted and skipped, matching
+                            // the old serial behaviour.
+                            failed.fetch_add(1, Ordering::Relaxed);
+                            eprintln!("[thread-save] media {url} failed: {error}");
+                            return Ok((url, None));
+                        }
+                    };
+                    if bytes.is_empty() {
+                        return Ok((url, None));
+                    }
+                    let size = bytes.len() as u64;
+                    // Archive append failures are fatal and abort the save.
+                    thread_archive::append_member(&app, &tid, &media_member(&url), &bytes)?;
+                    Ok::<(String, Option<u64>), String>((url, Some(size)))
+                }
+            },
+            |(_, stored_size)| {
+                let done = media_done.fetch_add(1, Ordering::Relaxed) + 1;
+                if let Some(size) = stored_size {
+                    stored.fetch_add(1, Ordering::Relaxed);
+                    pending_count.fetch_add(1, Ordering::Relaxed);
+                    pending_bytes.fetch_add(size, Ordering::Relaxed);
+                }
+                if done.is_multiple_of(MEDIA_META_FLUSH_INTERVAL) {
+                    flush_meta(
+                        pending_count.swap(0, Ordering::Relaxed),
+                        pending_bytes.swap(0, Ordering::Relaxed),
+                    )?;
+                }
+                if done.is_multiple_of(5) || done == media_total {
                     progress(
                         &app,
                         &tid,
                         "media",
-                        index as u32 + 1,
+                        done,
                         media_total,
-                        format!("已保存 {} {}/{}", kind.label(), index + 1, media_total),
+                        format!("已处理媒体 {}/{}", done, media_total),
                     );
                 }
-            }
-            Ok(false) => {}
-            Err(error) => {
-                failed += 1;
-                eprintln!("[thread-save] media {url} failed: {error}");
-            }
-        }
+                Ok(())
+            },
+        )
+        .await?;
     }
+    flush_meta(
+        pending_count.load(Ordering::Relaxed),
+        pending_bytes.load(Ordering::Relaxed),
+    )?;
 
     update_meta_at(&archive, |meta| {
         meta.updated_at = now_unix();
@@ -761,7 +1029,8 @@ async fn run_save<R: Runtime>(
     if floor_total > 0 {
         message.push_str(&format!("，{floor_total} 组楼中楼"));
     }
-    message.push_str(&format!("，{stored} 个媒体文件"));
+    message.push_str(&format!("，{} 个媒体文件", stored.load(Ordering::Relaxed)));
+    let failed = failed.load(Ordering::Relaxed);
     if failed > 0 {
         message.push_str(&format!("（{failed} 个失败）"));
     }
@@ -779,15 +1048,18 @@ pub async fn thread_save_start<R: Runtime>(
     proxy_url: Option<String>,
 ) -> Result<(), String> {
     validate_tid(&tid)?;
-    if jobs.is_running(&tid) {
-        return Err("该帖子正在保存中".to_string());
-    }
-    let cancel = Arc::new(AtomicBool::new(false));
-    jobs.0
-        .lock()
-        .unwrap_or_else(|p| p.into_inner())
-        .insert(tid.clone(), cancel.clone());
-    let options = options.unwrap_or_default();
+    // Check-and-insert must happen under one lock hold so two concurrent
+    // starts for the same tid cannot both slip through.
+    let cancel = {
+        let mut map = jobs.0.lock().unwrap_or_else(|p| p.into_inner());
+        if map.get(&tid).is_some_and(|flag| !flag.load(Ordering::Relaxed)) {
+            return Err("该帖子正在保存中".to_string());
+        }
+        let cancel = Arc::new(AtomicBool::new(false));
+        map.insert(tid.clone(), cancel.clone());
+        cancel
+    };
+    let options = options.map(SaveOptions::normalized).unwrap_or_default();
 
     let worker_app = app.clone();
     let worker_tid = tid.clone();
@@ -841,6 +1113,28 @@ pub fn thread_save_status(jobs: State<'_, SaveJobs>, tid: String) -> Result<bool
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn options_normalize_concurrency_and_retry() {
+        let options = SaveOptions {
+            page_concurrency: 0,
+            floor_concurrency: 999,
+            media_concurrency: 0,
+            retry_count: 99,
+            ..Default::default()
+        }
+        .normalized();
+        assert_eq!(options.page_concurrency, 1);
+        assert_eq!(options.floor_concurrency, MAX_FLOOR_CONCURRENCY);
+        assert_eq!(options.media_concurrency, 1);
+        assert_eq!(options.retry_count, MAX_RETRY_COUNT);
+
+        let defaults = SaveOptions::default();
+        assert_eq!(defaults.page_concurrency, 2);
+        assert_eq!(defaults.floor_concurrency, 3);
+        assert_eq!(defaults.media_concurrency, 4);
+        assert_eq!(defaults.retry_count, 2);
+    }
 
     #[test]
     fn page_range_parses_lists_and_ranges() {
