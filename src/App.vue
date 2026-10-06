@@ -617,9 +617,13 @@ onMounted(async (): Promise<void> => {
         :tabsRef="notificationComponent">
       </NotificationBox>
     </Transition>
-    <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
-    </ImageViewer>
-    <Toast ref="ToastComponent" />
+    <!-- 图片查看器与 Toast 必须盖过楼中楼卡片等弹窗（3200 层）。
+         传送至 body，与楼中楼卡片同处根层叠上下文，避免被容器内的层叠上下文压住。 -->
+    <Teleport to="body">
+      <ImageViewer :imageSrc="imageViewerSrc" :visible="imageViewerVisibility" @close="imageViewerVisibility = false">
+      </ImageViewer>
+      <Toast ref="ToastComponent" />
+    </Teleport>
     <ExternalLinkDialog @openThread="openThread" />
   </div>
 </template>

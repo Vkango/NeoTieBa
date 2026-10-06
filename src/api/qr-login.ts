@@ -5,7 +5,7 @@ export class ApiLogin {
     private token = '';
     private sign = '';
     public bdussd = '';
-    public scanTimer: number | null = null;
+    public scanTimer: ReturnType<typeof setInterval> | null = null;
     public isScanning = false;
     private isCanceled = false;
 

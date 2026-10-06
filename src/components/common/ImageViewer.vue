@@ -1,15 +1,18 @@
 <template>
     <Transition name="fade">
-        <div v-if="props.visible" class="image-viewer-overlay" :class="{ embedded: props.embedded, 'controls-visible': nearBottom || keyboardControls }" :style="props.contentWidth !== undefined ? { '--viewer-content-width': props.contentWidth + 'px' } : undefined"
-            @pointermove="trackControlsProximity" @pointerleave="nearBottom = false" @click.self="handleClose" @contextmenu="handleContextMenu" tabindex="0" @keydown="handleKeydown"
-            ref="overlayRef">
+        <div v-if="props.visible" class="image-viewer-overlay"
+            :class="{ embedded: props.embedded, 'controls-visible': nearBottom || keyboardControls }"
+            :style="props.contentWidth !== undefined ? { '--viewer-content-width': props.contentWidth + 'px' } : undefined"
+            @pointermove="trackControlsProximity" @pointerleave="nearBottom = false" @click.self="handleClose"
+            @contextmenu="handleContextMenu" tabindex="0" @keydown="handleKeydown" ref="overlayRef">
             <!-- Main Image Container -->
             <div class="image-wrapper" :style="wrapperStyle" @mousedown="handleMouseDown" @wheel.prevent="handleWheel"
                 @touchstart="handleTouchStart" @touchmove.prevent="handleTouchMove" @touchend="handleTouchEnd">
                 <p v-if="imageFailed" class="image-error" role="status">图片加载失败</p>
                 <p v-if="imageBlocked" role="status">配图已禁用</p>
-                <img v-if="!imageBlocked" v-show="!imageFailed" ref="imageRef" :src="resolvedImageSrc" :style="fittedImageStyle" class="viewer-image" alt="Preview"
-                    draggable="false" referrerpolicy="no-referrer" @load="onImageLoad" @error="handleImageError" />
+                <img v-if="!imageBlocked" v-show="!imageFailed" ref="imageRef" :src="resolvedImageSrc"
+                    :style="fittedImageStyle" class="viewer-image" alt="Preview" draggable="false"
+                    referrerpolicy="no-referrer" @load="onImageLoad" @error="handleImageError" />
             </div>
 
             <!-- Controls Bar -->
@@ -27,8 +30,8 @@
                         <span class="material-symbols-outlined">remove</span>
                     </button>
 
-                    <RangeSlider v-model="zoomSliderValue" :min="10" :max="1000" :step="1"
-                        class="zoom-slider" aria-label="图片缩放" :aria-value-text="`${Math.round(scale * 100)}%`" />
+                    <RangeSlider v-model="zoomSliderValue" :min="10" :max="1000" :step="1" class="zoom-slider"
+                        aria-label="图片缩放" :aria-value-text="`${Math.round(scale * 100)}%`" />
 
                     <button class="control-btn" @click="zoomIn" title="放大">
                         <span class="material-symbols-outlined">add</span>
@@ -519,8 +522,7 @@ function setZoom(preset: number) {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(var(--background-color), 0.94);
-    backdrop-filter: blur(5px);
+    background-color: rgba(var(--background-color), 0.5);
     z-index: 20000;
     display: flex;
     flex-direction: column;
@@ -565,6 +567,7 @@ html.macos .image-viewer-overlay:not(.embedded) {
     pointer-events: none;
     z-index: 20001;
 }
+
 .controls-visible .controls-bar {
     opacity: 1;
     transform: translateY(0);
@@ -702,8 +705,16 @@ html.macos .image-viewer-overlay:not(.embedded) {
     padding: 12px 0;
     box-sizing: border-box;
 }
-.zoom-slider :deep(.range-input) { padding: 0; }
-.zoom-slider:focus-within { outline: 2px solid rgba(var(--text-color), .7); outline-offset: 2px; border-radius: 6px; }
+
+.zoom-slider :deep(.range-input) {
+    padding: 0;
+}
+
+.zoom-slider:focus-within {
+    outline: 2px solid rgba(var(--text-color), .7);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
 
 .divider {
     width: 1px;

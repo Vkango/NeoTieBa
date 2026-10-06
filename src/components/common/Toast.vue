@@ -22,7 +22,7 @@ function showToast(set_title: string, set_duration: number) {
 }
 
 const emit = defineEmits(['closed']);
-let timer: number | null = null;
+let timer: ReturnType<typeof setTimeout> | null = null;
 
 const close = () => {
   visible.value = false;
