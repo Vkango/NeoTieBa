@@ -34,7 +34,12 @@
                                         <RemoteImage :src="barInfo.avatar" :alt="barInfo.name" class="bar-avatar" />
                                     </div>
                                     <div class="bar-main-info">
-                                        <h2 class="bar-name">{{ barInfo.name }}吧</h2>
+                                        <h2 class="bar-name">{{ barInfo.name }}吧
+                                            <RippleButton style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none; vertical-align: middle;"
+                                                @click="handleShare" title="生成分享卡片">
+                                                <span class="material-symbols-outlined" style="font-size: 20px;">share</span>
+                                            </RippleButton>
+                                        </h2>
                                         <div class="bar-slogan">{{ barInfo.slogan }}</div>
                                         <div class="bar-category">{{ barInfo.category }}</div>
                                     </div>
@@ -241,6 +246,24 @@ const isLoggedIn = ref(false)
 const actionLoading = ref(false)
 const apiStore = useApiStore()
 const n = apiStore.getApi()
+
+import { useShareCard, barUrl, stripHtml } from '@/services/share-card/useShareCard'
+const shareCard = useShareCard()
+const handleShare = () => {
+    if (!barInfo.value.name) return
+    shareCard({
+        title: `${barInfo.value.name}吧`,
+        subtitle: barInfo.value.category || undefined,
+        avatar: barInfo.value.avatar,
+        content: stripHtml(barInfo.value.description || barInfo.value.slogan),
+        stats: [
+            { label: '关注', value: formatNumber(barInfo.value.member_num) },
+            { label: '帖子', value: formatNumber(barInfo.value.post_num) },
+            { label: '主题帖', value: formatNumber(barInfo.value.thread_num) }
+        ],
+        qrUrl: barUrl(barInfo.value.name)
+    })
+}
 
 // 数据状态
 const barInfo = ref<BarInfo>({

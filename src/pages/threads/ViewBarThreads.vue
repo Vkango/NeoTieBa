@@ -6,7 +6,7 @@ import Thread from '@/components/thread/Thread.vue';
 import RemoteImage from '@/components/common/RemoteImage.vue';
 import type { BawuGroup } from '@/types/common';
 import { getCurrentUser, type User as ManagedUser } from '@/services/user-manage';
-import domToImage from 'dom-to-image';
+import { useShareCard, barUrl } from '@/services/share-card/useShareCard';
 import { useSettingsStore } from '@/stores/settings';
 import { currentAccentHex, setForumAccentPair } from '@/styles/theme';
 import { extractAccentPair } from '@/utils/color-extract';
@@ -115,33 +115,25 @@ const followDays = ref<number>(0);
 const myThreadNum = ref<number>(0);
 const dayPostNum = ref<number>(0);
 const isNarrowLayout = ref<boolean>(false);
-const captureRef = ref<HTMLElement | null>(null);
+const shareCard = useShareCard();
 
 const handleShare = async () => {
-  if (!captureRef.value || !openImageViewer) return;
-  try {
-    const dataUrl = await domToImage.toPng(captureRef.value, {
-      bgcolor: '#1e1e1e',
-      filter: (node: Node) => {
-        // Skip external stylesheets and CORS-restricted images
-        if (node instanceof HTMLLinkElement && node.rel === 'stylesheet') {
-          return !node.href.includes('fonts.googleapis.com');
-        }
-        if (node instanceof HTMLImageElement) {
-          // Allow data URLs and same-origin images
-          return node.src.startsWith('data:') ||
-            node.src.startsWith(window.location.origin) ||
-            node.hasAttribute('crossorigin');
-        }
-        return true;
-      },
-      imagePlaceholder: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMzMzMiLz48L3N2Zz4='
-    });
-    openImageViewer(dataUrl);
-  } catch (error) {
-    console.error('Failed to generate share image:', error);
-    sendToast?.('生成分享图片失败', 2000);
-  }
+  const forum = returnData.value.forum;
+  if (!forum?.name) return;
+  const category = [forum.first_class, (forum as { second_class?: string }).second_class]
+    .filter(Boolean).join(' · ');
+  await shareCard({
+    title: `${forum.name}吧`,
+    subtitle: category || undefined,
+    avatar: forum.avatar,
+    content: barDescription.value || forum.slogan || '',
+    stats: [
+      { label: '关注', value: formatNumber(Number(forum.member_num || 0)) },
+      { label: '帖子', value: formatNumber(Number(forum.post_num || 0)) },
+      { label: '主题帖', value: formatNumber(Number(forum.thread_num || 0)) }
+    ],
+    qrUrl: barUrl(forum.name)
+  });
 };
 
 const returnData: Ref<ForumData> = ref<ForumData>({
@@ -629,7 +621,7 @@ onBeforeUnmount((): void => {
 <template>
   <Container :tab-key="props.key_" :scroll-key="`bar-${props.key_}`" @yscroll="onScroll">
     <transition name="fade1">
-      <div v-if="!isLoading" ref="captureRef">
+      <div v-if="!isLoading">
         <div class="bar-banner">
           <div class="image-container">
             <RemoteImage class="background-image" :src="returnData.forum.avatar" />
@@ -643,7 +635,7 @@ onBeforeUnmount((): void => {
                 {{ returnData.forum.name }}吧
                 <RippleButton
                   style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none; vertical-align: middle;"
-                  @click.stop="handleShare" title="生成长截图">
+                  @click.stop="handleShare" title="生成分享卡片">
                   <span class="material-symbols-outlined" style="font-size: 20px;">share</span>
                 </RippleButton>
               </div>
@@ -836,7 +828,7 @@ onBeforeUnmount((): void => {
         </div>
 
         <div class="thread-list">
-          <Thread :uid="item.author?.id" @openUser="onUserNameClicked(item.author?.id || 0)"
+          <Thread :tid="item.id" :uid="item.author?.id" @openUser="onUserNameClicked(item.author?.id || 0)"
             @openThread="handleClick(item.id)" v-for="item in threadList" :key="item.id" :thread_title="item.title"
             :media="(item.media || []) as any" :user_name="item.author?.name_show || item.author?.name || '匿名用户'"
             :avatar="item.author?.portrait || ''"

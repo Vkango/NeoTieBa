@@ -112,7 +112,7 @@ const onScroll = () => {
         </div>
 
         <div class="result" v-if="searchType == 1 && searchResult">
-          <Thread :uid="item.user.uid" @openUser="emit('openUser', item.user.uid)" @openThread="emit('openThread', item.tid)"
+          <Thread :tid="item.tid" :uid="item.user.uid" @openUser="emit('openUser', item.user.uid)" @openThread="emit('openThread', item.tid)"
             v-for="item in searchResult" :thread_title="item.title"
             :user_name="item.user.user_name || item.user.show_nickname || '(未知)'"
             :avatar="item.user.portrait.match(/tb\.1\.[^/]+/) ? item.user.portrait.match(/tb\.1\.[^/]+/)[0] : '0'"

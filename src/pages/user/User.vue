@@ -85,6 +85,26 @@ const hasMore = ref<boolean>(true);
 const apiStore = useApiStore();
 const api = apiStore.getApi();
 
+import { useShareCard, shareAvatarUrl, userUrl, stripHtml } from '@/services/share-card/useShareCard';
+const shareCard = useShareCard();
+const handleShare = () => {
+  const user = returnData.value.user;
+  if (!user?.portrait && !user?.name_show) return;
+  shareCard({
+    title: user.name_show || user.name || '贴吧用户',
+    subtitle: user.name ? user.name : undefined,
+    avatar: shareAvatarUrl(user.portrait),
+    content: stripHtml(user.intro),
+    stats: [
+      { label: '吧龄', value: `${user.tb_age || 0}年` },
+      { label: '发帖', value: user.post_num || 0 },
+      { label: '获赞', value: user.total_agree_num || 0 },
+      { label: 'IP', value: user.ip_address || '未知' }
+    ],
+    qrUrl: userUrl(user.portrait || String(props.uid))
+  });
+};
+
 // 加载下一页
 const nextPage = async (): Promise<void> => {
   try {
@@ -198,7 +218,12 @@ const onScroll = (target: any) => {
               referrerpolicy="no-referrer"
               @click="() => openImageViewer && openImageViewer('https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + returnData.user.portrait)" />
             <div>
-              <div class="title">{{ returnData.user.name_show }} ({{ returnData.user.name }})</div>
+              <div class="title">{{ returnData.user.name_show }} ({{ returnData.user.name }})
+                <RippleButton style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none; vertical-align: middle;"
+                  @click="handleShare" title="生成分享卡片">
+                  <span class="material-symbols-outlined" style="font-size: 20px;">share</span>
+                </RippleButton>
+              </div>
               <div class="description" v-html="sanitize(returnData.user.intro == '' ? '没有签名喵' : returnData.user.intro)">
               </div>
               <div class="tags">

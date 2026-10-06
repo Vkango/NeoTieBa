@@ -1,11 +1,15 @@
 <template>
   <div class="thread" @click.stop>
     <div class="user-info" @click="openUser(props.uid as string | number)">
-      <div class="avatar"><RemoteImage kind="avatars" class="avatar"
+      <div class="avatar">
+        <RemoteImage kind="avatars" class="avatar"
           :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar"
-          referrerpolicy="no-referrer" /></div>
+          referrerpolicy="no-referrer" />
+      </div>
       <div>
-        <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small><span class="level"
+        <div class="user-name">{{ user_name }}<small
+            v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small><span
+            class="level"
             :class="{ 'color1': level >= 0 && level < 4, 'color2': level >= 4 && level < 10, 'color3': level >= 10 && level < 16, 'color4': level >= 16 }">{{
               level }} {{ is_lz ? '楼主' : '' }}</span>
         </div>
@@ -19,9 +23,10 @@
         @error.capture="handleImageError">
       </div>
       <div class="thread-info">
-        <!-- <button @click="dom2img">申必</button> -->
         <span class="material-symbols-outlined" style="font-size: 16px;">location_on</span>{{ ip_address }}
-        <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">share</span>分享
+        <span style="cursor: pointer; margin-left: 10px; display: flex; align-items: center;"
+          @click.stop="handleShare"><span class="material-symbols-outlined"
+            style="font-size: 16px;">share</span>&nbsp;分享</span>
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">thumb_up</span> {{ like }} 赞
 
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">floor</span> {{ floor }} 楼
@@ -30,8 +35,9 @@
 
       </div>
       <div class="subpost" v-if="reply_num > 0">
-        <SubPost v-for="item in subpost_list" :thread_content="item.content" :embedded-images="props.embeddedImages" @openUser="openUser" @select-image="handleSubpostImage"
-          :avatar="item.author.portrait" :uid="item.author.id" :user_name="item.author.name_show || item.author.name">
+        <SubPost v-for="item in subpost_list" :thread_content="item.content" :embedded-images="props.embeddedImages"
+          @openUser="openUser" @select-image="handleSubpostImage" :avatar="item.author.portrait" :uid="item.author.id"
+          :user_name="item.author.name_show || item.author.name">
         </SubPost>
         <RippleButton v-if="reply_num > 5" @click="emit('viewAllReplies', props)"
           style="box-sizing: border-box; margin: 5px 15px; background-color: transparent; box-shadow: none; width: fit-content;">
@@ -57,6 +63,7 @@ import { watch } from 'vue';
 import { archiveViewSubPost } from '@/core/archive';
 import { useOfflineMedia, useArchiveFallback, isArchiveUrl } from '@/composables/useOfflineMedia';
 import SubPost from './SubPost.vue';
+import { useShareCard, threadUrl, shareAvatarUrl, formatCardDate } from '@/services/share-card/useShareCard';
 import { getTimeInterval, processContentElements } from '@/utils/helper';
 import type { ContentElement } from '@/types/common';
 
@@ -77,6 +84,11 @@ interface Props {
   floor: number;
   level?: number;
   local?: boolean;
+  forumName?: string;
+  forumAvatar?: string;
+  threadTitle?: string;
+  threadAuthor?: string;
+  threadAuthorAvatar?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -120,6 +132,29 @@ const handleSubpostImage = (url: string) => {
   if (props.embeddedImages) emit('selectImage', url);
   else openImageViewer?.(url);
 };
+const shareCard = useShareCard();
+const handleShare = () => {
+  shareCard({
+    title: props.user_name,
+    subtitle: `第 ${props.floor} 楼`,
+    avatar: shareAvatarUrl(props.avatar),
+    meta: formatCardDate(props.create_time),
+    inline: true,
+    contentElements: props.thread_content as ContentElement[],
+    stats: [
+      { label: '赞', value: props.like },
+      { label: '回复', value: props.reply_num }
+    ],
+    source: (props.threadTitle || props.threadAuthor) ? {
+      title: props.threadTitle,
+      author: props.threadAuthor,
+      authorAvatar: props.threadAuthorAvatar,
+      barName: props.forumName,
+      barAvatar: props.forumAvatar
+    } : undefined,
+    qrUrl: threadUrl(props.tid, props.pid)
+  });
+};
 const registerSubpostImages = (items: any[]) => {
   const urls = items.flatMap(item => (Array.isArray(item?.content) ? item.content : [])
     .filter((part: any) => Number(part?.type) === 3 || Number(part?.type) === 20)
@@ -160,7 +195,7 @@ async function preloadBigCdnImages(): Promise<void> {
     const url = normalizeMediaUrl(source);
     try {
       const result = await fetchImage(url);
-    if (!blocked.value.images && image.isConnected) image.src = result;
+      if (!blocked.value.images && image.isConnected) image.src = result;
     } catch (error) {
       console.warn('big_cdn_src 加载失败:', source, error);
     }

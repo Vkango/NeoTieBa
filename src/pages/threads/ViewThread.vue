@@ -23,7 +23,9 @@ import Reply from '@/components/thread/Reply.vue';
 import ThreadFloorIndex from '@/components/thread/ThreadFloorIndex.vue';
 import { findReadingFloor, floorPreview } from '@/utils/thread-index';
 import ReplyView from '@/components/thread/SubPostView.vue';
-import domToImage from 'dom-to-image';
+import { useShareCard, threadUrl, shareAvatarUrl, formatCardDate } from '@/services/share-card/useShareCard';
+import { formatNumber } from '@/utils/helper';
+import type { ContentElement } from '@/types/common';
 
 interface GalleryImage {
   id: string;
@@ -73,6 +75,7 @@ interface ThreadData {
     thread: {
       title: string;
       author?: User;
+      reply_num?: number;
       collect_status?: number;
       collect_mark_pid?: string;
     };
@@ -338,32 +341,23 @@ const currentSubPostInfo: Ref<SubPostInfo> = ref({
 
 const openImageViewer = inject<(url: string) => void>('openImageViewer');
 const captureRef = ref<HTMLElement | null>(null);
+const shareCard = useShareCard();
 
 const handleShare = async () => {
-  if (!captureRef.value || !openImageViewer) return;
-  try {
-    const dataUrl = await domToImage.toPng(captureRef.value, {
-      bgcolor: '#1e1e1e',
-      filter: (node: Node) => {
-        // Skip external stylesheets and CORS-restricted images
-        if (node instanceof HTMLLinkElement && node.rel === 'stylesheet') {
-          return !node.href.includes('fonts.googleapis.com');
-        }
-        if (node instanceof HTMLImageElement) {
-          // Allow data URLs and same-origin images
-          return node.src.startsWith('data:') ||
-            node.src.startsWith(window.location.origin) ||
-            node.hasAttribute('crossorigin');
-        }
-        return true;
-      },
-      imagePlaceholder: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMzMzMiLz48L3N2Zz4='
-    });
-    openImageViewer(dataUrl);
-  } catch (error) {
-    console.error('Failed to generate share image:', error);
-    sendToast?.('生成分享图片失败', 2000);
-  }
+  const data = returnData.value.data;
+  const forum = data?.forum;
+  const firstPost = threadList.value[0];
+  const authorName = firstPost?.author?.name_show || firstPost?.author?.name || '匿名用户';
+  await shareCard({
+    title: threadTitle.value || '贴吧帖子',
+    avatar: shareAvatarUrl(firstPost?.author?.portrait),
+    barName: forum?.name,
+    barAvatar: forum?.avatar,
+    meta: `${authorName} · ${formatCardDate(Number(firstPost.time || 0))}`,
+    contentElements: (firstPost?.content || []) as ContentElement[],
+    stats: [{ label: '回复', value: formatNumber(Number(data?.thread?.reply_num ?? threadList.value.length)) }],
+    qrUrl: threadUrl(props.tid)
+  });
 };
 
 
@@ -774,7 +768,7 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                   </RippleButton>
                   {{ threadTitle }}
                   <RippleButton style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none;"
-                    @click="handleShare" title="生成长截图">
+                    @click="handleShare" title="生成分享卡片">
                     <span class="material-symbols-outlined" style="font-size: 20px;">share</span>
                   </RippleButton>
                   <RippleButton style="padding: 4px; border-radius: 50%; background: transparent; box-shadow: none;"
@@ -789,6 +783,10 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                 :class="{ 'gallery-selected': galleryOpen && String(item.id) === selectedImage?.postId }">
                 <Reply :embedded-images="galleryOpen" @select-image="selectReplyImage($event, String(item.id))"
                   @register-images="registerReplyImages($event, String(item.id))"
+                  :forum-name="returnData.data?.forum?.name" :forum-avatar="returnData.data?.forum?.avatar"
+                  :thread-title="threadTitle"
+                  :thread-author="returnData.data?.thread?.author?.name_show || returnData.data?.thread?.author?.user_name || ''"
+                  :thread-author-avatar="shareAvatarUrl(returnData.data?.thread?.author?.portrait)"
                   :like="Number(item.agree?.agree_num || 0) - Number(item.agree?.disagree_num || 0)"
                   :user_name="item.author?.name_show || item.author?.name || '匿名用户'" :uid="item.author_id"
                   @openUser="onUserNameClicked($event)" :avatar="item.author?.portrait || 'default'"
@@ -818,6 +816,10 @@ const ViewAllReplie = (data: SubPostInfo): void => {
                   </div>
                   <div class="subpost-card-content">
                     <ReplyView :key="`${currentSubPostInfo.tid}-${currentSubPostInfo.pid}`" v-bind="currentSubPostInfo"
+                      :forum-name="returnData.data?.forum?.name" :forum-avatar="returnData.data?.forum?.avatar"
+                      :thread-title="threadTitle"
+                      :thread-author="returnData.data?.thread?.author?.name_show || returnData.data?.thread?.author?.user_name || ''"
+                      :thread-author-avatar="shareAvatarUrl(returnData.data?.thread?.author?.portrait)"
                       @openUser="onUserNameClicked($event)"></ReplyView>
                   </div>
                 </section>

@@ -1,10 +1,13 @@
 <template>
   <div class="thread" @click="emit('openThread')">
     <div class="user-info" @click.stop @click="openUser">
-      <div class="avatar"><RemoteImage kind="avatars" class="avatar"
-          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar" /></div>
+      <div class="avatar">
+        <RemoteImage kind="avatars" class="avatar"
+          :src="'https://gss0.bdstatic.com/6LZ1dD3d1sgCo2Kml5_Y_D3/sys/portrait/item/' + avatar" />
+      </div>
       <div>
-        <div class="user-name">{{ user_name }}<small v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small></div>
+        <div class="user-name">{{ user_name }}<small
+            v-if="settings.showUserId && props.uid && String(props.uid) !== '0'"> · UID {{ props.uid }}</small></div>
         <div class="desc">{{ getTimeInterval(props.create_time * 1000) }}</div>
       </div>
     </div>
@@ -18,8 +21,8 @@
       <span v-if="blocked.images && media?.some(item => item.type == 3)">[配图已禁用]</span>
       <span v-if="blocked.videos && media?.some(item => item.type == 5)">[视频已禁用]</span>
       <div class="thread-media">
-        <RemoteImage class="thread-img" v-for="i in media?.filter(item => item.type == 3 && !blocked.images)" :key="i.big_pic"
-          :src="i.big_pic || ''" />
+        <RemoteImage class="thread-img" v-for="i in media?.filter(item => item.type == 3 && !blocked.images)"
+          :key="i.big_pic" :src="i.big_pic || ''" />
         <span v-for="i in media?.filter(item => item.type == 5 && !blocked.videos)">
           <RemoteImage kind="videos" class="thread-img" :src="i.vpic || ''" />
           <span class="material-symbols-outlined"
@@ -27,11 +30,14 @@
         </span>
       </div>
       <div class="thread-info">
-        <span v-if="fromBar != ''" style="display: flex; align-items: center;"><RemoteImage kind="avatars" v-if="fromBarAvatar" :src="fromBarAvatar"
-            style="width: 16px; height: 16px; border-radius: 16px; margin-right: 5px;"
-            :loading="'eager'" /><span style="margin-right: 5px;">{{ fromBar }}吧</span></span>
+        <span v-if="fromBar != ''" style="display: flex; align-items: center;">
+          <RemoteImage kind="avatars" v-if="fromBarAvatar" :src="fromBarAvatar"
+            style="width: 16px; height: 16px; border-radius: 16px; margin-right: 5px;" :loading="'eager'" /><span
+            style="margin-right: 5px;">{{ fromBar }}吧</span>
+        </span>
 
-        <span class="material-symbols-outlined" style="font-size: 16px;">share</span>分享
+        <span style="cursor: pointer; display: flex; align-items: center;" @click.stop="handleShare"><span
+            class="material-symbols-outlined" style="font-size: 16px;">share</span>&nbsp;分享</span>
         <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 10px;">forum</span> {{ reply_num }}
       </div>
     </div>
@@ -49,6 +55,7 @@ import type { ContentElement, MediaItem } from '@/types/common';
 import RemoteImage from '@/components/common/RemoteImage.vue';
 
 const props = withDefaults(defineProps<{
+  tid?: string | number;
   uid?: string | number;
   fromBarAvatar?: string;
   fromBar?: string;
@@ -62,6 +69,7 @@ const props = withDefaults(defineProps<{
   is_good?: boolean | number;
   theme_color?: string;
 }>(), {
+  tid: '',
   fromBarAvatar: '',
   fromBar: '',
   avatar: '',
@@ -83,6 +91,24 @@ const emit = defineEmits<{
 }>()
 const openUser = () => {
   emit('openUser');
+}
+import { useShareCard, threadUrl, shareAvatarUrl, formatCardDate } from '@/services/share-card/useShareCard';
+const shareCard = useShareCard();
+const handleShare = () => {
+  if (!props.tid) return;
+  const mediaElements = (props.media || [])
+    .filter(item => item.type === 3 && item.big_pic)
+    .map(item => ({ type: 3, bigSrc: item.big_pic }));
+  shareCard({
+    title: props.thread_title || '贴吧帖子',
+    avatar: shareAvatarUrl(props.avatar),
+    barName: props.fromBar,
+    barAvatar: props.fromBarAvatar,
+    meta: `${props.user_name} · ${formatCardDate(props.create_time)}`,
+    contentElements: [...(props.thread_content as ContentElement[]), ...mediaElements],
+    stats: [{ label: '回复', value: props.reply_num }],
+    qrUrl: threadUrl(props.tid)
+  });
 }
 function formatDate(timestamp: number) {
   const date = new Date(timestamp * 1000);
