@@ -22,7 +22,9 @@ use thread_save::{thread_save_cancel, thread_save_start, thread_save_status, Sav
 use tauri::Manager;
 #[cfg(not(target_os = "macos"))]
 use tauri_plugin_decorum::WebviewWindowExt;
-#[cfg(any(target_os = "windows", target_os = "macos"))]
+// Windows effect helpers (apply_acrylic, apply_mica, clear_acrylic, ...) come
+// from this glob; macOS uses the explicit import below, so keep it windows-only.
+#[cfg(target_os = "windows")]
 use window_vibrancy::*;
 // use api::{ get_user_info };
 use base64::{engine::general_purpose, Engine as _};
@@ -446,8 +448,18 @@ fn main() {
                 .expect("failed to create overlay titlebar");
 
             #[cfg(target_os = "macos")]
-            apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)
-                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
+            {
+                // Not unwrapped: a vibrancy failure would panic before the
+                // window is shown. The window stays usable without the blur.
+                if let Err(error) = apply_vibrancy(
+                    &window,
+                    NSVisualEffectMaterial::HudWindow,
+                    None,
+                    None,
+                ) {
+                    eprintln!("apply_vibrancy failed, falling back to opaque window: {error}");
+                }
+            }
 
             #[cfg(target_os = "windows")]
             let _ = apply_acrylic(&window, Some((255, 255, 255, 0)));

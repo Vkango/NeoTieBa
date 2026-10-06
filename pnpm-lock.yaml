@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource/material-symbols-outlined':
+        specifier: ^5.3.8
+        version: 5.3.8
       '@tauri-apps/api':
         specifier: ^2.11.0
         version: 2.11.0
@@ -418,6 +421,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource/material-symbols-outlined@5.3.8':
+    resolution: {integrity: sha512-HpYZX5B3zfy70PX4xYYaGI9CCDRCjJcMumcshJDZbG3vtQBQPrBi7QIqaduCjDryo9Z8jNQFjj4378MMAWCkWw==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1233,6 +1239,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.12':
     optional: true
+
+  '@fontsource/material-symbols-outlined@5.3.8': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
