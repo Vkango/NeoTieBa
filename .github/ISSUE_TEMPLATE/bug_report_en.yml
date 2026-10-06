@@ -1,0 +1,101 @@
+name: 🐛 Bug Report (English)
+description: Report a problem when using NeoTieba
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Please fill in as much detail as possible so the issue can be located faster.
+
+        > [!NOTE]
+        > This is an unofficial client and is not affiliated with Baidu. For account issues, please first make sure you have not violated Tieba community rules.
+  - type: textarea
+    id: summary
+    attributes:
+      label: 🐞 Bug Summary
+      description: Describe the problem in one or two sentences.
+      placeholder: e.g. All images fail to load on the thread detail page.
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: 📦 App Source
+      options:
+        - Installer downloaded from Releases
+        - GitHub Actions build (Test Build / Prerelease)
+        - Local dev environment (pnpm tauri dev)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 🔢 Version / Build Info
+      description: Version for Releases installers; Run number or commit for Actions builds; commit hash for dev.
+      placeholder: e.g. v0.1.0 / prerelease \#12 / commit 7edaa46
+    validations:
+      required: true
+  - type: checkboxes
+    id: platform
+    attributes:
+      label: 💻 Affected Platforms
+      description: Check every platform where the issue occurs.
+      options:
+        - label: Windows x64
+        - label: Windows arm64
+        - label: macOS Apple Silicon (arm64)
+        - label: macOS Intel (x64)
+        - label: Linux x64
+        - label: Linux arm64
+  - type: input
+    id: os-version
+    attributes:
+      label: 🖥️ OS Version
+      placeholder: e.g. Windows 11 24H2 / Ubuntu 22.04 / macOS 15.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 🧭 Steps to Reproduce
+      description: How can the problem be triggered? Describe step by step.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Actual Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 📷 Screenshots or Recordings
+      description: You can drag & drop or paste images directly. (Optional)
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📜 Logs
+      description: Relevant errors from the frontend console (F12) or the Rust backend. (Optional)
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📝 Additional Context
+      description: Anything else that may help locate the problem. (Optional)
+    validations:
+      required: false

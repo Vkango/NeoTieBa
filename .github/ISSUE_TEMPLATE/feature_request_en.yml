@@ -1,0 +1,38 @@
+name: 💡 Feature Request (English)
+description: Suggest a new feature or an improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Before submitting, please check the "Features (TODO)" roadmap in the README to make sure the feature is neither implemented nor already planned.
+  - type: textarea
+    id: description
+    attributes:
+      label: 💡 Feature Description
+      description: A clear description of the feature you want.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: 🎯 Problem / Use Case
+      description: What problem does it solve? When would it be useful?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 🛠️ Proposed Solution
+      description: If you have ideas, describe the approach or references (e.g. how the official client or other third-party clients behave). (Optional)
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: ⚠️ Confirmation
+      options:
+        - label: I confirm this feature is NOT on the "not planned" list declared in the README (replying, posting, auto check-in, moderation)
+          required: true
+        - label: I have checked the roadmap in the README and confirmed this feature is neither implemented nor planned
+          required: true

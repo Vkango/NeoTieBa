@@ -1,0 +1,101 @@
+name: 🐛 Bug 报告（中文）
+description: 报告使用 NeoTieba 时遇到的问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量详细地填写以下信息，以便更快定位问题。
+
+        > [!NOTE]
+        > 本项目为非官方客户端，与百度官方无关。如遇账号异常，请先自查是否违反贴吧社区规则。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 🐞 Bug 简述
+      description: 一句话概括遇到的问题。
+      placeholder: 例如：打开帖子详情页后图片全部加载失败。
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: 📦 应用来源
+      options:
+        - Releases 页面下载的安装包
+        - GitHub Actions 构建（Test Build / Prerelease）
+        - 本地开发环境（pnpm tauri dev）
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 🔢 版本号 / 构建信息
+      description: Releases 安装包请填版本号；Actions 构建请填 Run 编号或 Commit；dev 环境可填当前 commit。
+      placeholder: 例如 v0.1.0 / prerelease \#12 / commit 7edaa46
+    validations:
+      required: true
+  - type: checkboxes
+    id: platform
+    attributes:
+      label: 💻 受影响的平台
+      description: 勾选所有出现问题平台的平台。
+      options:
+        - label: Windows x64
+        - label: Windows arm64
+        - label: macOS Apple Silicon (arm64)
+        - label: macOS Intel (x64)
+        - label: Linux x64
+        - label: Linux arm64
+  - type: input
+    id: os-version
+    attributes:
+      label: 🖥️ 系统版本
+      placeholder: 例如 Windows 11 24H2 / Ubuntu 22.04 / macOS 15.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 🧭 复现步骤
+      description: 如何触发这个问题？请按步骤描述。
+      placeholder: |
+        1. 打开……
+        2. 点击……
+        3. 出现……
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ 期望行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ 实际行为
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 📷 截图或录屏
+      description: 可直接拖拽或粘贴图片。（可选）
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📜 日志
+      description: 前端控制台（F12）或 Rust 端输出的相关报错信息。（可选）
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📝 补充信息
+      description: 其他可能有助于定位问题的内容。（可选）
+    validations:
+      required: false
