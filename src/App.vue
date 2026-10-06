@@ -11,8 +11,9 @@ import User from './pages/user/User.vue';
 import Search from './pages/search/Search.vue';
 import Welcome from './pages/Welcome.vue';
 import Setting from './pages/Setting.vue';
-import { errorService } from '@/core/error-service';
+import { errorService, type ErrorReport as ErrorReportModel } from '@/core/error-service';
 import Tip from '@/components/notification/Tip.vue';
+import ErrorReportCard from '@/components/notification/ErrorReport.vue';
 import Debug from './pages/Debug.vue';
 import Home from './pages/Home.vue';
 import { clipboardService } from '@/services/clipboard-service';
@@ -212,6 +213,23 @@ const safeAddNotification = async (
 };
 
 provide('sendNotification', safeAddNotification);
+
+// Registered in setup scope (not onMounted) so even pre-mount errors show UI;
+// safeAddNotification queues them until the notification component is ready.
+errorService.addHandler(async (report: ErrorReportModel): Promise<void> => {
+  try {
+    await safeAddNotification(
+      '应用发生错误',
+      '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
+      ErrorReportCard,
+      null,
+      { report },
+      60000
+    );
+  } catch (e) {
+    console.error('Failed to show error notification:', e);
+  }
+});
 
 provide('sendToast', (title: string, duration = 3000): void => {
   if (ToastComponent.value) {
@@ -493,21 +511,6 @@ onMounted(async (): Promise<void> => {
   void settingsStore.setWallpaperEffect(settingsStore.wallpaperEffect);
   settingsStore.applyTheme(settingsStore.theme);
   settingsStore.initWallpaper();
-
-  errorService.addHandler(async (error: unknown, info: unknown): Promise<void> => {
-    try {
-      await safeAddNotification(
-        String(info),
-        '<span class="material-symbols-outlined" style="font-size: 17px;">bug_report</span>错误管理',
-        Tip,
-        null,
-        { Tip: String(error) },
-        60000
-      );
-    } catch (e) {
-      console.error('Failed to show error notification:', e);
-    }
-  });
 
   clipboardService.addHandler(async (url: string): Promise<void> => {
     try {
