@@ -57,6 +57,7 @@ export default defineConfig(async () => ({
   },
 
   build: {
+    sourcemap: true,
     rollupOptions: {
     }
   }

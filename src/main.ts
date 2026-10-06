@@ -2,7 +2,8 @@ import { createApp, reactive } from "vue";
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 import App from "@/App.vue";
-import { errorService } from "@/core/error-service";
+import { errorService, formatReport } from "@/core/error-service";
+import { error as logError } from '@tauri-apps/plugin-log';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readText } from '@tauri-apps/plugin-clipboard-manager';
 import pluginManager from '@/plugin/plugin-manager';
@@ -35,13 +36,31 @@ const text = await readText();
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
 
+// Persist every captured error into the shared log file (same file as Rust logs).
+errorService.addHandler(async (report) => {
+    if (!('__TAURI_INTERNALS__' in window)) return;
+    try {
+        await logError(formatReport(report));
+    } catch (e) {
+        console.error('Failed to write error log:', e);
+    }
+});
+
+// Catch errors outside Vue rendering: async callbacks and rejected promises.
+window.addEventListener('error', (event) => {
+    errorService.handleError(event.error ?? event.message, undefined, 'window');
+});
+window.addEventListener('unhandledrejection', (event) => {
+    errorService.handleError(event.reason, undefined, 'unhandledrejection');
+});
+
 const app = createApp(App);
 
 // 使用Pinia
 app.use(pinia);
 
 app.config.errorHandler = (err, _instance, info) => {
-    errorService.handleError(err, info as string);
+    errorService.handleError(err, info, 'vue');
     console.error(err);
 };
 

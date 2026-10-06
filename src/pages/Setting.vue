@@ -9,7 +9,8 @@ import type { MediaKind } from '@/utils/settings-policy';
 import { probeConnection } from '@/core/request';
 import { connectionMessage } from '@/utils/settings-policy';
 import { invoke } from '@tauri-apps/api/core';
-import { openUrl } from '@tauri-apps/plugin-opener';
+import { openUrl, openPath } from '@tauri-apps/plugin-opener';
+import { appLogDir } from '@tauri-apps/api/path';
 import { WALLPAPER_EFFECT_OPTIONS } from '@/stores/settings';
 
 // Props 定义
@@ -173,6 +174,7 @@ const networkSettings: ComputedRef<SettingItem[]> = computed(() => [
   { id: 'proxy_url', icon: 'link', title: '代理地址', type: 'input', desc: '例如 http://127.0.0.1:7890', value: settingsStore.proxyUrl, placeholder: 'http://127.0.0.1:7890' },
   { id: 'connection_test', icon: 'network_check', title: '连接测试', type: 'button', desc: connectionTestDesc.value, action: 'test' },
   { id: 'devtools', icon: 'bug_report', title: '打开开发者工具', type: 'button', desc: '打开 DevTools 调试窗口', action: 'devtools' },
+  { id: 'open_log_dir', icon: 'folder_open', title: '打开日志目录', type: 'button', desc: '查看应用运行日志，反馈问题时可附上日志文件', action: 'open_log_dir' },
 ]);
 
 // 帖子保存设置：预先编辑默认保存选项 + 离线查看回退策略
@@ -286,6 +288,8 @@ const handleSettingAction = (setting: SettingItem): void => {
     testConnection();
   } else if ('action' in setting && setting.action === 'devtools') {
     openDevTools();
+  } else if ('action' in setting && setting.action === 'open_log_dir') {
+    openLogDir();
   } else if ('action' in setting && setting.action === 'wallpaper') {
     pickWallpaper();
   } else if ('action' in setting && setting.action === 'remove_wallpaper') {
@@ -297,6 +301,14 @@ const openDevTools = (): void => {
   invoke('toggle_devtools').catch((error) => {
     actionError.value = `打开开发者工具失败：${String(error)}`;
   });
+};
+
+const openLogDir = async (): Promise<void> => {
+  try {
+    await openPath(await appLogDir());
+  } catch (error) {
+    actionError.value = `打开日志目录失败：${String(error)}`;
+  }
 };
 
 // 滚动处理

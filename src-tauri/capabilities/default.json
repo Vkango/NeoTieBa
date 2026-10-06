@@ -18,6 +18,8 @@
     "fs:allow-read-text-file",
     "fs:allow-read-file",
     "clipboard-x:default",
+    "log:default",
+    "opener:allow-open-path",
     {
       "identifier": "fs:scope",
       "allow": [

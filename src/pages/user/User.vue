@@ -121,7 +121,7 @@ onMounted(async (): Promise<void> => {
 
     // 加载用户信息
     const userInfo = await api.user_info(Number(props.uid), 1);
-    returnData.value = userInfo.data;
+    returnData.value = { ...userInfo.data, user: userInfo.data?.user ?? returnData.value.user };
     console.log('用户信息:', returnData.value);
 
     // 加载用户卡片

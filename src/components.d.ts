@@ -15,6 +15,7 @@ declare module 'vue' {
     BarInfoCard: typeof import('./components/user/BarInfoCard.vue')['default']
     Container: typeof import('./components/common/Container.vue')['default']
     Drawer: typeof import('./components/layout/Drawer.vue')['default']
+    ErrorReport: typeof import('./components/notification/ErrorReport.vue')['default']
     ExternalLinkDialog: typeof import('./components/common/ExternalLinkDialog.vue')['default']
     ImageViewer: typeof import('./components/common/ImageViewer.vue')['default']
     Item: typeof import('./components/common/Item.vue')['default']
